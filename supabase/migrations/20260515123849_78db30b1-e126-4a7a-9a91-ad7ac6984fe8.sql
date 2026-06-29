@@ -1,0 +1,1 @@
+ALTER TABLE public.missions ADD COLUMN IF NOT EXISTS is_expert_authored boolean NOT NULL DEFAULT false;

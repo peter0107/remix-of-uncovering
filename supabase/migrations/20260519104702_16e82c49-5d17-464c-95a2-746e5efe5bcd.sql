@@ -1,0 +1,3 @@
+CREATE POLICY "Admins insert submission files" ON storage.objects FOR INSERT TO authenticated WITH CHECK (bucket_id = 'mission-submissions' AND has_role(auth.uid(), 'admin'::app_role));
+CREATE POLICY "Admins update submission files" ON storage.objects FOR UPDATE TO authenticated USING (bucket_id = 'mission-submissions' AND has_role(auth.uid(), 'admin'::app_role)) WITH CHECK (bucket_id = 'mission-submissions' AND has_role(auth.uid(), 'admin'::app_role));
+CREATE POLICY "Admins delete submission files" ON storage.objects FOR DELETE TO authenticated USING (bucket_id = 'mission-submissions' AND has_role(auth.uid(), 'admin'::app_role));
