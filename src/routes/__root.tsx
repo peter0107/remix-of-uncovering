@@ -29,7 +29,7 @@ function GlobalNavigationOverlay() {
 
 function SiteLayout({ children }: { children: React.ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const bare = pathname.startsWith("/admin") || pathname.startsWith("/onboarding");
+  const bare = pathname.startsWith("/admin");
   if (bare) return <>{children}</>;
   return (
     <div className="flex min-h-screen flex-col">
@@ -132,6 +132,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         content:
           "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/8a03b4ad-1812-4167-82f1-2103810ca739/id-preview-193e0ba8--bc1010db-6cc4-4e75-a858-7a48f9b5a376.lovable.app-1778568493500.png",
       },
+      { name: "description", content: "Experience real job scenarios, get a personalized career report, and identify your strengths." },
+      { property: "og:description", content: "Experience real job scenarios, get a personalized career report, and identify your strengths." },
+      { name: "twitter:description", content: "Experience real job scenarios, get a personalized career report, and identify your strengths." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/7feeed6b-35f0-49cb-9ca5-129e56908ad4/id-preview-bfc275d2--7f9ca802-38e4-4c9e-9c3d-9f7551ac81e3.lovable.app-1783085120803.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/7feeed6b-35f0-49cb-9ca5-129e56908ad4/id-preview-bfc275d2--7f9ca802-38e4-4c9e-9c3d-9f7551ac81e3.lovable.app-1783085120803.png" },
     ],
     links: [
       {
