@@ -1,0 +1,1 @@
+alter view public.company_visible_submissions set (security_invoker = true);
