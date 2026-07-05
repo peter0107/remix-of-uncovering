@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as StartRouteImport } from './routes/start'
 import { Route as SimulationsRouteImport } from './routes/simulations'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as MyRouteImport } from './routes/my'
@@ -16,6 +17,11 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SimulationIdRouteImport } from './routes/simulation.$id'
 
+const StartRoute = StartRouteImport.update({
+  id: '/start',
+  path: '/start',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SimulationsRoute = SimulationsRouteImport.update({
   id: '/simulations',
   path: '/simulations',
@@ -53,6 +59,7 @@ export interface FileRoutesByFullPath {
   '/my': typeof MyRoute
   '/onboarding': typeof OnboardingRoute
   '/simulations': typeof SimulationsRoute
+  '/start': typeof StartRoute
   '/simulation/$id': typeof SimulationIdRoute
 }
 export interface FileRoutesByTo {
@@ -61,6 +68,7 @@ export interface FileRoutesByTo {
   '/my': typeof MyRoute
   '/onboarding': typeof OnboardingRoute
   '/simulations': typeof SimulationsRoute
+  '/start': typeof StartRoute
   '/simulation/$id': typeof SimulationIdRoute
 }
 export interface FileRoutesById {
@@ -70,6 +78,7 @@ export interface FileRoutesById {
   '/my': typeof MyRoute
   '/onboarding': typeof OnboardingRoute
   '/simulations': typeof SimulationsRoute
+  '/start': typeof StartRoute
   '/simulation/$id': typeof SimulationIdRoute
 }
 export interface FileRouteTypes {
@@ -80,6 +89,7 @@ export interface FileRouteTypes {
     | '/my'
     | '/onboarding'
     | '/simulations'
+    | '/start'
     | '/simulation/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -88,6 +98,7 @@ export interface FileRouteTypes {
     | '/my'
     | '/onboarding'
     | '/simulations'
+    | '/start'
     | '/simulation/$id'
   id:
     | '__root__'
@@ -96,6 +107,7 @@ export interface FileRouteTypes {
     | '/my'
     | '/onboarding'
     | '/simulations'
+    | '/start'
     | '/simulation/$id'
   fileRoutesById: FileRoutesById
 }
@@ -105,11 +117,19 @@ export interface RootRouteChildren {
   MyRoute: typeof MyRoute
   OnboardingRoute: typeof OnboardingRoute
   SimulationsRoute: typeof SimulationsRoute
+  StartRoute: typeof StartRoute
   SimulationIdRoute: typeof SimulationIdRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/start': {
+      id: '/start'
+      path: '/start'
+      fullPath: '/start'
+      preLoaderRoute: typeof StartRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/simulations': {
       id: '/simulations'
       path: '/simulations'
@@ -161,18 +181,9 @@ const rootRouteChildren: RootRouteChildren = {
   MyRoute: MyRoute,
   OnboardingRoute: OnboardingRoute,
   SimulationsRoute: SimulationsRoute,
+  StartRoute: StartRoute,
   SimulationIdRoute: SimulationIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

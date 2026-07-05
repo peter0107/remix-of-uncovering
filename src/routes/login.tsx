@@ -45,7 +45,7 @@ function LoginPage() {
         const { error } = await supabase.auth.signUp({
           email,
           password,
-          options: { emailRedirectTo: `${window.location.origin}/` },
+          options: { emailRedirectTo: `${window.location.origin}/start` },
         });
         if (error) {
           toast.error(error.message);
@@ -63,7 +63,7 @@ function LoginPage() {
         posthog.identify(email, { email });
         posthog.capture("user_logged_in", { email, method: "email" });
         toast.success("로그인되었습니다.");
-        navigate({ to: redirect });
+        navigate({ to: redirect === "/" ? "/start" : redirect });
       }
     } finally {
       setSubmitting(false);
@@ -164,8 +164,9 @@ function LoginPage() {
           size="lg"
           className="w-full"
           onClick={async () => {
+            const target = redirect === "/" ? "/start" : redirect;
             const result = await lovable.auth.signInWithOAuth("google", {
-              redirect_uri: `${window.location.origin}${redirect}`,
+              redirect_uri: `${window.location.origin}${target}`,
               extraParams: { prompt: "select_account" },
             });
             if (result.error) {
@@ -174,7 +175,7 @@ function LoginPage() {
             }
             posthog.capture("user_logged_in", { method: "google" });
             if (result.redirected) return;
-            navigate({ to: redirect });
+            navigate({ to: target });
           }}
         >
           <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">

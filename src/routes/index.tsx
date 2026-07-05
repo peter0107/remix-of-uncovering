@@ -70,7 +70,7 @@ function Index() {
           업무 역량과 직무 적합도를 확인할 수 있어요.
         </p>
         <div className="mt-8 flex justify-center">
-          <Link to="/simulations">
+          <Link to="/start">
             <Button
               size="lg"
               className="rounded-xl bg-zinc-900 px-8 text-white hover:bg-zinc-700"
