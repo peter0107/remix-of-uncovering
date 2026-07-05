@@ -153,84 +153,92 @@ function SimulationDetailPage() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-12">
-      <div className="flex items-center gap-1.5 text-xs text-zinc-400">
-        <Building2 className="h-3.5 w-3.5" />
-        {sim.company_name}
-      </div>
-      <h1 className="mt-1 text-2xl font-bold text-zinc-900">{sim.title}</h1>
-      {sim.estimated_minutes && (
-        <div className="mt-2 flex items-center gap-1 text-xs text-zinc-400">
-          <Clock className="h-3.5 w-3.5" />
-          약 {sim.estimated_minutes}분
+    <div className="mx-auto max-w-6xl px-4 py-12">
+      <div className="grid gap-8 lg:grid-cols-2">
+        {/* 왼쪽: 과제 내용 */}
+        <div>
+          <div className="flex items-center gap-1.5 text-xs text-zinc-400">
+            <Building2 className="h-3.5 w-3.5" />
+            {sim.company_name}
+          </div>
+          <h1 className="mt-1 text-2xl font-bold text-zinc-900">{sim.title}</h1>
+          {sim.estimated_minutes && (
+            <div className="mt-2 flex items-center gap-1 text-xs text-zinc-400">
+              <Clock className="h-3.5 w-3.5" />
+              약 {sim.estimated_minutes}분
+            </div>
+          )}
+
+          <Card className="mt-6 p-6">
+            <div className="prose prose-sm sm:prose-base prose-zinc max-w-none prose-table:text-sm">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                {sim.task_prompt ?? ""}
+              </ReactMarkdown>
+            </div>
+          </Card>
         </div>
-      )}
 
-      <Card className="mt-6 p-6">
-        <div className="prose prose-sm sm:prose-base prose-zinc max-w-none prose-table:text-sm">
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>
-            {sim.task_prompt ?? ""}
-          </ReactMarkdown>
-        </div>
-      </Card>
+        {/* 오른쪽: 제출 관련 */}
+        <div className="flex flex-col lg:sticky lg:top-20 lg:h-[calc(100vh-6rem)]">
+          <div className="flex min-h-0 flex-1 flex-col">
+            <label htmlFor="response" className="text-sm font-medium text-zinc-700">
+              답안 작성
+            </label>
+            <Textarea
+              id="response"
+              value={responseText}
+              onChange={(e) => setResponseText(e.target.value)}
+              placeholder="여기에 답안을 작성해주세요"
+              className="mt-2 min-h-40 flex-1 resize-none"
+            />
+          </div>
 
-      <div className="mt-6">
-        <label htmlFor="response" className="text-sm font-medium text-zinc-700">
-          답안 작성
-        </label>
-        <Textarea
-          id="response"
-          value={responseText}
-          onChange={(e) => setResponseText(e.target.value)}
-          placeholder="여기에 답안을 작성해주세요"
-          className="mt-2 min-h-60"
-        />
-      </div>
+          <div className="mt-6 shrink-0 rounded-2xl border border-zinc-200 p-5">
+            <p className="text-sm font-semibold text-zinc-900">
+              이 답안을 {sim.company_name}에 전송하는 것에 동의하시나요?
+            </p>
+            <p className="mt-1 text-xs text-zinc-400">
+              동의하면 답안 원문이 기업 담당자에게 그대로 전달돼요. 동의하지 않아도 제출
+              자체는 되고, 마이페이지 이력에는 남아요.
+            </p>
+            <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+              <button
+                type="button"
+                onClick={() => setConsent(true)}
+                className={cn(
+                  "flex-1 rounded-xl border-2 px-4 py-3 text-left text-sm transition-all",
+                  consent === true
+                    ? "border-zinc-900 bg-zinc-900 text-white"
+                    : "border-zinc-200 bg-white text-zinc-800 hover:border-zinc-400",
+                )}
+              >
+                네, 전송할게요
+              </button>
+              <button
+                type="button"
+                onClick={() => setConsent(false)}
+                className={cn(
+                  "flex-1 rounded-xl border-2 px-4 py-3 text-left text-sm transition-all",
+                  consent === false
+                    ? "border-zinc-900 bg-zinc-900 text-white"
+                    : "border-zinc-200 bg-white text-zinc-800 hover:border-zinc-400",
+                )}
+              >
+                아니요, 이번엔 비공개로 할게요
+              </button>
+            </div>
+          </div>
 
-      <div className="mt-8 rounded-2xl border border-zinc-200 p-5">
-        <p className="text-sm font-semibold text-zinc-900">
-          이 답안을 {sim.company_name}에 전송하는 것에 동의하시나요?
-        </p>
-        <p className="mt-1 text-xs text-zinc-400">
-          동의하면 답안 원문이 기업 담당자에게 그대로 전달돼요. 동의하지 않아도 제출
-          자체는 되고, 마이페이지 이력에는 남아요.
-        </p>
-        <div className="mt-4 flex flex-col gap-2 sm:flex-row">
-          <button
-            type="button"
-            onClick={() => setConsent(true)}
-            className={cn(
-              "flex-1 rounded-xl border-2 px-4 py-3 text-left text-sm transition-all",
-              consent === true
-                ? "border-zinc-900 bg-zinc-900 text-white"
-                : "border-zinc-200 bg-white text-zinc-800 hover:border-zinc-400",
-            )}
+          <Button
+            onClick={handleSubmit}
+            disabled={submitting}
+            size="lg"
+            className="mt-6 w-full shrink-0 rounded-xl bg-zinc-900 text-white hover:bg-zinc-700"
           >
-            네, 전송할게요
-          </button>
-          <button
-            type="button"
-            onClick={() => setConsent(false)}
-            className={cn(
-              "flex-1 rounded-xl border-2 px-4 py-3 text-left text-sm transition-all",
-              consent === false
-                ? "border-zinc-900 bg-zinc-900 text-white"
-                : "border-zinc-200 bg-white text-zinc-800 hover:border-zinc-400",
-            )}
-          >
-            아니요, 이번엔 비공개로 할게요
-          </button>
+            {submitting ? "제출 중..." : "제출하기"}
+          </Button>
         </div>
       </div>
-
-      <Button
-        onClick={handleSubmit}
-        disabled={submitting}
-        size="lg"
-        className="mt-6 w-full rounded-xl bg-zinc-900 text-white hover:bg-zinc-700"
-      >
-        {submitting ? "제출 중..." : "제출하기"}
-      </Button>
     </div>
   );
 }

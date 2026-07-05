@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -459,10 +459,17 @@ function Step5({
 
 function OnboardingPage() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [step, setStep] = useState(1);
   const [saving, setSaving] = useState(false);
   const [data, setDataRaw] = useState<OnboardingData>(INITIAL);
+
+  useEffect(() => {
+    if (authLoading) return;
+    if (!user) {
+      navigate({ to: "/login", search: { redirect: "/onboarding" } });
+    }
+  }, [user, authLoading, navigate]);
 
   const setData = (partial: Partial<OnboardingData>) =>
     setDataRaw((prev) => ({ ...prev, ...partial }));
@@ -510,6 +517,10 @@ function OnboardingPage() {
   };
 
   const progress = (step / 5) * 100;
+
+  if (authLoading || !user) {
+    return <div className="min-h-screen bg-white" />;
+  }
 
   return (
     <div className="flex min-h-screen flex-col bg-white">

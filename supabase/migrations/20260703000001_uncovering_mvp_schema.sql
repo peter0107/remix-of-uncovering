@@ -117,17 +117,23 @@ alter table job_simulations   enable row level security;
 alter table companies         enable row level security;
 
 -- 구직자: 본인 데이터만 읽기/쓰기
+drop policy if exists seeker_self_all on job_seekers;
 create policy seeker_self_all on job_seekers
   for all using (auth.uid() = id);
 
 -- 제출물: 구직자는 본인 제출물만
+drop policy if exists sub_self_all on submissions;
 create policy sub_self_all on submissions
   for all using (auth.uid() = job_seeker_id);
 
 -- job_simulations: 비로그인 방문자도 둘러볼 수 있어야 하므로 전체 공개 읽기 허용
+drop policy if exists sim_read_auth on job_simulations;
+drop policy if exists sim_read_public on job_simulations;
 create policy sim_read_public on job_simulations
   for select using (true);
 
 -- companies: job_simulations 조인 시 기업명 노출용, 전체 공개 읽기 허용
+drop policy if exists company_read_auth on companies;
+drop policy if exists company_read_public on companies;
 create policy company_read_public on companies
   for select using (true);

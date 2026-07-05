@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Clock, ArrowRight, Sparkles, Building2 } from "lucide-react";
+import { Clock, ArrowRight, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
@@ -95,6 +95,21 @@ async function fetchAll(): Promise<Simulation[]> {
   return (data as unknown as RawRow[]).map(toSimulation);
 }
 
+// ─── 직무 설명 ────────────────────────────────────────────────
+
+const JOB_DESCRIPTIONS: Record<string, string> = {
+  "서비스기획·PM": "제품이 어떤 문제를 풀어야 할지 정의하고, 데이터를 보며 방향을 조정해요.",
+  "개발": "아이디어를 실제로 동작하는 서비스로 만들어내는 일을 해요.",
+  "데이터": "숫자 속에서 패턴을 찾아 의사결정의 근거를 만들어요.",
+  "디자인": "사용자가 편하게 느끼도록 화면과 경험을 설계해요.",
+  "마케팅·그로스": "잠재 고객을 찾아내고, 성장 지표를 끌어올리는 방법을 고민해요.",
+  "운영·CS": "서비스가 매끄럽게 돌아가도록 관리하고, 고객의 목소리에 귀 기울여요.",
+  "회계·감사": "숫자가 정확한지 검증하고, 재무제표의 신뢰성을 지켜요.",
+  "임상시험·제약": "신약이 안전하고 효과적인지, 임상 데이터로 검증해요.",
+  "MD·바이어": "어떤 상품을 얼마나 사서 어떻게 팔지 전략을 세워요.",
+  "품질·엔지니어링": "불량의 원인을 추적하고, 품질 기준을 지켜내는 일을 해요.",
+};
+
 // ─── 카드 컴포넌트 ────────────────────────────────────────────
 
 function SimCard({
@@ -105,60 +120,48 @@ function SimCard({
   rank?: number;
 }) {
   return (
-    <div className="flex flex-col rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm transition-shadow hover:shadow-md">
-      {/* 순위 + 직무군 태그 */}
-      <div className="flex items-center justify-between">
-        {rank ? (
-          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-zinc-900 text-xs font-bold text-white">
-            {rank}
-          </span>
-        ) : (
-          <span />
-        )}
-        {sim.job_family && (
-          <span className="rounded-full bg-zinc-100 px-3 py-1 text-xs font-medium text-zinc-600">
-            {sim.job_family}
-          </span>
-        )}
-      </div>
+    <Link
+      to="/simulation/$id"
+      params={{ id: sim.id }}
+      className="group flex flex-col rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm transition-all hover:-translate-y-0.5 hover:border-zinc-900 hover:shadow-md"
+    >
+      {/* 순위 */}
+      {rank && (
+        <span className="flex h-7 w-7 items-center justify-center rounded-full bg-zinc-900 text-xs font-bold text-white">
+          {rank}
+        </span>
+      )}
 
-      {/* 기업명 */}
-      <div className="mt-4 flex items-center gap-1.5">
-        <Building2 className="h-3.5 w-3.5 text-zinc-400" />
-        <span className="text-xs text-zinc-400">{sim.company_name}</span>
-      </div>
+      {/* 직무군 */}
+      {sim.job_family && (
+        <h3 className="mt-4 text-2xl font-bold leading-snug text-zinc-900">
+          {sim.job_family}
+        </h3>
+      )}
 
-      {/* 제목 */}
-      <h3 className="mt-1 text-lg font-bold leading-snug text-zinc-900">{sim.title}</h3>
-
-      {/* 설명 */}
-      {sim.description && (
-        <p className="mt-2 flex-1 text-sm leading-relaxed text-zinc-500 line-clamp-3">
-          {sim.description}
+      {/* 직무 설명 */}
+      {sim.job_family && JOB_DESCRIPTIONS[sim.job_family] && (
+        <p className="mt-1.5 text-sm leading-relaxed text-zinc-500">
+          {JOB_DESCRIPTIONS[sim.job_family]}
         </p>
       )}
 
-      {/* 소요시간 + CTA */}
-      <div className="mt-5 flex items-center justify-between">
-        {sim.estimated_minutes ? (
-          <div className="flex items-center gap-1 text-xs text-zinc-400">
-            <Clock className="h-3.5 w-3.5" />
-            <span>약 {sim.estimated_minutes}분</span>
-          </div>
-        ) : (
-          <div />
-        )}
-        <Link to="/simulation/$id" params={{ id: sim.id }}>
-          <Button
-            size="sm"
-            className="gap-1 rounded-xl bg-zinc-900 text-white hover:bg-zinc-700"
-          >
-            시작하기
-            <ArrowRight className="h-3.5 w-3.5" />
-          </Button>
-        </Link>
+      {/* 소요시간 */}
+      {sim.estimated_minutes && (
+        <div className="mt-3 flex items-center gap-1 text-sm text-zinc-500">
+          <Clock className="h-4 w-4" />
+          <span>약 {sim.estimated_minutes}분 소요</span>
+        </div>
+      )}
+
+      {/* 호버 시 나타나는 CTA */}
+      <div className="mt-5 flex flex-1 items-end justify-end">
+        <span className="flex items-center gap-1 text-sm font-semibold text-zinc-400 transition-colors group-hover:text-zinc-900">
+          시작하기
+          <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+        </span>
       </div>
-    </div>
+    </Link>
   );
 }
 
