@@ -14,203 +14,363 @@ export type Database = {
   }
   public: {
     Tables: {
-      job_seekers: {
+      admin_emails: {
         Row: {
-          id: string
-          email: string
-          education_level: string | null
-          majors: string[] | null
-          academic_mark: number | null
-          job_interests: string[] | null
-          company_interests: string[] | null
-          work_regions: string[] | null
-          employment_types: string[] | null
-          willing_to_relocate: boolean | null
-          one_line_intro: string | null
-          external_links: Json
-          discovery_consent: boolean | null
           created_at: string
+          email: string
         }
         Insert: {
-          id?: string
-          email: string
-          education_level?: string | null
-          majors?: string[] | null
-          academic_mark?: number | null
-          job_interests?: string[] | null
-          company_interests?: string[] | null
-          work_regions?: string[] | null
-          employment_types?: string[] | null
-          willing_to_relocate?: boolean | null
-          one_line_intro?: string | null
-          external_links?: Json
-          discovery_consent?: boolean | null
           created_at?: string
+          email: string
         }
         Update: {
-          id?: string
-          email?: string
-          education_level?: string | null
-          majors?: string[] | null
-          academic_mark?: number | null
-          job_interests?: string[] | null
-          company_interests?: string[] | null
-          work_regions?: string[] | null
-          employment_types?: string[] | null
-          willing_to_relocate?: boolean | null
-          one_line_intro?: string | null
-          external_links?: Json
-          discovery_consent?: boolean | null
           created_at?: string
+          email?: string
         }
         Relationships: []
       }
-      companies: {
+      custom_jobs: {
         Row: {
+          category_id: string
+          created_at: string
+          description: string | null
           id: string
           name: string
-          unique_code: string
-          created_at: string
+          required_competencies: string[]
+          slug: string
+          status: string
+          updated_at: string
         }
         Insert: {
+          category_id: string
+          created_at?: string
+          description?: string | null
           id?: string
           name: string
-          unique_code: string
-          created_at?: string
+          required_competencies?: string[]
+          slug: string
+          status?: string
+          updated_at?: string
         }
         Update: {
+          category_id?: string
+          created_at?: string
+          description?: string | null
           id?: string
           name?: string
-          unique_code?: string
-          created_at?: string
+          required_competencies?: string[]
+          slug?: string
+          status?: string
+          updated_at?: string
         }
         Relationships: []
       }
-      job_simulations: {
+      mission_requests: {
         Row: {
-          id: string
-          company_id: string
-          title: string
-          description: string | null
-          job_family: string | null
-          domain: string | null
-          estimated_minutes: number | null
-          task_prompt: string | null
+          category_name: string | null
           created_at: string
+          id: string
+          job_name: string
+          status: string
         }
         Insert: {
-          id?: string
-          company_id: string
-          title: string
-          description?: string | null
-          job_family?: string | null
-          domain?: string | null
-          estimated_minutes?: number | null
-          task_prompt?: string | null
+          category_name?: string | null
           created_at?: string
+          id?: string
+          job_name: string
+          status?: string
         }
         Update: {
-          id?: string
-          company_id?: string
-          title?: string
-          description?: string | null
-          job_family?: string | null
-          domain?: string | null
-          estimated_minutes?: number | null
-          task_prompt?: string | null
+          category_name?: string | null
           created_at?: string
+          id?: string
+          job_name?: string
+          status?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "job_simulations_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "companies"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
-      submissions: {
+      missions: {
         Row: {
-          id: string
-          job_seeker_id: string
-          job_simulation_id: string
-          response_text: string | null
-          started_at: string | null
-          submitted_at: string | null
-          duration_sec: number | null
-          paste_detected: boolean | null
-          answer_transmission_consent: boolean | null
-          score_json: Json | null
+          author_id: string | null
+          author_name: string
+          author_role: string | null
+          company_name: string | null
+          company_size: string | null
+          content_mode: string
           created_at: string
+          data_points: Json | null
+          description: string | null
+          difficulty: string
+          duration_min: number
+          expert_comment_html: string | null
+          frequent_tasks: string | null
+          id: string
+          included_results: string[]
+          industries: string[] | null
+          industry: string | null
+          industry_categories: string[] | null
+          is_expert_authored: boolean
+          job_category: string | null
+          job_slug: string
+          locked_preview_text: string | null
+          material_blocks: Json
+          mission_steps: string[]
+          offline_activity_html: string | null
+          preview_notice: string | null
+          questions: Json | null
+          recommended_for: string | null
+          reviewed_by: string | null
+          sample_answer: string | null
+          situation: string | null
+          status: string
+          submitted_competencies: string[] | null
+          summary_description: string | null
+          summary_title: string | null
+          title: string
+          updated_at: string
+          verification_file_url: string | null
+          wizard_intro_blocks: Json
+          wizard_intro_html: string | null
+          wizard_steps: Json
+          years_experience: number | null
         }
         Insert: {
-          id?: string
-          job_seeker_id: string
-          job_simulation_id: string
-          response_text?: string | null
-          started_at?: string | null
-          submitted_at?: string | null
-          duration_sec?: number | null
-          paste_detected?: boolean | null
-          answer_transmission_consent?: boolean | null
-          score_json?: Json | null
+          author_id?: string | null
+          author_name?: string
+          author_role?: string | null
+          company_name?: string | null
+          company_size?: string | null
+          content_mode?: string
           created_at?: string
+          data_points?: Json | null
+          description?: string | null
+          difficulty?: string
+          duration_min?: number
+          expert_comment_html?: string | null
+          frequent_tasks?: string | null
+          id?: string
+          included_results?: string[]
+          industries?: string[] | null
+          industry?: string | null
+          industry_categories?: string[] | null
+          is_expert_authored?: boolean
+          job_category?: string | null
+          job_slug: string
+          locked_preview_text?: string | null
+          material_blocks?: Json
+          mission_steps?: string[]
+          offline_activity_html?: string | null
+          preview_notice?: string | null
+          questions?: Json | null
+          recommended_for?: string | null
+          reviewed_by?: string | null
+          sample_answer?: string | null
+          situation?: string | null
+          status?: string
+          submitted_competencies?: string[] | null
+          summary_description?: string | null
+          summary_title?: string | null
+          title: string
+          updated_at?: string
+          verification_file_url?: string | null
+          wizard_intro_blocks?: Json
+          wizard_intro_html?: string | null
+          wizard_steps?: Json
+          years_experience?: number | null
         }
         Update: {
-          id?: string
-          job_seeker_id?: string
-          job_simulation_id?: string
-          response_text?: string | null
-          started_at?: string | null
-          submitted_at?: string | null
-          duration_sec?: number | null
-          paste_detected?: boolean | null
-          answer_transmission_consent?: boolean | null
-          score_json?: Json | null
+          author_id?: string | null
+          author_name?: string
+          author_role?: string | null
+          company_name?: string | null
+          company_size?: string | null
+          content_mode?: string
           created_at?: string
+          data_points?: Json | null
+          description?: string | null
+          difficulty?: string
+          duration_min?: number
+          expert_comment_html?: string | null
+          frequent_tasks?: string | null
+          id?: string
+          included_results?: string[]
+          industries?: string[] | null
+          industry?: string | null
+          industry_categories?: string[] | null
+          is_expert_authored?: boolean
+          job_category?: string | null
+          job_slug?: string
+          locked_preview_text?: string | null
+          material_blocks?: Json
+          mission_steps?: string[]
+          offline_activity_html?: string | null
+          preview_notice?: string | null
+          questions?: Json | null
+          recommended_for?: string | null
+          reviewed_by?: string | null
+          sample_answer?: string | null
+          situation?: string | null
+          status?: string
+          submitted_competencies?: string[] | null
+          summary_description?: string | null
+          summary_title?: string | null
+          title?: string
+          updated_at?: string
+          verification_file_url?: string | null
+          wizard_intro_blocks?: Json
+          wizard_intro_html?: string | null
+          wizard_steps?: Json
+          years_experience?: number | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "submissions_job_seeker_id_fkey"
-            columns: ["job_seeker_id"]
-            isOneToOne: false
-            referencedRelation: "job_seekers"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "submissions_job_simulation_id_fkey"
-            columns: ["job_simulation_id"]
-            isOneToOne: false
-            referencedRelation: "job_simulations"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
+      }
+      orders: {
+        Row: {
+          answers: Json | null
+          competency_scores: Json
+          created_at: string
+          email: string
+          expert_comment: string | null
+          feedback_requested: boolean
+          fit_narrative: string | null
+          fit_points: string[]
+          id: string
+          improvements: string[]
+          job_slug: string
+          mission_id: string | null
+          mission_intro: string | null
+          next_actions: string[]
+          product_id: string
+          share_verification_image_name: string | null
+          share_verification_image_path: string | null
+          share_verification_rejection_note: string | null
+          share_verification_reviewed_at: string | null
+          share_verification_status: string
+          share_verification_submitted_at: string | null
+          status: string
+          strengths: string[]
+          submitted_at: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          answers?: Json | null
+          competency_scores?: Json
+          created_at?: string
+          email?: string
+          expert_comment?: string | null
+          feedback_requested?: boolean
+          fit_narrative?: string | null
+          fit_points?: string[]
+          id: string
+          improvements?: string[]
+          job_slug: string
+          mission_id?: string | null
+          mission_intro?: string | null
+          next_actions?: string[]
+          product_id: string
+          share_verification_image_name?: string | null
+          share_verification_image_path?: string | null
+          share_verification_rejection_note?: string | null
+          share_verification_reviewed_at?: string | null
+          share_verification_status?: string
+          share_verification_submitted_at?: string | null
+          status?: string
+          strengths?: string[]
+          submitted_at?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          answers?: Json | null
+          competency_scores?: Json
+          created_at?: string
+          email?: string
+          expert_comment?: string | null
+          feedback_requested?: boolean
+          fit_narrative?: string | null
+          fit_points?: string[]
+          id?: string
+          improvements?: string[]
+          job_slug?: string
+          mission_id?: string | null
+          mission_intro?: string | null
+          next_actions?: string[]
+          product_id?: string
+          share_verification_image_name?: string | null
+          share_verification_image_path?: string | null
+          share_verification_rejection_note?: string | null
+          share_verification_reviewed_at?: string | null
+          share_verification_status?: string
+          share_verification_submitted_at?: string | null
+          status?: string
+          strengths?: string[]
+          submitted_at?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          id: string
+          nickname: string | null
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          id: string
+          nickname?: string | null
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          id?: string
+          nickname?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
       }
     }
     Views: {
-      company_visible_submissions: {
-        Row: {
-          id: string
-          company_id: string
-          simulation_title: string
-          response_text: string | null
-          submitted_at: string | null
-          duration_sec: number | null
-          paste_detected: boolean | null
-          one_line_intro: string | null
-          external_links: Json
-          job_interests: string[] | null
-          discovery_consent: boolean | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "expert" | "user"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -337,6 +497,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "expert", "user"],
+    },
   },
 } as const
