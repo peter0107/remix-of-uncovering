@@ -124,10 +124,10 @@ create policy seeker_self_all on job_seekers
 create policy sub_self_all on submissions
   for all using (auth.uid() = job_seeker_id);
 
--- job_simulations: 모든 인증 유저 읽기 허용 (구직자 추천용)
-create policy sim_read_auth on job_simulations
-  for select using (auth.role() = 'authenticated');
+-- job_simulations: 비로그인 방문자도 둘러볼 수 있어야 하므로 전체 공개 읽기 허용
+create policy sim_read_public on job_simulations
+  for select using (true);
 
--- companies: job_simulations 조인 시 기업명 노출용, 모든 인증 유저 읽기 허용
-create policy company_read_auth on companies
-  for select using (auth.role() = 'authenticated');
+-- companies: job_simulations 조인 시 기업명 노출용, 전체 공개 읽기 허용
+create policy company_read_public on companies
+  for select using (true);

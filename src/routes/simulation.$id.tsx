@@ -1,6 +1,8 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Building2, CheckCircle2, Clock } from "lucide-react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -11,7 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/simulation/$id")({
-  head: () => ({ meta: [{ title: "시뮬레이션 — 언커버링" }] }),
+  head: () => ({ meta: [{ title: "시뮬레이션 — Beginner" }] }),
   component: SimulationDetailPage,
 });
 
@@ -38,10 +40,6 @@ function SimulationDetailPage() {
 
   useEffect(() => {
     if (authLoading) return;
-    if (!user) {
-      navigate({ to: "/login", search: { redirect: `/simulation/${id}` } });
-      return;
-    }
 
     supabase
       .from("job_simulations")
@@ -70,13 +68,18 @@ function SimulationDetailPage() {
   }, [id, user, authLoading, navigate]);
 
   const handleSubmit = async () => {
-    if (!user || !sim) return;
+    if (!sim) return;
     if (!responseText.trim()) {
       toast.error("답안을 작성해주세요.");
       return;
     }
     if (consent === null) {
       toast.error("답안 전송 동의 여부를 선택해주세요.");
+      return;
+    }
+    if (!user) {
+      toast.error("제출하려면 로그인이 필요해요.");
+      navigate({ to: "/login", search: { redirect: `/simulation/${id}` } });
       return;
     }
 
@@ -164,9 +167,11 @@ function SimulationDetailPage() {
       )}
 
       <Card className="mt-6 p-6">
-        <p className="text-sm leading-relaxed whitespace-pre-wrap text-zinc-700">
-          {sim.task_prompt}
-        </p>
+        <div className="prose prose-sm sm:prose-base prose-zinc max-w-none prose-table:text-sm">
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+            {sim.task_prompt ?? ""}
+          </ReactMarkdown>
+        </div>
       </Card>
 
       <div className="mt-6">

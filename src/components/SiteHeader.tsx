@@ -21,8 +21,8 @@ export function SiteHeader() {
     )}
     <header className="sticky top-0 z-40 w-full border-b border-border bg-background/80 backdrop-blur">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
-        <a href="/" className="flex items-center" aria-label="언커버링 홈">
-          <span className="text-lg font-bold tracking-tight text-foreground">언커버링</span>
+        <a href="/" className="flex items-center" aria-label="Beginner 홈">
+          <span className="text-lg font-bold tracking-tight text-foreground">Beginner</span>
         </a>
 
         <nav className="hidden items-center gap-7 md:flex">

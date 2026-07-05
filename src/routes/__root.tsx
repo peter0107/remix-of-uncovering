@@ -102,13 +102,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "언커버링 - 실제 업무로 나에게 맞는 회사 찾기" },
+      { title: "Beginner - 실제 업무로 나에게 맞는 회사 찾기" },
       {
         name: "description",
         content:
           "관심 직무의 실제 업무 시뮬레이션을 체험하고, 답안을 기업에 전송해 발견되어보세요.",
       },
-      { property: "og:title", content: "언커버링 - 실제 업무로 나에게 맞는 회사 찾기" },
+      { property: "og:title", content: "Beginner - 실제 업무로 나에게 맞는 회사 찾기" },
       {
         property: "og:description",
         content:

@@ -1,11 +1,17 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowRight, Compass, FileEdit, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "언커버링 - 실제 업무로 나에게 맞는 회사 찾기" },
+      { title: "Beginner - 실제 업무로 나에게 맞는 회사 찾기" },
       {
         name: "description",
         content:
@@ -15,6 +21,21 @@ export const Route = createFileRoute("/")({
   }),
   component: Index,
 });
+
+const FAQ = [
+  {
+    q: "시뮬레이션은 어떻게 생성되나요?",
+    a: "현직자의 인터뷰 내용을 바탕으로 현직자와 검수 후 실제 현업에서 발생하는 상황으로 제시됩니다.",
+  },
+  {
+    q: "한 직무 체험은 얼마나 걸리나요?",
+    a: "직무에 따라 평균 30~35분이며, 중간 저장이 가능합니다.",
+  },
+  {
+    q: "현직자 피드백은 어떻게 받나요?",
+    a: "체험 후 현직자 피드백 상품을 추가하면 제출 답변에 대한 코멘트를 받을 수 있습니다.",
+  },
+];
 
 const STEPS = [
   {
@@ -82,6 +103,26 @@ function Index() {
               </p>
             </div>
           ))}
+        </div>
+      </section>
+
+      <section className="border-t border-zinc-100 bg-zinc-50">
+        <div className="mx-auto max-w-2xl px-4 py-16">
+          <h2 className="text-center text-xl font-bold text-zinc-900 sm:text-2xl">
+            자주 묻는 질문
+          </h2>
+          <Accordion type="single" collapsible className="mt-8">
+            {FAQ.map((item) => (
+              <AccordionItem key={item.q} value={item.q}>
+                <AccordionTrigger className="text-base text-zinc-900">
+                  {item.q}
+                </AccordionTrigger>
+                <AccordionContent className="text-zinc-500">
+                  {item.a}
+                </AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
         </div>
       </section>
     </div>

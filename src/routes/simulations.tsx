@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Clock, ArrowRight, Sparkles, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/simulations")({
-  head: () => ({ meta: [{ title: "추천 시뮬레이션 — 언커버링" }] }),
+  head: () => ({ meta: [{ title: "추천 시뮬레이션 — Beginner" }] }),
   component: SimulationsPage,
 });
 
@@ -31,6 +31,28 @@ type JobSeeker = {
 
 // ─── 추천 쿼리 (룰 기반) ─────────────────────────────────────
 
+type RawRow = {
+  id: string;
+  title: string;
+  description: string | null;
+  job_family: string | null;
+  domain: string | null;
+  estimated_minutes: number | null;
+  companies: { name: string } | null;
+};
+
+function toSimulation(row: RawRow): Simulation {
+  return {
+    id: row.id,
+    title: row.title,
+    description: row.description,
+    job_family: row.job_family,
+    domain: row.domain,
+    estimated_minutes: row.estimated_minutes,
+    company_name: row.companies?.name ?? "",
+  };
+}
+
 async function fetchRecommended(seeker: JobSeeker): Promise<Simulation[]> {
   const jobInterests = seeker.job_interests ?? [];
   const companyInterests = seeker.company_interests ?? [];
@@ -44,24 +66,8 @@ async function fetchRecommended(seeker: JobSeeker): Promise<Simulation[]> {
   if (error) throw error;
   if (!data || data.length === 0) return [];
 
-  type RawRow = {
-    id: string;
-    title: string;
-    description: string | null;
-    job_family: string | null;
-    domain: string | null;
-    estimated_minutes: number | null;
-    companies: { name: string } | null;
-  };
-
   const rows = (data as unknown as RawRow[]).map((row) => ({
-    id: row.id,
-    title: row.title,
-    description: row.description,
-    job_family: row.job_family,
-    domain: row.domain,
-    estimated_minutes: row.estimated_minutes,
-    company_name: row.companies?.name ?? "",
+    ...toSimulation(row),
     // 직무 일치 여부 (정렬 키)
     _jobMatch: jobInterests.includes(row.job_family ?? ""),
     _companyMatch: companyInterests.includes(row.companies?.name ?? ""),
@@ -77,6 +83,18 @@ async function fetchRecommended(seeker: JobSeeker): Promise<Simulation[]> {
   return sorted.slice(0, 3).map(({ _jobMatch: _j, _companyMatch: _c, ...rest }) => rest);
 }
 
+// 비로그인 방문자용: 개인화 없이 전체 시뮬레이션 목록
+async function fetchAll(): Promise<Simulation[]> {
+  const { data, error } = await supabase
+    .from("job_simulations")
+    .select("id, title, description, job_family, domain, estimated_minutes, companies(name)")
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+  if (!data) return [];
+  return (data as unknown as RawRow[]).map(toSimulation);
+}
+
 // ─── 카드 컴포넌트 ────────────────────────────────────────────
 
 function SimCard({
@@ -84,15 +102,19 @@ function SimCard({
   rank,
 }: {
   sim: Simulation;
-  rank: number;
+  rank?: number;
 }) {
   return (
     <div className="flex flex-col rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm transition-shadow hover:shadow-md">
       {/* 순위 + 직무군 태그 */}
       <div className="flex items-center justify-between">
-        <span className="flex h-7 w-7 items-center justify-center rounded-full bg-zinc-900 text-xs font-bold text-white">
-          {rank}
-        </span>
+        {rank ? (
+          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-zinc-900 text-xs font-bold text-white">
+            {rank}
+          </span>
+        ) : (
+          <span />
+        )}
         {sim.job_family && (
           <span className="rounded-full bg-zinc-100 px-3 py-1 text-xs font-medium text-zinc-600">
             {sim.job_family}
@@ -186,7 +208,6 @@ function EmptyState({ hasOnboarding }: { hasOnboarding: boolean }) {
 
 function SimulationsPage() {
   const { user, loading: authLoading } = useAuth();
-  const navigate = useNavigate();
   const [seeker, setSeeker] = useState<JobSeeker | null>(null);
   const [sims, setSims] = useState<Simulation[]>([]);
   const [loading, setLoading] = useState(true);
@@ -194,13 +215,16 @@ function SimulationsPage() {
 
   useEffect(() => {
     if (authLoading) return;
-    if (!user) {
-      navigate({ to: "/login", search: { redirect: "/simulations" } });
-      return;
-    }
 
     (async () => {
       try {
+        if (!user) {
+          // 비로그인 방문자: 개인화 없이 전체 목록 둘러보기
+          setSeeker(null);
+          setSims(await fetchAll());
+          return;
+        }
+
         // 구직자 프로필 조회
         const { data: seekerData } = await supabase
           .from("job_seekers")
@@ -223,20 +247,28 @@ function SimulationsPage() {
         setLoading(false);
       }
     })();
-  }, [user, authLoading, navigate]);
+  }, [user, authLoading]);
 
   const hasOnboarding = !!(seeker?.job_interests?.length);
+  const isGuest = !authLoading && !user;
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-12">
       {/* 헤더 */}
       <div className="mb-2 flex items-center gap-2">
         <Sparkles className="h-5 w-5 text-zinc-500" />
-        <span className="text-sm font-medium text-zinc-500">맞춤 추천</span>
+        <span className="text-sm font-medium text-zinc-500">
+          {isGuest ? "직무 시뮬레이션" : "맞춤 추천"}
+        </span>
       </div>
       <h1 className="text-2xl font-bold text-zinc-900 md:text-3xl">
-        나를 위한 시뮬레이션 3개
+        {isGuest ? "원하는 시뮬레이션을 선택하세요" : "나를 위한 시뮬레이션 3개"}
       </h1>
+      {isGuest && (
+        <p className="mt-2 text-sm text-zinc-400">
+          로그인하면 관심 직무·기업에 맞는 시뮬레이션을 추천해 드려요.
+        </p>
+      )}
 
       {/* 관심 직무 태그 */}
       {!loading && seeker?.job_interests && seeker.job_interests.length > 0 && (
@@ -269,7 +301,7 @@ function SimulationsPage() {
       <div
         className={cn(
           "mt-8 grid gap-4",
-          sims.length === 3 ? "md:grid-cols-3" : "md:grid-cols-2",
+          !isGuest && sims.length === 3 ? "md:grid-cols-3" : "md:grid-cols-2",
         )}
       >
         {loading ? (
@@ -279,7 +311,9 @@ function SimulationsPage() {
             <CardSkeleton />
           </>
         ) : sims.length > 0 ? (
-          sims.map((sim, i) => <SimCard key={sim.id} sim={sim} rank={i + 1} />)
+          sims.map((sim, i) => (
+            <SimCard key={sim.id} sim={sim} rank={isGuest ? undefined : i + 1} />
+          ))
         ) : (
           <div className="col-span-full">
             <EmptyState hasOnboarding={hasOnboarding} />
@@ -288,7 +322,7 @@ function SimulationsPage() {
       </div>
 
       {/* 하단 안내 */}
-      {!loading && sims.length > 0 && (
+      {!loading && !isGuest && sims.length > 0 && (
         <p className="mt-6 text-center text-xs text-zinc-400">
           관심 직무·기업 기반으로 추천한 시뮬레이션입니다 ·{" "}
           <Link to="/onboarding" className="underline underline-offset-2 hover:text-zinc-600">

@@ -10,7 +10,7 @@ export function SiteFooter() {
           <Link to="/my" className="hover:text-foreground">프로필</Link>
         </nav>
         <p className="mt-6 text-xs text-muted-foreground">
-          © {new Date().getFullYear()} 언커버링. All rights reserved.
+          © {new Date().getFullYear()} Beginner. All rights reserved.
         </p>
       </div>
     </footer>
