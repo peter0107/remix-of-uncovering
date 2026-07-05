@@ -1,37 +1,15 @@
-import { Link, useNavigate } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { Menu, X, UserCircle2, LogOut, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SignupDialog } from "@/components/SignupDialog";
 import { useAuth } from "@/hooks/use-auth";
-import { lovable } from "@/integrations/lovable";
-import { toast } from "sonner";
 
-const NAV: { to: string; label: string }[] = [
-  { to: "/simulations", label: "추천 시뮬레이션" },
-];
+const NAV: { to: string; label: string }[] = [];
 
 export function SiteHeader() {
   const [open, setOpen] = useState(false);
   const { user, signOut, signingOut } = useAuth();
-  const navigate = useNavigate();
-
-  const handleStart = async () => {
-    if (user) {
-      navigate({ to: "/onboarding" });
-      return;
-    }
-    const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: `${window.location.origin}/onboarding`,
-      extraParams: { prompt: "select_account" },
-    });
-    if (result.error) {
-      toast.error("Google 로그인에 실패했습니다.");
-      return;
-    }
-    if (result.redirected) return;
-    navigate({ to: "/onboarding" });
-  };
 
   return (
     <>
@@ -88,13 +66,11 @@ export function SiteHeader() {
                   </Button>
                 }
               />
-              <Button
-                size="sm"
-                onClick={handleStart}
-                className="bg-brand text-brand-foreground hover:bg-brand/90"
-              >
-                시작하기
-              </Button>
+              <Link to="/simulations">
+                <Button size="sm" className="bg-brand text-brand-foreground hover:bg-brand/90">
+                  시작하기
+                </Button>
+              </Link>
             </>
           )}
         </div>
@@ -156,15 +132,11 @@ export function SiteHeader() {
                     </Button>
                   }
                 />
-                <Button
-                  onClick={() => {
-                    setOpen(false);
-                    handleStart();
-                  }}
-                  className="mt-1 w-full bg-brand text-brand-foreground hover:bg-brand/90"
-                >
-                  시작하기
-                </Button>
+                <Link to="/simulations" onClick={() => setOpen(false)}>
+                  <Button className="mt-1 w-full bg-brand text-brand-foreground hover:bg-brand/90">
+                    시작하기
+                  </Button>
+                </Link>
               </>
             )}
           </div>

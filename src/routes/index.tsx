@@ -1,11 +1,6 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowRight, Compass, FileEdit, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/hooks/use-auth";
-import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable";
-import { toast } from "sonner";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -40,43 +35,6 @@ const STEPS = [
 ];
 
 function Index() {
-  const { user, loading: authLoading } = useAuth();
-  const navigate = useNavigate();
-  const [hasOnboarding, setHasOnboarding] = useState<boolean | null>(null);
-
-  useEffect(() => {
-    if (!user) {
-      setHasOnboarding(null);
-      return;
-    }
-    supabase
-      .from("job_seekers")
-      .select("job_interests")
-      .eq("id", user.id)
-      .maybeSingle()
-      .then(({ data }) => {
-        setHasOnboarding(!!(data?.job_interests && data.job_interests.length > 0));
-      });
-  }, [user]);
-
-  const handleStart = async () => {
-    if (authLoading) return;
-    if (!user) {
-      const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: `${window.location.origin}/onboarding`,
-        extraParams: { prompt: "select_account" },
-      });
-      if (result.error) {
-        toast.error("Google 로그인에 실패했습니다.");
-        return;
-      }
-      if (result.redirected) return;
-      navigate({ to: "/onboarding" });
-      return;
-    }
-    navigate({ to: hasOnboarding ? "/simulations" : "/onboarding" });
-  };
-
   return (
     <div>
       <section className="mx-auto max-w-3xl px-4 pb-16 pt-20 text-center sm:pt-28">
@@ -95,14 +53,15 @@ function Index() {
           업무 역량과 직무 적합도를 확인할 수 있어요.
         </p>
         <div className="mt-8 flex justify-center">
-          <Button
-            size="lg"
-            onClick={handleStart}
-            className="rounded-xl bg-zinc-900 px-8 text-white hover:bg-zinc-700"
-          >
-            시작하기
-            <ArrowRight className="ml-1 h-4 w-4" />
-          </Button>
+          <Link to="/simulations">
+            <Button
+              size="lg"
+              className="rounded-xl bg-zinc-900 px-8 text-white hover:bg-zinc-700"
+            >
+              시작하기
+              <ArrowRight className="ml-1 h-4 w-4" />
+            </Button>
+          </Link>
         </div>
       </section>
 
@@ -123,32 +82,6 @@ function Index() {
               </p>
             </div>
           ))}
-        </div>
-      </section>
-
-      <section className="border-t border-zinc-100 bg-zinc-50">
-        <div className="mx-auto max-w-3xl px-4 py-16 text-center">
-          <h2 className="text-xl font-bold text-zinc-900 sm:text-2xl">
-            지금 관심 직무와 기업을 등록하면
-          </h2>
-          <p className="mt-2 text-sm text-zinc-500 sm:text-base">
-            나에게 맞는 시뮬레이션 3개를 바로 추천해드려요.
-          </p>
-          <div className="mt-6 flex justify-center">
-            {user ? (
-              <Link to={hasOnboarding ? "/simulations" : "/onboarding"}>
-                <Button className="rounded-xl bg-zinc-900 text-white hover:bg-zinc-700">
-                  {hasOnboarding ? "추천 시뮬레이션 보기" : "온보딩 시작하기"}
-                </Button>
-              </Link>
-            ) : (
-              <Link to="/login" search={{ redirect: "/onboarding" }}>
-                <Button className="rounded-xl bg-zinc-900 text-white hover:bg-zinc-700">
-                  로그인하고 시작하기
-                </Button>
-              </Link>
-            )}
-          </div>
         </div>
       </section>
     </div>
