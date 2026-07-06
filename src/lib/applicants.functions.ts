@@ -140,7 +140,7 @@ function mapApplicant(row: Record<string, unknown>): Applicant {
 }
 
 export const getApplicantsByCompanyCode = createServerFn({ method: "GET" })
-  .validator(companyCodeInputSchema)
+  .inputValidator(companyCodeInputSchema)
   .handler(async ({ data }): Promise<CompanyApplicants> => {
     const supabaseUrl = process.env.SUPABASE_URL;
     const supabaseKey = process.env.SUPABASE_PUBLISHABLE_KEY;
