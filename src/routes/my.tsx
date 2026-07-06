@@ -154,13 +154,6 @@ const PROFILE_SECTIONS: {
   },
 ];
 
-const SECTION_LABELS: Record<SectionKey, string> = {
-  education: "학력",
-  jobInterests: "관심 직무",
-  companyInterests: "관심 기업",
-  workPreference: "근무 선호",
-};
-
 function serializeProfileField(key: keyof ProfileFormData, value: unknown) {
   if (key === "academic_mark") {
     return value ? parseFloat(value as string) : null;
@@ -611,8 +604,9 @@ function MyPage() {
     setEditingSection(sectionKey);
   };
 
-  const closeSectionEditor = () => {
+  const cancelEditSection = () => {
     if (savingSection) return;
+    setDraftFormRaw(profileForm);
     setEditingSection(null);
   };
 
@@ -637,6 +631,35 @@ function MyPage() {
     setProfileFormRaw((prev) => ({ ...prev, ...draftForm }));
     setEditingSection(null);
     toast.success("저장됐어요.");
+  };
+
+  const renderSectionEditor = (sectionKey: SectionKey) => {
+    const section = PROFILE_SECTIONS.find((item) => item.key === sectionKey);
+    if (!section) return null;
+
+    const SectionComponent = section.Component;
+    return (
+      <div className="mt-4 rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
+        <SectionComponent data={draftForm} setData={setDraftForm} />
+        <div className="mt-6 flex gap-2">
+          <Button
+            onClick={saveSection}
+            disabled={savingSection}
+            className="rounded-xl bg-zinc-900 text-white hover:bg-zinc-700"
+          >
+            {savingSection ? "저장 중..." : "저장"}
+          </Button>
+          <Button
+            variant="outline"
+            onClick={cancelEditSection}
+            disabled={savingSection}
+            className="rounded-xl"
+          >
+            취소
+          </Button>
+        </div>
+      </div>
+    );
   };
 
   const updateResumeForm = (key: keyof ResumeForm, value: string) => {
@@ -825,10 +848,6 @@ function MyPage() {
   }
 
   const hasAnyLink = Boolean(links.github || links.portfolio || links.linkedin);
-  const editingSectionConfig = editingSection
-    ? PROFILE_SECTIONS.find((section) => section.key === editingSection)
-    : null;
-
   return (
     <div className="mx-auto max-w-2xl px-4 py-12">
       <h1 className="text-2xl font-bold text-zinc-900">프로필</h1>
@@ -1011,10 +1030,12 @@ function MyPage() {
             label="학력"
             onEdit={() => startEditSection("education")}
           >
-            {profileForm.university_name ||
-            profileForm.education_level ||
-            profileForm.majors.length ||
-            profileForm.academic_mark ? (
+            {editingSection === "education" ? (
+              renderSectionEditor("education")
+            ) : profileForm.university_name ||
+              profileForm.education_level ||
+              profileForm.majors.length ||
+              profileForm.academic_mark ? (
               <div className="flex flex-wrap items-center gap-2">
                 {profileForm.university_name && (
                   <span className="text-sm text-zinc-800">{profileForm.university_name}</span>
@@ -1043,7 +1064,9 @@ function MyPage() {
             label="관심 직무"
             onEdit={() => startEditSection("jobInterests")}
           >
-            {profileForm.job_interests.length ? (
+            {editingSection === "jobInterests" ? (
+              renderSectionEditor("jobInterests")
+            ) : profileForm.job_interests.length ? (
               <div className="flex flex-wrap gap-2">
                 {profileForm.job_interests.map((j) => (
                   <Tag key={j}>{j}</Tag>
@@ -1061,7 +1084,9 @@ function MyPage() {
             label="관심 기업"
             onEdit={() => startEditSection("companyInterests")}
           >
-            {profileForm.company_interests.length ? (
+            {editingSection === "companyInterests" ? (
+              renderSectionEditor("companyInterests")
+            ) : profileForm.company_interests.length ? (
               <div className="flex flex-wrap gap-2">
                 {profileForm.company_interests.map((c) => (
                   <Tag key={c}>{c}</Tag>
@@ -1079,9 +1104,11 @@ function MyPage() {
             label="근무 선호"
             onEdit={() => startEditSection("workPreference")}
           >
-            {profileForm.work_regions.length ||
-            profileForm.employment_types.length ||
-            profileForm.willing_to_relocate ? (
+            {editingSection === "workPreference" ? (
+              renderSectionEditor("workPreference")
+            ) : profileForm.work_regions.length ||
+              profileForm.employment_types.length ||
+              profileForm.willing_to_relocate ? (
               <div className="flex flex-wrap gap-2">
                 {profileForm.work_regions.map((r) => (
                   <Tag key={r}>{r}</Tag>
@@ -1274,38 +1301,6 @@ function MyPage() {
           </ul>
         )}
       </div>
-
-      <Dialog open={!!editingSectionConfig} onOpenChange={(open) => !open && closeSectionEditor()}>
-        <DialogContent className="max-h-[88vh] max-w-2xl overflow-y-auto">
-          {editingSectionConfig && (
-            <>
-              <DialogHeader>
-                <DialogTitle>{SECTION_LABELS[editingSectionConfig.key]} 수정</DialogTitle>
-                <DialogDescription>
-                  이 항목에 필요한 정보만 수정하고 저장할 수 있어요.
-                </DialogDescription>
-              </DialogHeader>
-
-              <div className="py-2">
-                <editingSectionConfig.Component data={draftForm} setData={setDraftForm} />
-              </div>
-
-              <DialogFooter>
-                <Button variant="outline" onClick={closeSectionEditor} disabled={savingSection}>
-                  취소
-                </Button>
-                <Button
-                  onClick={saveSection}
-                  disabled={savingSection}
-                  className="bg-zinc-900 text-white hover:bg-zinc-700"
-                >
-                  {savingSection ? "저장 중..." : "저장"}
-                </Button>
-              </DialogFooter>
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
 
       <Dialog open={resumeEditorOpen} onOpenChange={setResumeEditorOpen}>
         <DialogContent className="max-h-[88vh] max-w-4xl overflow-y-auto">
