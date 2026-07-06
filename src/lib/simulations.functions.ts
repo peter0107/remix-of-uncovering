@@ -3,6 +3,8 @@ import { getRequest } from "@tanstack/react-start/server";
 import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
 
+import { DOMAIN_CATEGORIES } from "@/lib/domain-categories";
+
 export type AdminCompanySimulation = {
   id: string;
   companyId: string;
@@ -14,8 +16,11 @@ export type AdminCompanySimulation = {
   domain: string;
   estimatedMinutes: number | null;
   description: string;
+  taskPrompt: string;
   createdAt: string;
 };
+
+const domainCategorySchema = z.enum(DOMAIN_CATEGORIES);
 
 const createCompanySimulationInputSchema = z.object({
   companyCode: z.string().min(1),
@@ -23,9 +28,13 @@ const createCompanySimulationInputSchema = z.object({
   roleLabel: z.string().min(1),
   description: z.string().optional().default(""),
   jobFamily: z.string().optional().default(""),
-  domain: z.string().optional().default(""),
+  domain: domainCategorySchema,
   estimatedMinutes: z.number().int().positive().nullable().optional().default(null),
   taskPrompt: z.string().min(1),
+});
+
+const updateCompanySimulationInputSchema = createCompanySimulationInputSchema.extend({
+  id: z.string().uuid(),
 });
 
 function createPublicServerClient() {
@@ -106,6 +115,7 @@ function mapAdminSimulation(row: Record<string, unknown>): AdminCompanySimulatio
     domain: String(row.domain ?? ""),
     estimatedMinutes: typeof row.estimated_minutes === "number" ? row.estimated_minutes : null,
     description: String(row.description ?? ""),
+    taskPrompt: String(row.task_prompt ?? ""),
     createdAt: formatDateTime(String(row.created_at)),
   };
 }
@@ -118,7 +128,7 @@ export const getAdminCompanySimulations = createServerFn({ method: "GET" }).hand
     const { data, error } = await supabaseAdmin
       .from("job_simulations")
       .select(
-        "id, company_id, title, role_label, job_family, domain, estimated_minutes, description, created_at, companies(code, unique_code, name)",
+        "id, company_id, title, role_label, job_family, domain, estimated_minutes, description, task_prompt, created_at, companies(code, unique_code, name)",
       )
       .order("created_at", { ascending: false });
 
@@ -147,20 +157,62 @@ export const createCompanySimulation = createServerFn({ method: "POST" })
       throw new Error("Invalid company code");
     }
 
-    const { error } = await supabaseAdmin.from("job_simulations").insert({
-      company_id: company.id,
-      title: data.title,
-      role_label: data.roleLabel,
-      description: data.description,
-      job_family: data.jobFamily,
-      domain: data.domain,
-      estimated_minutes: data.estimatedMinutes,
-      task_prompt: data.taskPrompt,
-    });
+    const { data: row, error } = await supabaseAdmin
+      .from("job_simulations")
+      .insert({
+        company_id: company.id,
+        title: data.title,
+        role_label: data.roleLabel,
+        description: data.description,
+        job_family: data.jobFamily,
+        domain: data.domain,
+        estimated_minutes: data.estimatedMinutes,
+        task_prompt: data.taskPrompt,
+      })
+      .select("id")
+      .single();
 
     if (error) {
       console.error("Failed to create company simulation:", error);
       throw new Error("Failed to create company simulation");
+    }
+
+    return { ok: true, id: row.id as string };
+  });
+
+export const updateCompanySimulation = createServerFn({ method: "POST" })
+  .inputValidator(updateCompanySimulationInputSchema)
+  .handler(async ({ data }) => {
+    await assertAdmin();
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { data: company, error: companyError } = await supabaseAdmin
+      .from("companies")
+      .select("id")
+      .eq("code", data.companyCode)
+      .single();
+
+    if (companyError || !company) {
+      throw new Error("Invalid company code");
+    }
+
+    const { error } = await supabaseAdmin
+      .from("job_simulations")
+      .update({
+        company_id: company.id,
+        title: data.title,
+        role_label: data.roleLabel,
+        description: data.description,
+        job_family: data.jobFamily,
+        domain: data.domain,
+        estimated_minutes: data.estimatedMinutes,
+        task_prompt: data.taskPrompt,
+      })
+      .eq("id", data.id);
+
+    if (error) {
+      console.error("Failed to update company simulation:", error);
+      throw new Error("Failed to update company simulation");
     }
 
     return { ok: true };

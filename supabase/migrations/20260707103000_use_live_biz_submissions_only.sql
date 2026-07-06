@@ -46,7 +46,7 @@ source_simulation as (
     '마케팅 매니저'::text as role_label,
     source.description,
     source.job_family,
-    source.domain,
+    '마케팅·광고·MD'::text as domain,
     source.estimated_minutes,
     source.task_prompt
   from a_company
@@ -65,7 +65,7 @@ fallback_simulation as (
     '마케팅 매니저'::text as role_label,
     '마케팅 캠페인 실험 결과를 해석하고 실행 전략을 제안하는 직무 시뮬레이션입니다.'::text as description,
     '마케팅'::text as job_family,
-    '그로스'::text as domain,
+    '마케팅·광고·MD'::text as domain,
     72::integer as estimated_minutes,
     '# 마케팅 캠페인 A/B 테스트 결과 해석
 

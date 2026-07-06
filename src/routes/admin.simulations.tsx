@@ -1,13 +1,15 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { ListChecks, Plus, RefreshCw } from "lucide-react";
-import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { Building2, ListChecks, Plus, RefreshCw, Save } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 
 import { useAuth } from "@/hooks/use-auth";
 import {
   createCompanySimulation,
   getAdminCompanySimulations,
+  updateCompanySimulation,
   type AdminCompanySimulation,
 } from "@/lib/simulations.functions";
+import { DOMAIN_CATEGORIES } from "@/lib/domain-categories";
 
 type SimulationForm = {
   companyCode: string;
@@ -20,13 +22,41 @@ type SimulationForm = {
   taskPrompt: string;
 };
 
+function createEmptyForm(companyCode = ""): SimulationForm {
+  return {
+    companyCode,
+    roleLabel: "",
+    title: "",
+    description: "",
+    jobFamily: "",
+    domain: DOMAIN_CATEGORIES[0],
+    estimatedMinutes: "60",
+    taskPrompt: "",
+  };
+}
+
+function formFromSimulation(simulation: AdminCompanySimulation): SimulationForm {
+  return {
+    companyCode: simulation.companyCode,
+    roleLabel: simulation.roleLabel,
+    title: simulation.title,
+    description: simulation.description,
+    jobFamily: simulation.jobFamily,
+    domain: DOMAIN_CATEGORIES.includes(simulation.domain as (typeof DOMAIN_CATEGORIES)[number])
+      ? simulation.domain
+      : DOMAIN_CATEGORIES[0],
+    estimatedMinutes: simulation.estimatedMinutes ? String(simulation.estimatedMinutes) : "",
+    taskPrompt: simulation.taskPrompt,
+  };
+}
+
 const EMPTY_FORM: SimulationForm = {
-  companyCode: "BGNR-2024-A",
+  companyCode: "",
   roleLabel: "",
   title: "",
   description: "",
   jobFamily: "",
-  domain: "",
+  domain: DOMAIN_CATEGORIES[0],
   estimatedMinutes: "60",
   taskPrompt: "",
 };
@@ -46,10 +76,65 @@ function AdminSimulations() {
   const { user, loading: authLoading } = useAuth();
   const [simulations, setSimulations] = useState<AdminCompanySimulation[]>([]);
   const [form, setForm] = useState<SimulationForm>(EMPTY_FORM);
+  const [selectedCompanyCode, setSelectedCompanyCode] = useState("");
+  const [selectedSimulationId, setSelectedSimulationId] = useState<string | null>(null);
+  const [hasInitializedSelection, setHasInitializedSelection] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const companies = useMemo(() => {
+    const map = new Map<
+      string,
+      { code: string; name: string; simulationCount: number; companyId: string }
+    >();
+
+    for (const simulation of simulations) {
+      const current = map.get(simulation.companyCode);
+      if (current) {
+        current.simulationCount += 1;
+      } else {
+        map.set(simulation.companyCode, {
+          code: simulation.companyCode,
+          name: simulation.companyName,
+          companyId: simulation.companyId,
+          simulationCount: 1,
+        });
+      }
+    }
+
+    return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name, "ko-KR"));
+  }, [simulations]);
+
+  const selectedCompany = useMemo(
+    () => companies.find((company) => company.code === selectedCompanyCode) ?? null,
+    [companies, selectedCompanyCode],
+  );
+
+  const companySimulations = useMemo(
+    () =>
+      simulations
+        .filter((simulation) => simulation.companyCode === selectedCompanyCode)
+        .sort((a, b) => a.roleLabel.localeCompare(b.roleLabel, "ko-KR")),
+    [simulations, selectedCompanyCode],
+  );
+
+  const isEditing = selectedSimulationId !== null;
+
+  const selectSimulation = useCallback((simulation: AdminCompanySimulation) => {
+    setSelectedSimulationId(simulation.id);
+    setForm(formFromSimulation(simulation));
+    setMessage(null);
+    setError(null);
+  }, []);
+
+  const startNewSimulation = useCallback((companyCode: string) => {
+    setSelectedSimulationId(null);
+    setForm(createEmptyForm(companyCode));
+    setMessage(null);
+    setError(null);
+  }, []);
 
   const loadSimulations = useCallback(async () => {
     setIsLoading(true);
@@ -73,8 +158,28 @@ function AdminSimulations() {
     void loadSimulations();
   }, [authLoading, user, navigate, loadSimulations]);
 
+  useEffect(() => {
+    if (isLoading || hasInitializedSelection || simulations.length === 0) return;
+    const firstSimulation = simulations[0];
+    setSelectedCompanyCode(firstSimulation.companyCode);
+    selectSimulation(firstSimulation);
+    setHasInitializedSelection(true);
+  }, [hasInitializedSelection, isLoading, selectSimulation, simulations]);
+
   function updateForm<K extends keyof SimulationForm>(key: K, value: SimulationForm[K]) {
     setForm((current) => ({ ...current, [key]: value }));
+  }
+
+  function selectCompany(companyCode: string) {
+    setSelectedCompanyCode(companyCode);
+    const firstSimulation = simulations.find(
+      (simulation) => simulation.companyCode === companyCode,
+    );
+    if (firstSimulation) {
+      selectSimulation(firstSimulation);
+    } else {
+      startNewSimulation(companyCode);
+    }
   }
 
   async function submitSimulation(event: FormEvent) {
@@ -89,21 +194,32 @@ function AdminSimulations() {
         ? Number(form.estimatedMinutes.trim())
         : null;
 
-      await createCompanySimulation({
-        data: {
-          companyCode: form.companyCode.trim(),
-          roleLabel: form.roleLabel.trim(),
-          title: form.title.trim(),
-          description: form.description.trim(),
-          jobFamily: form.jobFamily.trim(),
-          domain: form.domain.trim(),
-          estimatedMinutes: Number.isFinite(estimatedMinutes) ? estimatedMinutes : null,
-          taskPrompt: form.taskPrompt.trim(),
-        },
-      });
+      const payload = {
+        companyCode: form.companyCode.trim(),
+        roleLabel: form.roleLabel.trim(),
+        title: form.title.trim(),
+        description: form.description.trim(),
+        jobFamily: form.jobFamily.trim(),
+        domain: form.domain,
+        estimatedMinutes: Number.isFinite(estimatedMinutes) ? estimatedMinutes : null,
+        taskPrompt: form.taskPrompt.trim(),
+      };
 
-      setForm(EMPTY_FORM);
+      if (selectedSimulationId) {
+        await updateCompanySimulation({
+          data: {
+            id: selectedSimulationId,
+            ...payload,
+          },
+        });
+        await loadSimulations();
+        setMessage("직무 시뮬레이션을 수정했습니다.");
+        return;
+      }
+
+      const result = await createCompanySimulation({ data: payload });
       await loadSimulations();
+      setSelectedSimulationId(result.id);
       setMessage("직무 시뮬레이션을 추가했습니다. 기업 페이지 드롭다운에 반영됩니다.");
     } catch (err) {
       setError(err instanceof Error ? err.message : "직무 시뮬레이션을 추가하지 못했습니다.");
@@ -156,70 +272,115 @@ function AdminSimulations() {
         </div>
       )}
 
-      <div className="mt-6 grid gap-6 xl:grid-cols-[420px_1fr]">
-        <div className="space-y-6">
-          <section className="rounded-md border border-neutral-200">
-            <div className="flex items-center justify-between border-b border-neutral-200 p-4">
-              <div>
-                <h2 className="text-sm font-semibold text-neutral-900">등록된 시뮬레이션</h2>
-                <p className="mt-1 text-xs text-neutral-500">
-                  현재 DB에 있는 직무 시뮬레이션 {simulations.length}건
-                </p>
-              </div>
-              <ListChecks className="h-4 w-4 text-neutral-400" />
+      <div className="mt-6 grid gap-6 xl:grid-cols-[280px_360px_1fr]">
+        <section className="rounded-md border border-neutral-200">
+          <div className="flex items-center justify-between border-b border-neutral-200 p-4">
+            <div>
+              <h2 className="text-sm font-semibold text-neutral-900">기업</h2>
+              <p className="mt-1 text-xs text-neutral-500">등록 기업 {companies.length}곳</p>
             </div>
+            <Building2 className="h-4 w-4 text-neutral-400" />
+          </div>
 
-            <div className="max-h-[420px] space-y-2 overflow-y-auto p-3">
-              {simulations.map((simulation) => (
-                <article key={simulation.id} className="rounded-md border border-neutral-200 p-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <h3 className="text-sm font-semibold text-neutral-900">
-                        {simulation.roleLabel}
-                      </h3>
-                      <p className="mt-1 text-xs text-neutral-500">
-                        {simulation.companyName} · {simulation.companyCode}
-                      </p>
-                    </div>
-                    {simulation.estimatedMinutes && (
-                      <span className="rounded bg-neutral-100 px-2 py-1 text-xs font-medium text-neutral-600">
-                        {simulation.estimatedMinutes}분
-                      </span>
-                    )}
-                  </div>
-                  <p className="mt-3 text-sm font-medium text-neutral-800">{simulation.title}</p>
-                  {simulation.description && (
-                    <p className="mt-2 line-clamp-2 text-xs leading-5 text-neutral-500">
-                      {simulation.description}
-                    </p>
-                  )}
-                  <div className="mt-3 flex flex-wrap gap-2 text-xs text-neutral-500">
-                    {simulation.jobFamily && (
-                      <span className="rounded bg-neutral-50 px-2 py-1">
-                        {simulation.jobFamily}
-                      </span>
-                    )}
-                    {simulation.domain && (
-                      <span className="rounded bg-neutral-50 px-2 py-1">{simulation.domain}</span>
-                    )}
-                  </div>
-                </article>
-              ))}
-
-              {simulations.length === 0 && (
-                <div className="rounded-md border border-dashed border-neutral-200 p-8 text-center text-sm text-neutral-500">
-                  등록된 직무 시뮬레이션이 없습니다.
+          <div className="max-h-[640px] space-y-2 overflow-y-auto p-3">
+            {companies.map((company) => (
+              <button
+                key={company.code}
+                type="button"
+                onClick={() => selectCompany(company.code)}
+                className={`w-full rounded-md border p-4 text-left transition-colors ${
+                  company.code === selectedCompanyCode
+                    ? "border-neutral-900 bg-neutral-50"
+                    : "border-neutral-200 hover:bg-neutral-50"
+                }`}
+              >
+                <div className="text-sm font-semibold text-neutral-900">{company.name}</div>
+                <div className="mt-1 text-xs text-neutral-500">{company.code}</div>
+                <div className="mt-3 text-xs text-neutral-400">
+                  시뮬레이션 {company.simulationCount}개
                 </div>
-              )}
+              </button>
+            ))}
+
+            {companies.length === 0 && (
+              <div className="rounded-md border border-dashed border-neutral-200 p-8 text-center text-sm text-neutral-500">
+                등록된 기업이 없습니다.
+              </div>
+            )}
+          </div>
+        </section>
+
+        <section className="rounded-md border border-neutral-200">
+          <div className="flex items-center justify-between border-b border-neutral-200 p-4">
+            <div>
+              <h2 className="text-sm font-semibold text-neutral-900">직무 시뮬레이션</h2>
+              <p className="mt-1 text-xs text-neutral-500">
+                {selectedCompany?.name ?? "기업 선택"} · {companySimulations.length}개
+              </p>
             </div>
-          </section>
-        </div>
+            <ListChecks className="h-4 w-4 text-neutral-400" />
+          </div>
+
+          <div className="border-b border-neutral-200 p-3">
+            <button
+              type="button"
+              onClick={() => startNewSimulation(selectedCompanyCode || companies[0]?.code || "")}
+              disabled={!selectedCompanyCode && companies.length === 0}
+              className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-md bg-neutral-900 px-3 text-xs font-medium text-white hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <Plus className="h-3.5 w-3.5" />이 기업에 추가
+            </button>
+          </div>
+
+          <div className="max-h-[584px] space-y-2 overflow-y-auto p-3">
+            {companySimulations.map((simulation) => (
+              <button
+                key={simulation.id}
+                type="button"
+                onClick={() => selectSimulation(simulation)}
+                className={`w-full rounded-md border p-4 text-left transition-colors ${
+                  simulation.id === selectedSimulationId
+                    ? "border-neutral-900 bg-neutral-50"
+                    : "border-neutral-200 hover:bg-neutral-50"
+                }`}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <h3 className="text-sm font-semibold text-neutral-900">
+                      {simulation.roleLabel}
+                    </h3>
+                    <p className="mt-1 line-clamp-2 text-xs text-neutral-500">{simulation.title}</p>
+                  </div>
+                  {simulation.estimatedMinutes && (
+                    <span className="shrink-0 rounded bg-neutral-100 px-2 py-1 text-xs font-medium text-neutral-600">
+                      {simulation.estimatedMinutes}분
+                    </span>
+                  )}
+                </div>
+                <div className="mt-3 flex flex-wrap gap-2 text-xs text-neutral-500">
+                  <span className="rounded bg-neutral-50 px-2 py-1">{simulation.domain}</span>
+                  {simulation.jobFamily && (
+                    <span className="rounded bg-neutral-50 px-2 py-1">{simulation.jobFamily}</span>
+                  )}
+                </div>
+              </button>
+            ))}
+
+            {companySimulations.length === 0 && (
+              <div className="rounded-md border border-dashed border-neutral-200 p-8 text-center text-sm text-neutral-500">
+                이 기업에 등록된 직무 시뮬레이션이 없습니다.
+              </div>
+            )}
+          </div>
+        </section>
 
         <section className="rounded-md border border-neutral-200">
           <div className="border-b border-neutral-200 p-4">
-            <h2 className="text-sm font-semibold text-neutral-900">시뮬레이션 입력</h2>
+            <h2 className="text-sm font-semibold text-neutral-900">
+              {isEditing ? "시뮬레이션 수정" : "시뮬레이션 추가"}
+            </h2>
             <p className="mt-1 text-xs text-neutral-500">
-              저장하면 해당 기업의 직무 선택 목록에 표시됩니다.
+              저장하면 유저 추천 화면과 기업 직무 선택 목록에 반영됩니다.
             </p>
           </div>
 
@@ -229,6 +390,7 @@ function AdminSimulations() {
                 label="기업 코드"
                 value={form.companyCode}
                 onChange={(value) => updateForm("companyCode", value)}
+                disabled
                 required
               />
               <InputField
@@ -262,11 +424,12 @@ function AdminSimulations() {
                 onChange={(value) => updateForm("jobFamily", value)}
                 placeholder="예: 데이터"
               />
-              <InputField
+              <SelectField
                 label="도메인"
                 value={form.domain}
                 onChange={(value) => updateForm("domain", value)}
-                placeholder="예: 에듀테크"
+                options={DOMAIN_CATEGORIES}
+                required
               />
               <InputField
                 label="예상 소요 시간"
@@ -287,7 +450,16 @@ function AdminSimulations() {
             <div className="flex justify-end gap-2">
               <button
                 type="button"
-                onClick={() => setForm(EMPTY_FORM)}
+                onClick={() => {
+                  if (!selectedSimulationId) {
+                    startNewSimulation(form.companyCode);
+                    return;
+                  }
+                  const currentSimulation =
+                    simulations.find((simulation) => simulation.id === selectedSimulationId) ??
+                    companySimulations[0];
+                  if (currentSimulation) selectSimulation(currentSimulation);
+                }}
                 className="h-10 rounded-md border border-neutral-300 px-4 text-sm font-medium hover:bg-neutral-50"
               >
                 초기화
@@ -299,12 +471,13 @@ function AdminSimulations() {
                   !form.companyCode.trim() ||
                   !form.roleLabel.trim() ||
                   !form.title.trim() ||
+                  !form.domain.trim() ||
                   !form.taskPrompt.trim()
                 }
                 className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-neutral-900 px-4 text-sm font-medium text-white hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                <Plus className="h-4 w-4" />
-                {isSaving ? "저장 중..." : "시뮬레이션 추가"}
+                {isEditing ? <Save className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+                {isSaving ? "저장 중..." : isEditing ? "수정 저장" : "시뮬레이션 추가"}
               </button>
             </div>
           </form>
@@ -338,6 +511,7 @@ function InputField({
   type = "text",
   placeholder,
   required,
+  disabled,
 }: {
   label: string;
   value: string;
@@ -345,6 +519,7 @@ function InputField({
   type?: string;
   placeholder?: string;
   required?: boolean;
+  disabled?: boolean;
 }) {
   return (
     <label className="block">
@@ -355,8 +530,41 @@ function InputField({
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
         required={required}
-        className="mt-2 h-10 w-full rounded-md border border-neutral-300 px-3 text-sm outline-none focus:border-neutral-900"
+        disabled={disabled}
+        className="mt-2 h-10 w-full rounded-md border border-neutral-300 px-3 text-sm outline-none focus:border-neutral-900 disabled:cursor-not-allowed disabled:bg-neutral-50 disabled:text-neutral-500"
       />
+    </label>
+  );
+}
+
+function SelectField({
+  label,
+  value,
+  onChange,
+  options,
+  required,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  options: readonly string[];
+  required?: boolean;
+}) {
+  return (
+    <label className="block">
+      <span className="text-xs font-medium text-neutral-600">{label}</span>
+      <select
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        required={required}
+        className="mt-2 h-10 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm outline-none focus:border-neutral-900"
+      >
+        {options.map((option) => (
+          <option key={option} value={option}>
+            {option}
+          </option>
+        ))}
+      </select>
     </label>
   );
 }

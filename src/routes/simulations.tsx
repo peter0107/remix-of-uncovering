@@ -6,6 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
+import { DOMAIN_DESCRIPTIONS } from "@/lib/domain-categories";
 
 export const Route = createFileRoute("/simulations")({
   head: () => ({ meta: [{ title: "추천 시뮬레이션 — Beginner" }] }),
@@ -57,7 +58,7 @@ async function fetchRecommended(seeker: JobSeeker): Promise<Simulation[]> {
   const jobInterests = seeker.job_interests ?? [];
   const companyInterests = seeker.company_interests ?? [];
 
-  // job_simulations + companies 조인, 관심 직무 일치 우선 정렬
+  // job_simulations + companies 조인, 관심 도메인 일치 우선 정렬
   const { data, error } = await supabase
     .from("job_simulations")
     .select("id, title, description, job_family, domain, estimated_minutes, companies(name)")
@@ -68,19 +69,19 @@ async function fetchRecommended(seeker: JobSeeker): Promise<Simulation[]> {
 
   const rows = (data as unknown as RawRow[]).map((row) => ({
     ...toSimulation(row),
-    // 직무 일치 여부 (정렬 키)
-    _jobMatch: jobInterests.includes(row.job_family ?? ""),
+    // 관심 직무 선택값은 21개 도메인 카테고리와 같은 목록을 사용한다.
+    _domainMatch: jobInterests.includes(row.domain ?? ""),
     _companyMatch: companyInterests.includes(row.companies?.name ?? ""),
   }));
 
-  // 직무 일치 > 기업 일치 > 나머지 순서
+  // 도메인 일치 > 기업 일치 > 나머지 순서
   const sorted = rows.sort((a, b) => {
-    const scoreA = (a._jobMatch ? 2 : 0) + (a._companyMatch ? 1 : 0);
-    const scoreB = (b._jobMatch ? 2 : 0) + (b._companyMatch ? 1 : 0);
+    const scoreA = (a._domainMatch ? 2 : 0) + (a._companyMatch ? 1 : 0);
+    const scoreB = (b._domainMatch ? 2 : 0) + (b._companyMatch ? 1 : 0);
     return scoreB - scoreA;
   });
 
-  return sorted.slice(0, 3).map(({ _jobMatch: _j, _companyMatch: _c, ...rest }) => rest);
+  return sorted.slice(0, 3).map(({ _domainMatch: _d, _companyMatch: _c, ...rest }) => rest);
 }
 
 // 비로그인 방문자용: 개인화 없이 전체 시뮬레이션 목록
@@ -95,30 +96,9 @@ async function fetchAll(): Promise<Simulation[]> {
   return (data as unknown as RawRow[]).map(toSimulation);
 }
 
-// ─── 직무 설명 ────────────────────────────────────────────────
-
-const JOB_DESCRIPTIONS: Record<string, string> = {
-  "서비스기획·PM": "제품이 어떤 문제를 풀어야 할지 정의하고, 데이터를 보며 방향을 조정해요.",
-  "개발": "아이디어를 실제로 동작하는 서비스로 만들어내는 일을 해요.",
-  "데이터": "숫자 속에서 패턴을 찾아 의사결정의 근거를 만들어요.",
-  "디자인": "사용자가 편하게 느끼도록 화면과 경험을 설계해요.",
-  "마케팅·그로스": "잠재 고객을 찾아내고, 성장 지표를 끌어올리는 방법을 고민해요.",
-  "운영·CS": "서비스가 매끄럽게 돌아가도록 관리하고, 고객의 목소리에 귀 기울여요.",
-  "회계·감사": "숫자가 정확한지 검증하고, 재무제표의 신뢰성을 지켜요.",
-  "임상시험·제약": "신약이 안전하고 효과적인지, 임상 데이터로 검증해요.",
-  "MD·바이어": "어떤 상품을 얼마나 사서 어떻게 팔지 전략을 세워요.",
-  "품질·엔지니어링": "불량의 원인을 추적하고, 품질 기준을 지켜내는 일을 해요.",
-};
-
 // ─── 카드 컴포넌트 ────────────────────────────────────────────
 
-function SimCard({
-  sim,
-  rank,
-}: {
-  sim: Simulation;
-  rank?: number;
-}) {
+function SimCard({ sim, rank }: { sim: Simulation; rank?: number }) {
   return (
     <Link
       to="/simulation/$id"
@@ -132,17 +112,15 @@ function SimCard({
         </span>
       )}
 
-      {/* 직무군 */}
-      {sim.job_family && (
-        <h3 className="mt-4 text-2xl font-bold leading-snug text-zinc-900">
-          {sim.job_family}
-        </h3>
+      {/* 도메인 */}
+      {sim.domain && (
+        <h3 className="mt-4 text-2xl font-bold leading-snug text-zinc-900">{sim.domain}</h3>
       )}
 
-      {/* 직무 설명 */}
-      {sim.job_family && JOB_DESCRIPTIONS[sim.job_family] && (
+      {/* 도메인 설명 */}
+      {sim.domain && sim.domain in DOMAIN_DESCRIPTIONS && (
         <p className="mt-1.5 text-sm leading-relaxed text-zinc-500">
-          {JOB_DESCRIPTIONS[sim.job_family]}
+          {DOMAIN_DESCRIPTIONS[sim.domain as keyof typeof DOMAIN_DESCRIPTIONS]}
         </p>
       )}
 
@@ -252,7 +230,7 @@ function SimulationsPage() {
     })();
   }, [user, authLoading]);
 
-  const hasOnboarding = !!(seeker?.job_interests?.length);
+  const hasOnboarding = !!seeker?.job_interests?.length;
   const isGuest = !authLoading && !user;
 
   return (
