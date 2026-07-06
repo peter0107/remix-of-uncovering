@@ -286,12 +286,18 @@ function ApplicantDetail({ applicant }: { applicant: Applicant }) {
               </p>
             </InfoBlock>
 
-            <InfoBlock title="경력">
+            <InfoBlock
+              title={
+                <span className="inline-flex flex-wrap items-center gap-2">
+                  경력
+                  <span className="rounded bg-blue-50 px-2 py-1 text-xs font-semibold text-blue-600">
+                    {applicant.experience}
+                  </span>
+                </span>
+              }
+            >
               <p className="text-sm font-medium leading-6 text-neutral-900">
                 {applicant.recentJob}
-                <span className="ml-2 rounded bg-blue-50 px-2 py-1 text-xs font-semibold text-blue-600">
-                  {applicant.experience}
-                </span>
               </p>
             </InfoBlock>
 
@@ -372,7 +378,7 @@ function Field({ label, value }: { label: string; value: string }) {
   );
 }
 
-function InfoBlock({ title, children }: { title?: string; children: React.ReactNode }) {
+function InfoBlock({ title, children }: { title?: React.ReactNode; children: React.ReactNode }) {
   return (
     <section className="rounded-md border border-neutral-200 p-4">
       {title && <h3 className="text-sm font-semibold text-neutral-900">{title}</h3>}
