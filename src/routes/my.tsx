@@ -142,7 +142,7 @@ const PROFILE_SECTIONS: {
 }[] = [
   {
     key: "education",
-    fields: ["education_level", "majors", "academic_mark"],
+    fields: ["university_name", "education_level", "majors", "academic_mark"],
     Component: EducationFields,
   },
   { key: "jobInterests", fields: ["job_interests"], Component: JobInterestFields },
@@ -153,6 +153,13 @@ const PROFILE_SECTIONS: {
     Component: WorkPreferenceFields,
   },
 ];
+
+const SECTION_LABELS: Record<SectionKey, string> = {
+  education: "학력",
+  jobInterests: "관심 직무",
+  companyInterests: "관심 기업",
+  workPreference: "근무 선호",
+};
 
 function serializeProfileField(key: keyof ProfileFormData, value: unknown) {
   if (key === "academic_mark") {
@@ -179,16 +186,28 @@ function SectionRow({
   icon: Icon,
   label,
   children,
+  onEdit,
 }: {
   icon: LucideIcon;
   label: string;
   children: ReactNode;
+  onEdit: () => void;
 }) {
   return (
     <div className="py-5 first:pt-0 last:pb-0">
-      <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-zinc-700">
-        <Icon className="h-4 w-4 text-zinc-400" />
-        {label}
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2 text-sm font-semibold text-zinc-700">
+          <Icon className="h-4 w-4 text-zinc-400" />
+          {label}
+        </div>
+        <button
+          type="button"
+          onClick={onEdit}
+          aria-label={`${label} 수정`}
+          className="flex h-8 w-8 items-center justify-center rounded-full text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-900"
+        >
+          <Pencil className="h-4 w-4" />
+        </button>
       </div>
       {children}
     </div>
@@ -238,7 +257,9 @@ function buildBlankResumeForm(userEmail: string, seeker: JobSeeker | null): Resu
     target_role: seeker?.job_interests?.[0] ?? "",
     preferred_region: seeker?.work_regions?.join(", ") ?? "",
     employment_type: seeker?.employment_types?.join(", ") ?? "",
-    education: [seeker?.education_level, seeker?.majors?.join(", ")].filter(Boolean).join(" / "),
+    education: [seeker?.university_name, seeker?.education_level, seeker?.majors?.join(", ")]
+      .filter(Boolean)
+      .join(" / "),
   };
 }
 
@@ -383,8 +404,10 @@ function MyPage() {
   const [links, setLinks] = useState<ExternalLinks>({});
   const [profileForm, setProfileFormRaw] = useState<ProfileFormData>(INITIAL_PROFILE_FORM);
 
-  const [editingAll, setEditingAll] = useState(false);
-  const [savingAll, setSavingAll] = useState(false);
+  const [editingProfileCard, setEditingProfileCard] = useState(false);
+  const [savingProfileCard, setSavingProfileCard] = useState(false);
+  const [editingSection, setEditingSection] = useState<SectionKey | null>(null);
+  const [savingSection, setSavingSection] = useState(false);
   const [draftIntro, setDraftIntro] = useState("");
   const [draftLinks, setDraftLinks] = useState<ExternalLinks>({});
   const [draftForm, setDraftFormRaw] = useState<ProfileFormData>(INITIAL_PROFILE_FORM);
@@ -445,6 +468,7 @@ function MyPage() {
       setLinks((seeker?.external_links as ExternalLinks) ?? {});
       setAvatarUrl(seeker?.avatar_url ?? null);
       setProfileFormRaw({
+        university_name: seeker?.university_name ?? "",
         education_level: seeker?.education_level ?? "",
         majors: seeker?.majors ?? [],
         academic_mark: seeker?.academic_mark != null ? String(seeker.academic_mark) : "",
@@ -550,32 +574,26 @@ function MyPage() {
     toast.success(next ? "채용 제안 받기로 변경됐어요." : "채용 제안 받기를 해제했어요.");
   };
 
-  const startEditAll = () => {
+  const startEditProfileCard = () => {
     setDraftIntro(oneLineIntro);
     setDraftLinks(links);
-    setDraftFormRaw(profileForm);
-    setEditingAll(true);
+    setEditingProfileCard(true);
   };
 
-  const cancelEditAll = () => {
-    setEditingAll(false);
+  const cancelEditProfileCard = () => {
+    setEditingProfileCard(false);
   };
 
-  const saveAll = async () => {
+  const saveProfileCard = async () => {
     if (!user) return;
 
-    setSavingAll(true);
+    setSavingProfileCard(true);
     const patch: TablesUpdate<"job_seekers"> = {
       one_line_intro: draftIntro || null,
       external_links: draftLinks,
     };
-    for (const section of PROFILE_SECTIONS) {
-      for (const field of section.fields) {
-        (patch as Record<string, unknown>)[field] = serializeProfileField(field, draftForm[field]);
-      }
-    }
     const { error } = await supabase.from("job_seekers").update(patch).eq("id", user.id);
-    setSavingAll(false);
+    setSavingProfileCard(false);
 
     if (error) {
       toast.error("저장 중 오류가 발생했어요.");
@@ -584,8 +602,40 @@ function MyPage() {
 
     setOneLineIntro(draftIntro);
     setLinks(draftLinks);
-    setProfileFormRaw(draftForm);
-    setEditingAll(false);
+    setEditingProfileCard(false);
+    toast.success("저장됐어요.");
+  };
+
+  const startEditSection = (sectionKey: SectionKey) => {
+    setDraftFormRaw(profileForm);
+    setEditingSection(sectionKey);
+  };
+
+  const closeSectionEditor = () => {
+    if (savingSection) return;
+    setEditingSection(null);
+  };
+
+  const saveSection = async () => {
+    if (!user || !editingSection) return;
+    const section = PROFILE_SECTIONS.find((item) => item.key === editingSection);
+    if (!section) return;
+
+    setSavingSection(true);
+    const patch: TablesUpdate<"job_seekers"> = {};
+    for (const field of section.fields) {
+      (patch as Record<string, unknown>)[field] = serializeProfileField(field, draftForm[field]);
+    }
+    const { error } = await supabase.from("job_seekers").update(patch).eq("id", user.id);
+    setSavingSection(false);
+
+    if (error) {
+      toast.error("저장 중 오류가 발생했어요.");
+      return;
+    }
+
+    setProfileFormRaw((prev) => ({ ...prev, ...draftForm }));
+    setEditingSection(null);
     toast.success("저장됐어요.");
   };
 
@@ -775,6 +825,9 @@ function MyPage() {
   }
 
   const hasAnyLink = Boolean(links.github || links.portfolio || links.linkedin);
+  const editingSectionConfig = editingSection
+    ? PROFILE_SECTIONS.find((section) => section.key === editingSection)
+    : null;
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-12">
@@ -809,7 +862,7 @@ function MyPage() {
             </div>
 
             <div className="min-w-0">
-              {editingAll ? (
+              {editingProfileCard ? (
                 <Input
                   value={draftIntro}
                   onChange={(e) => setDraftIntro(e.target.value)}
@@ -826,7 +879,7 @@ function MyPage() {
               )}
               <p className="mt-1 text-sm text-zinc-400">{user?.email}</p>
 
-              {editingAll ? (
+              {editingProfileCard ? (
                 <div className="mt-4 grid gap-3">
                   <div>
                     <Label htmlFor="github">GitHub</Label>
@@ -863,6 +916,23 @@ function MyPage() {
                       placeholder="https://linkedin.com/in/..."
                       className="mt-2"
                     />
+                  </div>
+                  <div className="flex gap-2 pt-1">
+                    <Button
+                      onClick={saveProfileCard}
+                      disabled={savingProfileCard}
+                      className="rounded-xl bg-zinc-900 text-white hover:bg-zinc-700"
+                    >
+                      {savingProfileCard ? "저장 중..." : "저장"}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={cancelEditProfileCard}
+                      disabled={savingProfileCard}
+                      className="rounded-xl"
+                    >
+                      취소
+                    </Button>
                   </div>
                 </div>
               ) : (
@@ -905,8 +975,12 @@ function MyPage() {
             </div>
           </div>
 
-          {!editingAll && (
-            <Button variant="outline" onClick={startEditAll} className="shrink-0 rounded-xl">
+          {!editingProfileCard && (
+            <Button
+              variant="outline"
+              onClick={startEditProfileCard}
+              className="shrink-0 rounded-xl"
+            >
               프로필 수정
             </Button>
           )}
@@ -931,105 +1005,97 @@ function MyPage() {
       </div>
 
       <Card className="mt-4 p-6">
-        {editingAll ? (
-          <>
-            {PROFILE_SECTIONS.map((section, i) => (
-              <div key={section.key}>
-                {i > 0 && <Separator className="my-6" />}
-                <section.Component data={draftForm} setData={setDraftForm} />
+        <>
+          <SectionRow
+            icon={GraduationCap}
+            label="학력"
+            onEdit={() => startEditSection("education")}
+          >
+            {profileForm.university_name ||
+            profileForm.education_level ||
+            profileForm.majors.length ||
+            profileForm.academic_mark ? (
+              <div className="flex flex-wrap items-center gap-2">
+                {profileForm.university_name && (
+                  <span className="text-sm text-zinc-800">{profileForm.university_name}</span>
+                )}
+                {profileForm.education_level && (
+                  <span className="text-sm text-zinc-800">{profileForm.education_level}</span>
+                )}
+                {profileForm.majors.map((m) => (
+                  <Tag key={m}>{m}</Tag>
+                ))}
+                {profileForm.academic_mark && (
+                  <span className="text-sm text-zinc-500">
+                    학점 {profileForm.academic_mark}/4.5
+                  </span>
+                )}
               </div>
-            ))}
-            <div className="mt-6 flex gap-2">
-              <Button
-                onClick={saveAll}
-                disabled={savingAll}
-                className="rounded-xl bg-zinc-900 text-white hover:bg-zinc-700"
-              >
-                {savingAll ? "저장 중..." : "저장"}
-              </Button>
-              <Button
-                variant="outline"
-                onClick={cancelEditAll}
-                disabled={savingAll}
-                className="rounded-xl"
-              >
-                취소
-              </Button>
-            </div>
-          </>
-        ) : (
-          <>
-            <SectionRow icon={GraduationCap} label="학력">
-              {profileForm.education_level ||
-              profileForm.majors.length ||
-              profileForm.academic_mark ? (
-                <div className="flex flex-wrap items-center gap-2">
-                  {profileForm.education_level && (
-                    <span className="text-sm text-zinc-800">{profileForm.education_level}</span>
-                  )}
-                  {profileForm.majors.map((m) => (
-                    <Tag key={m}>{m}</Tag>
-                  ))}
-                  {profileForm.academic_mark && (
-                    <span className="text-sm text-zinc-500">
-                      학점 {profileForm.academic_mark}/4.5
-                    </span>
-                  )}
-                </div>
-              ) : (
-                <p className="text-sm text-zinc-400">아직 입력하지 않았어요</p>
-              )}
-            </SectionRow>
+            ) : (
+              <p className="text-sm text-zinc-400">아직 입력하지 않았어요</p>
+            )}
+          </SectionRow>
 
-            <Separator />
+          <Separator />
 
-            <SectionRow icon={Briefcase} label="관심 직무">
-              {profileForm.job_interests.length ? (
-                <div className="flex flex-wrap gap-2">
-                  {profileForm.job_interests.map((j) => (
-                    <Tag key={j}>{j}</Tag>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-zinc-400">아직 선택하지 않았어요</p>
-              )}
-            </SectionRow>
+          <SectionRow
+            icon={Briefcase}
+            label="관심 직무"
+            onEdit={() => startEditSection("jobInterests")}
+          >
+            {profileForm.job_interests.length ? (
+              <div className="flex flex-wrap gap-2">
+                {profileForm.job_interests.map((j) => (
+                  <Tag key={j}>{j}</Tag>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-zinc-400">아직 선택하지 않았어요</p>
+            )}
+          </SectionRow>
 
-            <Separator />
+          <Separator />
 
-            <SectionRow icon={Building2} label="관심 기업">
-              {profileForm.company_interests.length ? (
-                <div className="flex flex-wrap gap-2">
-                  {profileForm.company_interests.map((c) => (
-                    <Tag key={c}>{c}</Tag>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-zinc-400">아직 선택하지 않았어요</p>
-              )}
-            </SectionRow>
+          <SectionRow
+            icon={Building2}
+            label="관심 기업"
+            onEdit={() => startEditSection("companyInterests")}
+          >
+            {profileForm.company_interests.length ? (
+              <div className="flex flex-wrap gap-2">
+                {profileForm.company_interests.map((c) => (
+                  <Tag key={c}>{c}</Tag>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-zinc-400">아직 선택하지 않았어요</p>
+            )}
+          </SectionRow>
 
-            <Separator />
+          <Separator />
 
-            <SectionRow icon={MapPin} label="근무 선호">
-              {profileForm.work_regions.length ||
-              profileForm.employment_types.length ||
-              profileForm.willing_to_relocate ? (
-                <div className="flex flex-wrap gap-2">
-                  {profileForm.work_regions.map((r) => (
-                    <Tag key={r}>{r}</Tag>
-                  ))}
-                  {profileForm.employment_types.map((t) => (
-                    <Tag key={t}>{t}</Tag>
-                  ))}
-                  {profileForm.willing_to_relocate && <Tag>이주 가능</Tag>}
-                </div>
-              ) : (
-                <p className="text-sm text-zinc-400">아직 입력하지 않았어요</p>
-              )}
-            </SectionRow>
-          </>
-        )}
+          <SectionRow
+            icon={MapPin}
+            label="근무 선호"
+            onEdit={() => startEditSection("workPreference")}
+          >
+            {profileForm.work_regions.length ||
+            profileForm.employment_types.length ||
+            profileForm.willing_to_relocate ? (
+              <div className="flex flex-wrap gap-2">
+                {profileForm.work_regions.map((r) => (
+                  <Tag key={r}>{r}</Tag>
+                ))}
+                {profileForm.employment_types.map((t) => (
+                  <Tag key={t}>{t}</Tag>
+                ))}
+                {profileForm.willing_to_relocate && <Tag>이주 가능</Tag>}
+              </div>
+            ) : (
+              <p className="text-sm text-zinc-400">아직 입력하지 않았어요</p>
+            )}
+          </SectionRow>
+        </>
       </Card>
 
       <div className="mt-8">
@@ -1208,6 +1274,38 @@ function MyPage() {
           </ul>
         )}
       </div>
+
+      <Dialog open={!!editingSectionConfig} onOpenChange={(open) => !open && closeSectionEditor()}>
+        <DialogContent className="max-h-[88vh] max-w-2xl overflow-y-auto">
+          {editingSectionConfig && (
+            <>
+              <DialogHeader>
+                <DialogTitle>{SECTION_LABELS[editingSectionConfig.key]} 수정</DialogTitle>
+                <DialogDescription>
+                  이 항목에 필요한 정보만 수정하고 저장할 수 있어요.
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="py-2">
+                <editingSectionConfig.Component data={draftForm} setData={setDraftForm} />
+              </div>
+
+              <DialogFooter>
+                <Button variant="outline" onClick={closeSectionEditor} disabled={savingSection}>
+                  취소
+                </Button>
+                <Button
+                  onClick={saveSection}
+                  disabled={savingSection}
+                  className="bg-zinc-900 text-white hover:bg-zinc-700"
+                >
+                  {savingSection ? "저장 중..." : "저장"}
+                </Button>
+              </DialogFooter>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={resumeEditorOpen} onOpenChange={setResumeEditorOpen}>
         <DialogContent className="max-h-[88vh] max-w-4xl overflow-y-auto">

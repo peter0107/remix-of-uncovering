@@ -50,6 +50,7 @@ export type Database = {
           job_interests: string[] | null
           majors: string[] | null
           one_line_intro: string | null
+          university_name: string | null
           willing_to_relocate: boolean | null
           work_regions: string[] | null
         }
@@ -67,6 +68,7 @@ export type Database = {
           job_interests?: string[] | null
           majors?: string[] | null
           one_line_intro?: string | null
+          university_name?: string | null
           willing_to_relocate?: boolean | null
           work_regions?: string[] | null
         }
@@ -84,6 +86,7 @@ export type Database = {
           job_interests?: string[] | null
           majors?: string[] | null
           one_line_intro?: string | null
+          university_name?: string | null
           willing_to_relocate?: boolean | null
           work_regions?: string[] | null
         }

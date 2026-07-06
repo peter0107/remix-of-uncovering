@@ -65,6 +65,7 @@ export const EMPLOYMENT_TYPES = ["인턴", "신입", "계약직"];
 // ─── 타입 ────────────────────────────────────────────────────
 
 export type ProfileFormData = {
+  university_name: string;
   education_level: string;
   majors: string[];
   academic_mark: string;
@@ -77,6 +78,7 @@ export type ProfileFormData = {
 };
 
 export const INITIAL_PROFILE_FORM: ProfileFormData = {
+  university_name: "",
   education_level: "",
   majors: [],
   academic_mark: "",
@@ -142,6 +144,18 @@ export function EducationFields({
   return (
     <div>
       <SectionHeader title="학력을 알려주세요" subtitle="맞춤 시뮬레이션 추천에 활용됩니다" />
+
+      {/* 학교명 */}
+      <div className="mb-6">
+        <p className="mb-3 text-sm font-semibold text-zinc-700">대학교 이름</p>
+        <input
+          type="text"
+          placeholder="예: 연세대학교"
+          value={data.university_name}
+          onChange={(e) => setData({ university_name: e.target.value })}
+          className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm outline-none focus:border-zinc-900"
+        />
+      </div>
 
       {/* 학력 */}
       <div className="mb-6">
