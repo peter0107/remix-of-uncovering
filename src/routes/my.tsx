@@ -547,7 +547,7 @@ function MyPage() {
     }
 
     setProfileFormRaw((prev) => ({ ...prev, discovery_consent: next }));
-    toast.success(next ? "발견 동의로 변경됐어요." : "발견 동의를 해제했어요.");
+    toast.success(next ? "채용 제안 받기로 변경됐어요." : "채용 제안 받기를 해제했어요.");
   };
 
   const startEditAll = () => {
@@ -917,9 +917,9 @@ function MyPage() {
         <div className="flex items-start gap-3">
           <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-zinc-400" />
           <div>
-            <p className="text-sm font-semibold text-zinc-700">기업에게 발견되기</p>
+            <p className="text-sm font-semibold text-zinc-700">채용 제안 받아보기</p>
             <p className="mt-0.5 text-xs text-zinc-400">
-              동의하면 관심 기업 담당자가 내 프로필을 보고 제안을 보낼 수 있어요
+              동의하면 관심 기업 담당자가 내 프로필을 보고 채용 제안을 보낼 수 있어요
             </p>
           </div>
         </div>

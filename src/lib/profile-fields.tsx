@@ -115,13 +115,7 @@ export function Chip({
   );
 }
 
-export function SectionHeader({
-  title,
-  subtitle,
-}: {
-  title: string;
-  subtitle?: string;
-}) {
+export function SectionHeader({ title, subtitle }: { title: string; subtitle?: string }) {
   return (
     <div className="mb-8">
       <h2 className="text-2xl font-bold text-zinc-900">{title}</h2>
@@ -141,18 +135,13 @@ export function EducationFields({
 }) {
   const toggleMajor = (m: string) => {
     setData({
-      majors: data.majors.includes(m)
-        ? data.majors.filter((x) => x !== m)
-        : [...data.majors, m],
+      majors: data.majors.includes(m) ? data.majors.filter((x) => x !== m) : [...data.majors, m],
     });
   };
 
   return (
     <div>
-      <SectionHeader
-        title="학력을 알려주세요"
-        subtitle="맞춤 시뮬레이션 추천에 활용됩니다"
-      />
+      <SectionHeader title="학력을 알려주세요" subtitle="맞춤 시뮬레이션 추천에 활용됩니다" />
 
       {/* 학력 */}
       <div className="mb-6">
@@ -356,14 +345,10 @@ export function WorkPreferenceFields({
           <span
             className={cn(
               "flex h-5 w-5 items-center justify-center rounded-full border-2",
-              data.willing_to_relocate
-                ? "border-white bg-white"
-                : "border-zinc-300",
+              data.willing_to_relocate ? "border-white bg-white" : "border-zinc-300",
             )}
           >
-            {data.willing_to_relocate && (
-              <span className="h-2.5 w-2.5 rounded-full bg-zinc-900" />
-            )}
+            {data.willing_to_relocate && <span className="h-2.5 w-2.5 rounded-full bg-zinc-900" />}
           </span>
           다른 지역으로 이주할 수 있어요
         </button>
@@ -381,17 +366,16 @@ export function DiscoveryConsentFields({
 }) {
   return (
     <div>
-      <SectionHeader title="기업이 나를 발견할 수 있을까요?" />
+      <SectionHeader title="채용 제안을 받아볼까요?" />
 
       <div className="mb-8 rounded-2xl bg-zinc-50 p-6 text-sm leading-relaxed text-zinc-600">
         <p>
           내가 수행한 시뮬레이션 답안과 프로필을 기반으로, 관심 기업의 담당자가
-          나를 발견하고 <strong className="text-zinc-900">이메일로 면접 제안</strong>을
-          보낼 수 있게 됩니다.
+          <strong className="text-zinc-900"> 이메일로 채용 제안</strong>을 보낼 수 있게 됩니다.
         </p>
         <p className="mt-3">
-          동의하지 않아도 시뮬레이션 수행과 추천 기능은 정상적으로 사용할 수 있어요.
-          나중에 프로필 설정에서 언제든 변경할 수 있습니다.
+          동의하지 않아도 시뮬레이션 수행과 추천 기능은 정상적으로 사용할 수 있어요. 나중에 프로필
+          설정에서 언제든 변경할 수 있습니다.
         </p>
       </div>
 
@@ -406,14 +390,14 @@ export function DiscoveryConsentFields({
               : "border-zinc-200 bg-white text-zinc-800 hover:border-zinc-400",
           )}
         >
-          <p className="font-semibold">네, 기업에게 발견되고 싶어요</p>
+          <p className="font-semibold">네, 채용 제안을 받아볼래요</p>
           <p
             className={cn(
               "mt-1 text-sm",
               data.discovery_consent ? "text-zinc-300" : "text-zinc-400",
             )}
           >
-            기업 담당자가 내 프로필을 보고 연락을 보낼 수 있어요
+            기업 담당자가 내 프로필을 보고 채용 제안을 보낼 수 있어요
           </p>
         </button>
 

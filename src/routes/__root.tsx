@@ -106,13 +106,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       {
         name: "description",
         content:
-          "관심 직무의 실제 업무 시뮬레이션을 체험하고, 답안을 기업에 전송해 발견되어보세요.",
+          "관심 직무의 실제 업무 시뮬레이션을 체험하고, 답안을 기업에 전송해 채용 제안을 받아보세요.",
       },
       { property: "og:title", content: "Beginner - 실제 업무로 나에게 맞는 회사 찾기" },
       {
         property: "og:description",
         content:
-          "관심 직무의 실제 업무 시뮬레이션을 체험하고, 답안을 기업에 전송해 발견되어보세요.",
+          "관심 직무의 실제 업무 시뮬레이션을 체험하고, 답안을 기업에 전송해 채용 제안을 받아보세요.",
       },
       { property: "og:type", content: "website" },
     ],

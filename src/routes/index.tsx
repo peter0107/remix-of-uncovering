@@ -15,7 +15,7 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "관심 직무의 실제 업무 시뮬레이션을 체험하고, 답안을 기업에 전송해 발견되어보세요.",
+          "관심 직무의 실제 업무 시뮬레이션을 체험하고, 답안을 기업에 전송해 채용 제안을 받아보세요.",
       },
     ],
   }),
@@ -46,8 +46,8 @@ const STEPS = [
   },
   {
     icon: Compass,
-    title: "기업에게 발견되기",
-    desc: "동의하면 답안이 기업에 전달되고, 관심 있는 기업이 먼저 연락할 수 있어요.",
+    title: "채용 제안 받아보기",
+    desc: "동의하면 답안이 기업에 전달되고, 관심 있는 기업이 채용 제안을 보낼 수 있어요.",
   },
 ];
 
@@ -71,10 +71,7 @@ function Index() {
         </p>
         <div className="mt-8 flex justify-center">
           <Link to="/start">
-            <Button
-              size="lg"
-              className="rounded-xl bg-zinc-900 px-8 text-white hover:bg-zinc-700"
-            >
+            <Button size="lg" className="rounded-xl bg-zinc-900 px-8 text-white hover:bg-zinc-700">
               시작하기
               <ArrowRight className="ml-1 h-4 w-4" />
             </Button>
@@ -85,18 +82,13 @@ function Index() {
       <section className="mx-auto max-w-4xl px-4 pb-24">
         <div className="grid gap-4 sm:grid-cols-3">
           {STEPS.map((step, i) => (
-            <div
-              key={step.title}
-              className="rounded-2xl border border-zinc-200 bg-white p-6"
-            >
+            <div key={step.title} className="rounded-2xl border border-zinc-200 bg-white p-6">
               <div className="flex h-9 w-9 items-center justify-center rounded-full bg-zinc-900 text-sm font-bold text-white">
                 {i + 1}
               </div>
               <step.icon className="mt-4 h-6 w-6 text-zinc-400" />
               <h3 className="mt-3 font-semibold text-zinc-900">{step.title}</h3>
-              <p className="mt-1.5 text-sm leading-relaxed text-zinc-500">
-                {step.desc}
-              </p>
+              <p className="mt-1.5 text-sm leading-relaxed text-zinc-500">{step.desc}</p>
             </div>
           ))}
         </div>
@@ -110,12 +102,8 @@ function Index() {
           <Accordion type="single" collapsible className="mt-8">
             {FAQ.map((item) => (
               <AccordionItem key={item.q} value={item.q}>
-                <AccordionTrigger className="text-base text-zinc-900">
-                  {item.q}
-                </AccordionTrigger>
-                <AccordionContent className="text-zinc-500">
-                  {item.a}
-                </AccordionContent>
+                <AccordionTrigger className="text-base text-zinc-900">{item.q}</AccordionTrigger>
+                <AccordionContent className="text-zinc-500">{item.a}</AccordionContent>
               </AccordionItem>
             ))}
           </Accordion>
