@@ -133,6 +133,83 @@ export type Database = {
           },
         ]
       }
+      resumes: {
+        Row: {
+          basics: Json
+          created_at: string
+          educations: Json
+          experiences: Json
+          id: string
+          is_default: boolean
+          job_conditions: Json
+          memo: string | null
+          portfolios: Json
+          skills: string[]
+          source_type: string
+          target_role: string | null
+          title: string
+          tools: string[]
+          updated_at: string
+          uploaded_file_name: string | null
+          uploaded_file_path: string | null
+          uploaded_file_size: number | null
+          uploaded_file_type: string | null
+          user_id: string
+        }
+        Insert: {
+          basics?: Json
+          created_at?: string
+          educations?: Json
+          experiences?: Json
+          id?: string
+          is_default?: boolean
+          job_conditions?: Json
+          memo?: string | null
+          portfolios?: Json
+          skills?: string[]
+          source_type?: string
+          target_role?: string | null
+          title?: string
+          tools?: string[]
+          updated_at?: string
+          uploaded_file_name?: string | null
+          uploaded_file_path?: string | null
+          uploaded_file_size?: number | null
+          uploaded_file_type?: string | null
+          user_id: string
+        }
+        Update: {
+          basics?: Json
+          created_at?: string
+          educations?: Json
+          experiences?: Json
+          id?: string
+          is_default?: boolean
+          job_conditions?: Json
+          memo?: string | null
+          portfolios?: Json
+          skills?: string[]
+          source_type?: string
+          target_role?: string | null
+          title?: string
+          tools?: string[]
+          updated_at?: string
+          uploaded_file_name?: string | null
+          uploaded_file_path?: string | null
+          uploaded_file_size?: number | null
+          uploaded_file_type?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "resumes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "job_seekers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       submissions: {
         Row: {
           answer_transmission_consent: boolean | null
