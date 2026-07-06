@@ -49,9 +49,20 @@ export type Company = {
   roleLabel: string;
 };
 
+export type CompanySimulation = {
+  id: string;
+  title: string;
+  roleLabel: string;
+  jobFamily: string;
+  domain: string;
+  estimatedMinutes: number | null;
+  description: string;
+};
+
 export type CompanyApplicants = {
   company: Company;
   applicants: Applicant[];
+  simulations: CompanySimulation[];
 };
 
 const statusEnum = z.enum(["submitted", "in_review", "completed"]);
@@ -102,6 +113,17 @@ const companyApplicantsSchema = z.object({
     roleLabel: z.string(),
   }),
   applicants: z.array(applicantSchema),
+  simulations: z.array(
+    z.object({
+      id: z.string().uuid(),
+      title: z.string(),
+      roleLabel: z.string(),
+      jobFamily: z.string(),
+      domain: z.string(),
+      estimatedMinutes: z.number().nullable(),
+      description: z.string(),
+    }),
+  ),
 });
 
 const companyCodeInputSchema = z.object({
@@ -162,6 +184,19 @@ function mapApplicant(row: Record<string, unknown>): Applicant {
   };
 }
 
+function mapSimulation(row: Record<string, unknown>): CompanySimulation {
+  const roleLabel = String(row.role_label ?? row.job_family ?? row.title);
+  return {
+    id: String(row.id),
+    title: String(row.title),
+    roleLabel,
+    jobFamily: String(row.job_family ?? ""),
+    domain: String(row.domain ?? ""),
+    estimatedMinutes: typeof row.estimated_minutes === "number" ? row.estimated_minutes : null,
+    description: String(row.description ?? ""),
+  };
+}
+
 export const getApplicantsByCompanyCode = createServerFn({ method: "GET" })
   .inputValidator(companyCodeInputSchema)
   .handler(async ({ data }): Promise<CompanyApplicants> => {
@@ -200,6 +235,17 @@ export const getApplicantsByCompanyCode = createServerFn({ method: "GET" })
 
     const applicants = ((rows ?? []) as Record<string, unknown>[]).map(mapApplicant);
 
+    const { data: simulationRows, error: simulationsError } = await supabase
+      .from("job_simulations")
+      .select("id, title, role_label, job_family, domain, estimated_minutes, description")
+      .eq("company_id", company.id)
+      .order("created_at", { ascending: false });
+
+    if (simulationsError) {
+      console.error("Failed to load company simulations:", simulationsError);
+      throw new Error("Failed to load company simulations");
+    }
+
     return companyApplicantsSchema.parse({
       company: {
         id: company.id,
@@ -208,5 +254,6 @@ export const getApplicantsByCompanyCode = createServerFn({ method: "GET" })
         roleLabel: company.role_label,
       },
       applicants,
+      simulations: ((simulationRows ?? []) as Record<string, unknown>[]).map(mapSimulation),
     });
   });

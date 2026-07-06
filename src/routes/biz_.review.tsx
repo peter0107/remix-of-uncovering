@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Bookmark } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { Bookmark, Send, X } from "lucide-react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { z } from "zod";
 
 import {
@@ -9,6 +9,7 @@ import {
   type CompanyApplicants,
   type Status,
 } from "@/lib/applicants.functions";
+import { createJobSimulationRequest } from "@/lib/simulations.functions";
 
 const searchSchema = z.object({
   code: z.string().catch(""),
@@ -40,6 +41,12 @@ function BizReview() {
   const [savedIds, setSavedIds] = useState<Set<string>>(() => new Set());
   const [showSavedOnly, setShowSavedOnly] = useState(false);
   const [roleFilter, setRoleFilter] = useState("all");
+  const [isRequestOpen, setIsRequestOpen] = useState(false);
+  const [requestRole, setRequestRole] = useState("");
+  const [requestNote, setRequestNote] = useState("");
+  const [requestContact, setRequestContact] = useState("");
+  const [requestMessage, setRequestMessage] = useState<string | null>(null);
+  const [isRequesting, setIsRequesting] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -73,8 +80,14 @@ function BizReview() {
   }, [code]);
 
   const roleOptions = useMemo(() => {
-    const roles = new Set(data?.applicants.map((applicant) => applicant.role) ?? []);
-    return Array.from(roles);
+    const roles = new Map<string, string>();
+    for (const simulation of data?.simulations ?? []) {
+      roles.set(simulation.roleLabel, simulation.roleLabel);
+    }
+    for (const applicant of data?.applicants ?? []) {
+      if (!roles.has(applicant.role)) roles.set(applicant.role, applicant.role);
+    }
+    return Array.from(roles.values());
   }, [data]);
 
   const visibleApplicants = useMemo(() => {
@@ -101,6 +114,40 @@ function BizReview() {
       else next.add(id);
       return next;
     });
+  }
+
+  function openRequestDialog() {
+    setRequestRole(roleFilter === "all" ? "" : roleFilter);
+    setRequestNote("");
+    setRequestContact("");
+    setRequestMessage(null);
+    setIsRequestOpen(true);
+  }
+
+  async function submitSimulationRequest(event: FormEvent) {
+    event.preventDefault();
+    if (!code || !requestRole.trim() || isRequesting) return;
+
+    setIsRequesting(true);
+    setRequestMessage(null);
+    try {
+      await createJobSimulationRequest({
+        data: {
+          code,
+          requestedRole: requestRole.trim(),
+          requestNote: requestNote.trim(),
+          contactEmail: requestContact.trim(),
+        },
+      });
+      setRequestMessage("요청이 접수되었습니다. 관리자가 확인 후 시뮬레이션을 추가합니다.");
+      setRequestRole("");
+      setRequestNote("");
+      setRequestContact("");
+    } catch {
+      setRequestMessage("요청을 접수하지 못했습니다. 잠시 후 다시 시도해주세요.");
+    } finally {
+      setIsRequesting(false);
+    }
   }
 
   if (isLoading) {
@@ -159,6 +206,15 @@ function BizReview() {
               ))}
             </select>
           </label>
+
+          <button
+            type="button"
+            onClick={openRequestDialog}
+            className="mt-3 inline-flex h-9 w-full items-center justify-center gap-2 rounded-md border border-neutral-300 bg-white px-3 text-xs font-medium text-neutral-800 hover:bg-neutral-50"
+          >
+            <Send className="h-3.5 w-3.5" />
+            직무 요청하기
+          </button>
 
           <p className="mt-3 text-xs text-neutral-500">
             현재 조건에 맞는 지원자 {visibleApplicants.length}명
@@ -240,10 +296,82 @@ function BizReview() {
           <ApplicantDetail applicant={selectedApplicant} />
         ) : (
           <section className="rounded-md border border-neutral-200 p-8 text-sm text-neutral-500">
-            검토할 지원자를 선택하세요.
+            {roleFilter === "all"
+              ? "검토할 지원자를 선택하세요."
+              : "이 직무에는 아직 제출한 지원자가 없습니다."}
           </section>
         )}
       </main>
+
+      {isRequestOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-4">
+          <form
+            onSubmit={submitSimulationRequest}
+            className="w-full max-w-lg rounded-md bg-white p-6 shadow-xl"
+          >
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h2 className="text-lg font-semibold tracking-tight">직무 시뮬레이션 요청</h2>
+                <p className="mt-1 text-sm text-neutral-500">
+                  필요한 직무를 남기면 관리자 요청함에 전달됩니다.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsRequestOpen(false)}
+                className="grid h-8 w-8 place-items-center rounded-md text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900"
+                aria-label="요청 창 닫기"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <label className="mt-5 block text-xs font-medium text-neutral-600">요청 직무</label>
+            <input
+              value={requestRole}
+              onChange={(event) => setRequestRole(event.target.value)}
+              placeholder="예: 브랜드 마케터"
+              className="mt-2 h-10 w-full rounded-md border border-neutral-300 px-3 text-sm outline-none focus:border-neutral-900"
+            />
+
+            <label className="mt-4 block text-xs font-medium text-neutral-600">요청 메모</label>
+            <textarea
+              value={requestNote}
+              onChange={(event) => setRequestNote(event.target.value)}
+              placeholder="필요한 직무 상황이나 평가하고 싶은 역량을 적어주세요."
+              className="mt-2 h-28 w-full resize-none rounded-md border border-neutral-300 p-3 text-sm outline-none focus:border-neutral-900"
+            />
+
+            <label className="mt-4 block text-xs font-medium text-neutral-600">회신 이메일</label>
+            <input
+              type="email"
+              value={requestContact}
+              onChange={(event) => setRequestContact(event.target.value)}
+              placeholder="선택 입력"
+              className="mt-2 h-10 w-full rounded-md border border-neutral-300 px-3 text-sm outline-none focus:border-neutral-900"
+            />
+
+            {requestMessage && <p className="mt-4 text-sm text-neutral-600">{requestMessage}</p>}
+
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setIsRequestOpen(false)}
+                className="h-9 rounded-md border border-neutral-300 px-3 text-xs font-medium hover:bg-neutral-50"
+              >
+                닫기
+              </button>
+              <button
+                type="submit"
+                disabled={!requestRole.trim() || isRequesting}
+                className="h-9 rounded-md bg-neutral-900 px-3 text-xs font-medium text-white hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {isRequesting ? "접수 중..." : "요청 보내기"}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
     </div>
   );
 }
