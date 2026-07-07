@@ -75,7 +75,7 @@ async function fetchRecommended(seeker: JobSeeker): Promise<Simulation[]> {
   const rows = (data as unknown as RawRow[]).map((row) => ({
     ...toSimulation(row),
     // 관심 직무 선택값은 21개 도메인 카테고리와 같은 목록을 사용한다.
-    _domainMatch: jobInterests.includes(row.domain ?? ""),
+    _domainMatch: (jobInterests as readonly string[]).includes(row.domain ?? ""),
     _companyMatch: companyInterests.includes(row.companies?.name ?? ""),
   }));
 
