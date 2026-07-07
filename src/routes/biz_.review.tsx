@@ -165,12 +165,12 @@ function BizReview() {
   return (
     <div className="min-h-screen bg-white text-neutral-900">
       <header className="border-b border-neutral-200">
-        <div className="mx-auto flex max-w-7xl flex-col gap-3 px-6 py-3 md:min-h-14 md:flex-row md:items-center md:justify-between md:gap-6 md:py-2">
-          <div className="flex min-w-0 shrink-0 items-center justify-between gap-4 md:max-w-[46%] md:justify-start">
+        <div className="mx-auto grid max-w-7xl gap-3 px-6 py-3 xl:min-h-14 xl:grid-cols-[360px_1fr] xl:items-center xl:gap-6 xl:py-2">
+          <div className="flex min-w-0 items-center justify-between gap-4">
             <div className="flex min-w-0 items-center gap-4">
               <div className="shrink-0 whitespace-nowrap">
                 <span className="text-sm font-semibold tracking-tight">Beginner</span>
-                <span className="ml-2 text-xs text-neutral-500">for Business</span>
+                <span className="ml-1 text-xs font-light text-neutral-500">biz</span>
               </div>
               <span className="truncate text-sm font-medium text-neutral-500">
                 {data.company.name}
@@ -178,17 +178,17 @@ function BizReview() {
             </div>
             <Link
               to="/biz"
-              className="shrink-0 whitespace-nowrap text-xs font-medium text-neutral-500 hover:text-neutral-900 md:hidden"
+              className="shrink-0 whitespace-nowrap text-xs font-medium text-neutral-500 hover:text-neutral-900 xl:hidden"
             >
               코드 변경
             </Link>
           </div>
-          <div className="min-w-0 flex-1 md:flex md:justify-center">
+          <div className="min-w-0">
             <select
               value={roleFilter}
               onChange={(event) => setRoleFilter(event.target.value)}
               aria-label="직무 선택"
-              className="h-9 w-full min-w-0 rounded-md border border-neutral-300 bg-white px-3 text-sm font-medium text-neutral-900 outline-none focus:border-neutral-900 md:max-w-[320px]"
+              className="h-9 w-full min-w-0 rounded-md border border-neutral-300 bg-white px-3 text-sm font-medium text-neutral-900 outline-none focus:border-neutral-900"
             >
               <option value="all">전체 직무</option>
               {roleOptions.map((role) => (
@@ -198,12 +198,6 @@ function BizReview() {
               ))}
             </select>
           </div>
-          <Link
-            to="/biz"
-            className="hidden shrink-0 whitespace-nowrap text-xs font-medium text-neutral-500 hover:text-neutral-900 md:block"
-          >
-            코드 변경
-          </Link>
         </div>
       </header>
 
@@ -306,7 +300,7 @@ function BizShell({ children }: { children: React.ReactNode }) {
     <div className="flex min-h-screen flex-col bg-white text-neutral-900">
       <header className="flex h-14 items-center border-b border-neutral-200 px-6">
         <span className="text-sm font-semibold tracking-tight">Beginner</span>
-        <span className="ml-2 text-xs text-neutral-500">for Business</span>
+        <span className="ml-1 text-xs font-light text-neutral-500">biz</span>
       </header>
       <main className="flex flex-1 items-center justify-center px-6 text-sm text-neutral-500">
         {children}

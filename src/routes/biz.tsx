@@ -47,7 +47,7 @@ function BizIndex() {
         <a href="/biz" className="text-sm font-semibold tracking-tight">
           Beginner
         </a>
-        <span className="ml-2 text-xs text-neutral-500">for Business</span>
+        <span className="ml-1 text-xs font-light text-neutral-500">biz</span>
       </header>
 
       <main className="flex flex-1 items-center justify-center px-6">
