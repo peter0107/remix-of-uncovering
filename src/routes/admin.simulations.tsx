@@ -22,7 +22,6 @@ type SimulationForm = {
   roleLabel: string;
   title: string;
   description: string;
-  jobFamily: string;
   domain: string;
   estimatedMinutes: string;
   taskPrompt: string;
@@ -46,7 +45,6 @@ function createEmptyForm(companyCode = ""): SimulationForm {
     roleLabel: "",
     title: "",
     description: "",
-    jobFamily: "",
     domain: DOMAIN_CATEGORIES[0],
     estimatedMinutes: "60",
     taskPrompt: "",
@@ -59,7 +57,6 @@ function formFromSimulation(simulation: AdminCompanySimulation): SimulationForm 
     roleLabel: simulation.roleLabel,
     title: simulation.title,
     description: simulation.description,
-    jobFamily: simulation.jobFamily,
     domain: DOMAIN_CATEGORIES.includes(simulation.domain as (typeof DOMAIN_CATEGORIES)[number])
       ? simulation.domain
       : DOMAIN_CATEGORIES[0],
@@ -73,7 +70,6 @@ const EMPTY_FORM: SimulationForm = {
   roleLabel: "",
   title: "",
   description: "",
-  jobFamily: "",
   domain: DOMAIN_CATEGORIES[0],
   estimatedMinutes: "60",
   taskPrompt: "",
@@ -258,7 +254,6 @@ function AdminSimulations() {
         roleLabel: form.roleLabel.trim(),
         title: form.title.trim(),
         description: form.description.trim(),
-        jobFamily: form.jobFamily.trim(),
         domain: form.domain as DomainCategory,
         estimatedMinutes: Number.isFinite(estimatedMinutes) ? estimatedMinutes : null,
         taskPrompt: form.taskPrompt.trim(),
@@ -520,11 +515,6 @@ function AdminSimulations() {
                 <div className="mt-3 flex items-end justify-between gap-3">
                   <div className="flex flex-wrap gap-2 text-xs text-neutral-500">
                     <span className="rounded bg-neutral-50 px-2 py-1">{simulation.domain}</span>
-                    {simulation.jobFamily && (
-                      <span className="rounded bg-neutral-50 px-2 py-1">
-                        {simulation.jobFamily}
-                      </span>
-                    )}
                   </div>
                   <button
                     type="button"
@@ -576,7 +566,7 @@ function AdminSimulations() {
                 required
               />
               <InputField
-                label="드롭다운 직무명"
+                label="직무명"
                 value={form.roleLabel}
                 onChange={(value) => updateForm("roleLabel", value)}
                 placeholder="예: 마케팅 매니저"
@@ -599,13 +589,7 @@ function AdminSimulations() {
               rows={3}
             />
 
-            <div className="grid gap-4 md:grid-cols-3">
-              <InputField
-                label="직무군"
-                value={form.jobFamily}
-                onChange={(value) => updateForm("jobFamily", value)}
-                placeholder="예: 데이터"
-              />
+            <div className="grid gap-4 md:grid-cols-2">
               <SelectField
                 label="도메인"
                 value={form.domain}

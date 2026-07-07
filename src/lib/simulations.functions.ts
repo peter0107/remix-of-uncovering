@@ -250,6 +250,7 @@ export const createCompanySimulation = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     await assertAdmin();
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const jobFamily = data.jobFamily.trim() || data.roleLabel.trim();
 
     const { data: company, error: companyError } = await supabaseAdmin
       .from("companies")
@@ -268,7 +269,7 @@ export const createCompanySimulation = createServerFn({ method: "POST" })
         title: data.title,
         role_label: data.roleLabel,
         description: data.description,
-        job_family: data.jobFamily,
+        job_family: jobFamily,
         domain: data.domain,
         estimated_minutes: data.estimatedMinutes,
         task_prompt: data.taskPrompt,
@@ -290,6 +291,7 @@ export const updateCompanySimulation = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     await assertAdmin();
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const jobFamily = data.jobFamily.trim() || data.roleLabel.trim();
 
     const { data: company, error: companyError } = await supabaseAdmin
       .from("companies")
@@ -308,7 +310,7 @@ export const updateCompanySimulation = createServerFn({ method: "POST" })
         title: data.title,
         role_label: data.roleLabel,
         description: data.description,
-        job_family: data.jobFamily,
+        job_family: jobFamily,
         domain: data.domain,
         estimated_minutes: data.estimatedMinutes,
         task_prompt: data.taskPrompt,
