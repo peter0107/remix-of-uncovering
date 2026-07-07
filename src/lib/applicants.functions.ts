@@ -264,19 +264,7 @@ function mapSimulation(row: Record<string, unknown>): CompanySimulation {
 export const getApplicantsByCompanyCode = createServerFn({ method: "GET" })
   .inputValidator(companyCodeInputSchema)
   .handler(async ({ data }): Promise<CompanyApplicants> => {
-    const supabaseUrl = process.env.SUPABASE_URL;
-    const supabaseKey = process.env.SUPABASE_PUBLISHABLE_KEY;
-
-    if (!supabaseUrl || !supabaseKey) {
-      throw new Error("Backend is not configured");
-    }
-
-    const supabase = createClient(supabaseUrl, supabaseKey, {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false,
-      },
-    });
+    const { supabaseAdmin: supabase } = await import("@/integrations/supabase/client.server");
 
     const { data: company, error: companyError } = await supabase
       .from("companies")
@@ -287,6 +275,7 @@ export const getApplicantsByCompanyCode = createServerFn({ method: "GET" })
     if (companyError || !company) {
       throw new Error("Invalid company code");
     }
+
 
     const { data: rows, error: rpcError } = await supabase.rpc("get_applicants_by_company_code", {
       company_code: data.code,
@@ -342,19 +331,8 @@ export const getApplicantsByCompanyCode = createServerFn({ method: "GET" })
 export const setSavedApplicantByCompanyCode = createServerFn({ method: "POST" })
   .inputValidator(savedApplicantInputSchema)
   .handler(async ({ data }): Promise<{ saved: boolean }> => {
-    const supabaseUrl = process.env.SUPABASE_URL;
-    const supabaseKey = process.env.SUPABASE_PUBLISHABLE_KEY;
+    const { supabaseAdmin: supabase } = await import("@/integrations/supabase/client.server");
 
-    if (!supabaseUrl || !supabaseKey) {
-      throw new Error("Backend is not configured");
-    }
-
-    const supabase = createClient(supabaseUrl, supabaseKey, {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false,
-      },
-    });
 
     const { data: saved, error } = await supabase.rpc("set_saved_applicant_by_company_code", {
       p_company_code: data.code,
