@@ -164,17 +164,22 @@ function BizReview() {
 
   return (
     <div className="min-h-screen bg-white text-neutral-900">
-      <header className="flex h-14 items-center justify-between border-b border-neutral-200 px-6">
-        <div className="flex min-w-0 items-center gap-6">
-          <div className="shrink-0">
-            <span className="text-sm font-semibold tracking-tight">Beginner</span>
-            <span className="ml-2 text-xs text-neutral-500">for Business</span>
+      <header className="relative border-b border-neutral-200">
+        <div className="mx-auto flex min-h-14 max-w-7xl items-center justify-between gap-3 px-6 py-2 xl:grid xl:h-14 xl:grid-cols-[360px_1fr_auto] xl:gap-6 xl:py-0">
+          <div className="flex shrink-0 items-center gap-4 xl:absolute xl:left-6 xl:top-0 xl:h-14">
+            <div className="shrink-0">
+              <span className="text-sm font-semibold tracking-tight">Beginner</span>
+              <span className="ml-2 text-xs text-neutral-500">for Business</span>
+            </div>
+            <span className="truncate text-sm font-medium text-neutral-500">
+              {data.company.name}
+            </span>
           </div>
           <select
             value={roleFilter}
             onChange={(event) => setRoleFilter(event.target.value)}
             aria-label="직무 선택"
-            className="h-9 w-52 rounded-md border border-neutral-300 bg-white px-3 text-sm font-medium text-neutral-900 outline-none focus:border-neutral-900 md:w-64"
+            className="h-9 w-44 rounded-md border border-neutral-300 bg-white px-3 text-sm font-medium text-neutral-900 outline-none focus:border-neutral-900 md:w-64 xl:col-start-1 xl:w-full xl:max-w-[320px]"
           >
             <option value="all">전체 직무</option>
             {roleOptions.map((role) => (
@@ -183,16 +188,18 @@ function BizReview() {
               </option>
             ))}
           </select>
+          <Link
+            to="/biz"
+            className="shrink-0 text-xs font-medium text-neutral-500 hover:text-neutral-900 xl:col-start-3"
+          >
+            코드 변경
+          </Link>
         </div>
-        <Link to="/biz" className="text-xs font-medium text-neutral-500 hover:text-neutral-900">
-          코드 변경
-        </Link>
       </header>
 
       <main className="mx-auto grid max-w-7xl gap-6 px-6 py-8 xl:grid-cols-[360px_1fr]">
         <aside>
-          <p className="text-xs font-medium text-neutral-500">{data.company.name}</p>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight">{data.company.roleLabel}</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">{data.company.roleLabel}</h1>
           <p className="mt-2 text-sm text-neutral-500">
             총 {data.applicants.length}명의 제출자가 있습니다.
           </p>
