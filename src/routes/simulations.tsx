@@ -103,29 +103,56 @@ async function fetchAll(): Promise<Simulation[]> {
   return (data as unknown as RawRow[]).map(toSimulation);
 }
 
+// ─── 기업 플레이스홀더 (기업 확정 전 임시) ───────────────────
+// TODO: 실제 기업이 확정되면 sim.company_name / 로고 URL 로 교체.
+const COMPANY_PLACEHOLDERS = [
+  { name: "A기업", letter: "A", className: "bg-indigo-100 text-indigo-700" },
+  { name: "B기업", letter: "B", className: "bg-emerald-100 text-emerald-700" },
+  { name: "C기업", letter: "C", className: "bg-amber-100 text-amber-700" },
+  { name: "D기업", letter: "D", className: "bg-rose-100 text-rose-700" },
+  { name: "E기업", letter: "E", className: "bg-sky-100 text-sky-700" },
+];
+
+function placeholderCompany(index: number) {
+  return COMPANY_PLACEHOLDERS[index % COMPANY_PLACEHOLDERS.length];
+}
+
 // ─── 카드 컴포넌트 ────────────────────────────────────────────
 
-function SimCard({ sim, rank }: { sim: Simulation; rank?: number }) {
-  const displayTitle = sim.role_label || sim.job_family || sim.title;
+function SimCard({ sim, index, rank }: { sim: Simulation; index: number; rank?: number }) {
+  const company = placeholderCompany(index);
+  const roleLine = sim.role_label || sim.job_family || sim.title;
+  // 직무 + 시뮬 내용을 한 줄로 요약
+  const subline = [roleLine, sim.description].filter(Boolean).join(" · ");
 
   return (
     <Link
       to="/simulation/$id"
       params={{ id: sim.id }}
-      className="group flex flex-col rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm transition-all hover:-translate-y-0.5 hover:border-zinc-900 hover:shadow-md"
+      className="group relative flex flex-col rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm transition-all hover:-translate-y-0.5 hover:border-zinc-900 hover:shadow-md"
     >
       {/* 순위 */}
       {rank && (
-        <span className="flex h-7 w-7 items-center justify-center rounded-full bg-zinc-900 text-xs font-bold text-white">
+        <span className="absolute right-4 top-4 flex h-7 w-7 items-center justify-center rounded-full bg-zinc-900 text-xs font-bold text-white">
           {rank}
         </span>
       )}
 
-      <h3 className="mt-4 text-2xl font-bold leading-snug text-zinc-900">{displayTitle}</h3>
+      {/* 기업 아이콘 (예시) */}
+      <span
+        className={cn(
+          "flex h-14 w-14 items-center justify-center rounded-2xl text-2xl font-bold",
+          company.className,
+        )}
+      >
+        {company.letter}
+      </span>
 
-      {sim.description && (
-        <p className="mt-1.5 text-sm leading-relaxed text-zinc-500">{sim.description}</p>
-      )}
+      {/* 기업명 — 메인 */}
+      <h3 className="mt-4 text-2xl font-bold leading-snug text-zinc-900">{company.name}</h3>
+
+      {/* 직무 + 시뮬 내용 — 한 줄 서브 */}
+      <p className="mt-1.5 line-clamp-1 text-sm leading-relaxed text-zinc-500">{subline}</p>
 
       {/* 소요시간 */}
       {sim.estimated_minutes && (
@@ -151,11 +178,9 @@ function SimCard({ sim, rank }: { sim: Simulation; rank?: number }) {
 function CardSkeleton() {
   return (
     <div className="rounded-2xl border border-zinc-100 bg-white p-6">
-      <Skeleton className="h-7 w-7 rounded-full" />
-      <Skeleton className="mt-4 h-3 w-20" />
-      <Skeleton className="mt-2 h-6 w-3/4" />
-      <Skeleton className="mt-2 h-4 w-full" />
-      <Skeleton className="mt-1 h-4 w-5/6" />
+      <Skeleton className="h-14 w-14 rounded-2xl" />
+      <Skeleton className="mt-4 h-6 w-24" />
+      <Skeleton className="mt-2 h-4 w-5/6" />
       <div className="mt-5 flex justify-end">
         <Skeleton className="h-8 w-24 rounded-xl" />
       </div>
@@ -301,7 +326,7 @@ function SimulationsPage() {
           </>
         ) : sims.length > 0 ? (
           sims.map((sim, i) => (
-            <SimCard key={sim.id} sim={sim} rank={isGuest ? undefined : i + 1} />
+            <SimCard key={sim.id} sim={sim} index={i} rank={isGuest ? undefined : i + 1} />
           ))
         ) : (
           <div className="col-span-full">
