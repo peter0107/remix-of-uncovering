@@ -35,14 +35,6 @@ export const Route = createFileRoute("/simulation/$id")({
   component: SimulationDetailPage,
 });
 
-const LOW_TIME_THRESHOLD_SEC = 5 * 60; // 5분 이하 남으면 빨간색 경고
-
-function formatRemaining(sec: number) {
-  const m = Math.floor(sec / 60);
-  const s = sec % 60;
-  return `${m}:${s.toString().padStart(2, "0")}`;
-}
-
 type SimulationDetail = {
   id: string;
   title: string;
@@ -68,7 +60,6 @@ function SimulationDetailPage() {
   const [submittedId, setSubmittedId] = useState<string | null>(null);
   const [applicationSent, setApplicationSent] = useState(false);
   const [startedAt] = useState(() => new Date());
-  const [remainingSec, setRemainingSec] = useState<number | null>(null);
 
   // 시뮬레이션 진행 중(제출 전)일 때만 이탈을 차단
   const inProgress = Boolean(sim && !submittedAt);
@@ -79,22 +70,6 @@ function SimulationDetailPage() {
     enableBeforeUnload: inProgress,
     withResolver: true,
   });
-
-  // 남은 시간 카운트다운 (예상 소요 시간 기준)
-  useEffect(() => {
-    if (!sim?.estimated_minutes || submittedAt) {
-      setRemainingSec(null);
-      return;
-    }
-    const totalSec = sim.estimated_minutes * 60;
-    const tick = () => {
-      const elapsed = Math.floor((Date.now() - startedAt.getTime()) / 1000);
-      setRemainingSec(Math.max(0, totalSec - elapsed));
-    };
-    tick();
-    const iv = setInterval(tick, 1000);
-    return () => clearInterval(iv);
-  }, [sim?.estimated_minutes, submittedAt, startedAt]);
 
   const parsed: ParsedSimulation | null = useMemo(
     () => parseSimulationSteps(sim?.task_prompt),
@@ -408,28 +383,6 @@ function SimulationDetailPage() {
     </AlertDialog>
   );
 
-  const timerBadge = remainingSec !== null && (
-    <div
-      className={cn(
-        "mb-4 flex shrink-0 items-center justify-between rounded-xl border px-4 py-3 transition-colors",
-        remainingSec <= LOW_TIME_THRESHOLD_SEC
-          ? "border-red-200 bg-red-50 text-red-600"
-          : "border-zinc-200 bg-zinc-50 text-zinc-700",
-      )}
-    >
-      <div className="flex items-center gap-1.5 text-xs font-medium">
-        <Clock className="h-3.5 w-3.5" />
-        남은 시간
-      </div>
-      <div className="flex items-center gap-1.5">
-        {remainingSec <= LOW_TIME_THRESHOLD_SEC && <AlertTriangle className="h-4 w-4" />}
-        <span className="font-mono text-lg font-bold tabular-nums">
-          {formatRemaining(remainingSec)}
-        </span>
-      </div>
-    </div>
-  );
-
   // ---------- 스텝 위저드 ----------
   if (parsed) {
     const step = parsed.steps[stepIdx];
@@ -458,7 +411,6 @@ function SimulationDetailPage() {
 
           {/* 오른쪽: 현재 스텝 질문 */}
           <div className="flex flex-col">
-            {timerBadge}
             {/* 진행바 */}
             <div className="flex gap-1.5">
               {parsed.steps.map((s, i) => (
@@ -565,7 +517,6 @@ function SimulationDetailPage() {
 
         {/* 오른쪽: 제출 관련 */}
         <div className="flex flex-col lg:sticky lg:top-20 lg:h-[calc(100vh-6rem)]">
-          {timerBadge}
           <div className="flex min-h-0 flex-1 flex-col">
             <label htmlFor="response" className="text-sm font-medium text-zinc-700">
               답안 작성
