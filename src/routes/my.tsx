@@ -2341,14 +2341,12 @@ function MyPage() {
                   label="이력서 제목"
                   value={resumeForm.title}
                   onChange={updateResumeForm}
-                  shared
                 />
                 <ResumeField
                   id="target_role"
                   label="지원 직무"
                   value={resumeForm.target_role}
                   onChange={updateResumeForm}
-                  shared
                 />
                 <div className="md:col-span-2">
                   <ResumeTextField
