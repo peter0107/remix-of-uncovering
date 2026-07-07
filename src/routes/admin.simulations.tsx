@@ -262,7 +262,7 @@ function AdminSimulations() {
         title: form.title.trim(),
         description: form.description.trim(),
         jobFamily: form.jobFamily.trim(),
-        domain: form.domain,
+        domain: form.domain as DomainCategory,
         estimatedMinutes: Number.isFinite(estimatedMinutes) ? estimatedMinutes : null,
         taskPrompt: form.taskPrompt.trim(),
       };
