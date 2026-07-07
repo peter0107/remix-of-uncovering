@@ -60,7 +60,7 @@ function AdminHome() {
 
   return (
     <div className="min-h-screen bg-white text-neutral-900">
-      <header className="flex h-14 items-center justify-between border-b border-neutral-200 px-6">
+      <header className="flex h-14 items-center justify-between border-b border-neutral-300 bg-neutral-100 px-6">
         <div>
           <span className="text-sm font-semibold tracking-tight">Beginner</span>
           <span className="ml-2 text-xs text-neutral-500">Admin</span>
