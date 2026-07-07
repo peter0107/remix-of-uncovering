@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Clock, ArrowRight, Sparkles } from "lucide-react";
+import { Clock, ArrowRight, Sparkles, LayoutGrid } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,7 +15,7 @@ export const Route = createFileRoute("/simulations")({
 
 // ─── 타입 ────────────────────────────────────────────────────
 
-type Simulation = {
+export type Simulation = {
   id: string;
   title: string;
   role_label: string | null;
@@ -89,8 +89,8 @@ async function fetchRecommended(seeker: JobSeeker): Promise<Simulation[]> {
   return sorted.slice(0, 3).map(({ _domainMatch: _d, _companyMatch: _c, ...rest }) => rest);
 }
 
-// 비로그인 방문자용: 개인화 없이 전체 시뮬레이션 목록
-async function fetchAll(): Promise<Simulation[]> {
+// 비로그인 방문자용 · 전체 직무 보기: 개인화 없이 전체 시뮬레이션 목록
+export async function fetchAll(): Promise<Simulation[]> {
   const { data, error } = await supabase
     .from("job_simulations")
     .select("id, title, role_label, description, job_family, domain, estimated_minutes, companies(name)")
@@ -119,7 +119,7 @@ function placeholderCompany(index: number) {
 
 // ─── 카드 컴포넌트 ────────────────────────────────────────────
 
-function SimCard({ sim, index, rank }: { sim: Simulation; index: number; rank?: number }) {
+export function SimCard({ sim, index, rank }: { sim: Simulation; index: number; rank?: number }) {
   const company = placeholderCompany(index);
   const roleLine = sim.role_label || sim.job_family || sim.title;
   // 직무 + 시뮬 내용을 한 줄로 요약
@@ -175,7 +175,7 @@ function SimCard({ sim, index, rank }: { sim: Simulation; index: number; rank?: 
 
 // ─── 스켈레톤 ────────────────────────────────────────────────
 
-function CardSkeleton() {
+export function CardSkeleton() {
   return (
     <div className="rounded-2xl border border-zinc-100 bg-white p-6">
       <Skeleton className="h-14 w-14 rounded-2xl" />
@@ -334,6 +334,21 @@ function SimulationsPage() {
           </div>
         )}
       </div>
+
+      {/* 전체 직무 보기 */}
+      {!loading && (
+        <div className="mt-8 flex justify-center">
+          <Link to="/simulations/all">
+            <Button
+              variant="outline"
+              className="rounded-xl border-zinc-300 text-zinc-700 hover:border-zinc-900 hover:text-zinc-900"
+            >
+              <LayoutGrid className="mr-2 h-4 w-4" />
+              전체 직무 보기
+            </Button>
+          </Link>
+        </div>
+      )}
 
       {/* 하단 안내 */}
       {!loading && !isGuest && sims.length > 0 && (
