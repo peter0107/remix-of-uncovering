@@ -35,7 +35,10 @@ function SimulationDetailPage() {
   const [responseText, setResponseText] = useState("");
   const [consent, setConsent] = useState<boolean | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [applying, setApplying] = useState(false);
   const [submittedAt, setSubmittedAt] = useState<Date | null>(null);
+  const [submittedId, setSubmittedId] = useState<string | null>(null);
+  const [applicationSent, setApplicationSent] = useState(false);
   const [startedAt] = useState(() => new Date());
 
   useEffect(() => {
@@ -85,22 +88,80 @@ function SimulationDetailPage() {
 
     setSubmitting(true);
     const now = new Date();
-    const { error } = await supabase.from("submissions").insert({
-      job_seeker_id: user.id,
-      job_simulation_id: sim.id,
-      response_text: responseText,
-      started_at: startedAt.toISOString(),
-      submitted_at: now.toISOString(),
-      duration_sec: Math.round((now.getTime() - startedAt.getTime()) / 1000),
-      answer_transmission_consent: consent,
-    });
+    const { data: submission, error } = await supabase
+      .from("submissions")
+      .insert({
+        job_seeker_id: user.id,
+        job_simulation_id: sim.id,
+        response_text: responseText,
+        started_at: startedAt.toISOString(),
+        submitted_at: now.toISOString(),
+        duration_sec: Math.round((now.getTime() - startedAt.getTime()) / 1000),
+        answer_transmission_consent: consent,
+      })
+      .select("id")
+      .single();
     setSubmitting(false);
 
     if (error) {
       toast.error("제출 중 오류가 발생했어요. 다시 시도해 주세요.");
       return;
     }
+    if (!submission) {
+      toast.error("제출 확인 중 오류가 발생했어요. 다시 시도해 주세요.");
+      return;
+    }
+    setSubmittedId(submission.id);
+    setApplicationSent(consent === true);
     setSubmittedAt(now);
+  };
+
+  const handleApply = async () => {
+    if (!sim) return;
+    if (!user) {
+      toast.error("지원하려면 로그인이 필요해요.");
+      navigate({ to: "/login", search: { redirect: `/simulation/${id}` } });
+      return;
+    }
+
+    setApplying(true);
+
+    let targetSubmissionId = submittedId;
+    if (!targetSubmissionId) {
+      const { data: latestSubmission, error: findError } = await supabase
+        .from("submissions")
+        .select("id")
+        .eq("job_seeker_id", user.id)
+        .eq("job_simulation_id", sim.id)
+        .not("submitted_at", "is", null)
+        .order("submitted_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (findError || !latestSubmission) {
+        setApplying(false);
+        toast.error("먼저 시뮬레이션 답안을 제출해주세요.");
+        return;
+      }
+      targetSubmissionId = latestSubmission.id;
+      setSubmittedId(latestSubmission.id);
+    }
+
+    const { error } = await supabase
+      .from("submissions")
+      .update({ answer_transmission_consent: true })
+      .eq("id", targetSubmissionId)
+      .eq("job_seeker_id", user.id);
+
+    setApplying(false);
+
+    if (error) {
+      toast.error("지원 처리 중 오류가 발생했어요. 다시 시도해 주세요.");
+      return;
+    }
+
+    setApplicationSent(true);
+    toast.success(`${sim.company_name}에 지원했어요. 기업 화면에서 확인할 수 있습니다.`);
   };
 
   if (authLoading || loading) {
@@ -129,18 +190,17 @@ function SimulationDetailPage() {
         <CheckCircle2 className="mx-auto h-12 w-12 text-zinc-900" />
         <h1 className="mt-4 text-xl font-bold text-zinc-900">제출이 완료됐어요</h1>
         <p className="mt-2 text-sm text-zinc-500">
-          {consent
+          {applicationSent
             ? `${sim.company_name}에 답안이 전달돼요. 관심이 있으면 먼저 연락드릴 수 있어요.`
-            : "이번 답안은 기업에 전달되지 않아요. 마이페이지에는 기록으로 남아요."}
+            : "지원하기를 누르면 이력서와 시뮬레이션 답안이 기업 담당자 화면에 표시돼요."}
         </p>
         <div className="mt-8 flex flex-col gap-2">
           <Button
             className="rounded-xl bg-zinc-900 text-white hover:bg-zinc-700"
-            onClick={() =>
-              toast.info("groupby 채용 페이지 연동은 준비 중이에요.")
-            }
+            disabled={applying || applicationSent}
+            onClick={handleApply}
           >
-            지원하기
+            {applicationSent ? "지원 완료" : applying ? "지원 중..." : "지원하기"}
           </Button>
           <Link to="/simulations">
             <Button variant="outline" className="w-full rounded-xl">
@@ -164,16 +224,13 @@ function SimulationDetailPage() {
           <h1 className="mt-1 text-2xl font-bold text-zinc-900">{sim.title}</h1>
           {sim.estimated_minutes && (
             <div className="mt-2 flex items-center gap-1 text-xs text-zinc-400">
-              <Clock className="h-3.5 w-3.5" />
-              약 {sim.estimated_minutes}분
+              <Clock className="h-3.5 w-3.5" />약 {sim.estimated_minutes}분
             </div>
           )}
 
           <Card className="mt-6 p-6">
             <div className="prose prose-sm sm:prose-base prose-zinc max-w-none prose-table:text-sm">
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                {sim.task_prompt ?? ""}
-              </ReactMarkdown>
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>{sim.task_prompt ?? ""}</ReactMarkdown>
             </div>
           </Card>
         </div>
@@ -198,8 +255,8 @@ function SimulationDetailPage() {
               이 답안을 {sim.company_name}에 전송하는 것에 동의하시나요?
             </p>
             <p className="mt-1 text-xs text-zinc-400">
-              동의하면 답안 원문이 기업 담당자에게 그대로 전달돼요. 동의하지 않아도 제출
-              자체는 되고, 마이페이지 이력에는 남아요.
+              동의하면 답안 원문이 기업 담당자에게 그대로 전달돼요. 동의하지 않아도 제출 자체는
+              되고, 마이페이지 이력에는 남아요.
             </p>
             <div className="mt-4 flex flex-col gap-2 sm:flex-row">
               <button
