@@ -44,6 +44,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
+import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -66,6 +67,7 @@ export const Route = createFileRoute("/my")({
 });
 
 type ExternalLinks = { github?: string; portfolio?: string; linkedin?: string };
+type AvatarEditorState = { file: File; previewUrl: string };
 
 type CompletedSimulation = {
   submissionId: string;
@@ -104,6 +106,7 @@ type ResumeForm = {
 
 const MAX_AVATAR_BYTES = 5 * 1024 * 1024;
 const MAX_RESUME_BYTES = 6 * 1024 * 1024;
+const AVATAR_EXPORT_SIZE = 512;
 
 const EMPTY_RESUME_FORM: ResumeForm = {
   title: "",
@@ -243,6 +246,54 @@ function splitTags(value: string) {
 
 function fallbackDisplayName(userEmail: string) {
   return userEmail.split("@")[0] || "이름";
+}
+
+function loadImage(src: string) {
+  return new Promise<HTMLImageElement>((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = reject;
+    image.src = src;
+  });
+}
+
+async function createCroppedAvatarBlob(
+  src: string,
+  options: { zoom: number; offsetX: number; offsetY: number },
+) {
+  const image = await loadImage(src);
+  const canvas = document.createElement("canvas");
+  canvas.width = AVATAR_EXPORT_SIZE;
+  canvas.height = AVATAR_EXPORT_SIZE;
+
+  const context = canvas.getContext("2d");
+  if (!context) throw new Error("Canvas is not available");
+
+  const baseScale = Math.max(
+    AVATAR_EXPORT_SIZE / image.naturalWidth,
+    AVATAR_EXPORT_SIZE / image.naturalHeight,
+  );
+  const drawWidth = image.naturalWidth * baseScale * options.zoom;
+  const drawHeight = image.naturalHeight * baseScale * options.zoom;
+  const overflowX = Math.max(0, drawWidth - AVATAR_EXPORT_SIZE);
+  const overflowY = Math.max(0, drawHeight - AVATAR_EXPORT_SIZE);
+  const drawX = (AVATAR_EXPORT_SIZE - drawWidth) / 2 - (overflowX * options.offsetX) / 100;
+  const drawY = (AVATAR_EXPORT_SIZE - drawHeight) / 2 - (overflowY * options.offsetY) / 100;
+
+  context.fillStyle = "#ffffff";
+  context.fillRect(0, 0, AVATAR_EXPORT_SIZE, AVATAR_EXPORT_SIZE);
+  context.drawImage(image, drawX, drawY, drawWidth, drawHeight);
+
+  return new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob(
+      (blob) => {
+        if (blob) resolve(blob);
+        else reject(new Error("Failed to create avatar image"));
+      },
+      "image/jpeg",
+      0.92,
+    );
+  });
 }
 
 function buildBlankResumeForm(userEmail: string, seeker: JobSeeker | null): ResumeForm {
@@ -413,6 +464,10 @@ function MyPage() {
 
   const [discoverySaving, setDiscoverySaving] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [avatarEditor, setAvatarEditor] = useState<AvatarEditorState | null>(null);
+  const [avatarZoom, setAvatarZoom] = useState(1);
+  const [avatarOffsetX, setAvatarOffsetX] = useState(0);
+  const [avatarOffsetY, setAvatarOffsetY] = useState(0);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [history, setHistory] = useState<CompletedSimulation[] | null>(null);
   const [resumes, setResumes] = useState<Resume[]>([]);
@@ -509,6 +564,13 @@ function MyPage() {
     })();
   }, [user, authLoading, navigate, refreshResumes]);
 
+  useEffect(() => {
+    const previewUrl = avatarEditor?.previewUrl;
+    return () => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+    };
+  }, [avatarEditor?.previewUrl]);
+
   const handleAvatarChange = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     e.target.value = "";
@@ -523,13 +585,39 @@ function MyPage() {
       return;
     }
 
+    setAvatarZoom(1);
+    setAvatarOffsetX(0);
+    setAvatarOffsetY(0);
+    setAvatarEditor({ file, previewUrl: URL.createObjectURL(file) });
+  };
+
+  const closeAvatarEditor = () => {
+    if (uploadingAvatar) return;
+    setAvatarEditor(null);
+  };
+
+  const applyAvatarEdit = async () => {
+    if (!user || !avatarEditor) return;
+
     setUploadingAvatar(true);
-    const ext = file.name.split(".").pop() || "jpg";
-    const path = `${user.id}/avatar.${ext}`;
+    const path = `${user.id}/avatar.jpg`;
+
+    let blob: Blob;
+    try {
+      blob = await createCroppedAvatarBlob(avatarEditor.previewUrl, {
+        zoom: avatarZoom,
+        offsetX: avatarOffsetX,
+        offsetY: avatarOffsetY,
+      });
+    } catch {
+      setUploadingAvatar(false);
+      toast.error("사진 편집 중 오류가 발생했어요.");
+      return;
+    }
 
     const { error: uploadError } = await supabase.storage
       .from("avatars")
-      .upload(path, file, { upsert: true });
+      .upload(path, blob, { contentType: "image/jpeg", upsert: true });
 
     if (uploadError) {
       setUploadingAvatar(false);
@@ -553,6 +641,7 @@ function MyPage() {
     }
 
     setAvatarUrl(url);
+    setAvatarEditor(null);
     toast.success("프로필 사진이 업데이트됐어요.");
   };
 
@@ -1318,6 +1407,88 @@ function MyPage() {
           </ul>
         )}
       </div>
+
+      <Dialog open={!!avatarEditor} onOpenChange={(open) => !open && closeAvatarEditor()}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>프로필 사진 편집</DialogTitle>
+            <DialogDescription>사진을 원형 영역에 맞게 조정한 뒤 적용하세요.</DialogDescription>
+          </DialogHeader>
+
+          {avatarEditor && (
+            <div className="space-y-6 py-2">
+              <div className="mx-auto flex h-64 w-64 items-center justify-center overflow-hidden rounded-full bg-zinc-100 ring-1 ring-zinc-200">
+                <img
+                  src={avatarEditor.previewUrl}
+                  alt="프로필 사진 미리보기"
+                  className="h-full w-full object-cover"
+                  style={{
+                    transform: `translate(${avatarOffsetX / 3}%, ${avatarOffsetY / 3}%) scale(${avatarZoom})`,
+                    transformOrigin: "center",
+                  }}
+                />
+              </div>
+
+              <div className="space-y-5">
+                <div>
+                  <div className="mb-2 flex items-center justify-between text-sm">
+                    <span className="font-medium text-zinc-700">확대</span>
+                    <span className="text-zinc-400">{avatarZoom.toFixed(1)}x</span>
+                  </div>
+                  <Slider
+                    value={[avatarZoom]}
+                    min={1}
+                    max={3}
+                    step={0.05}
+                    onValueChange={([value]) => setAvatarZoom(value ?? 1)}
+                  />
+                </div>
+
+                <div>
+                  <div className="mb-2 flex items-center justify-between text-sm">
+                    <span className="font-medium text-zinc-700">가로 위치</span>
+                    <span className="text-zinc-400">{avatarOffsetX}</span>
+                  </div>
+                  <Slider
+                    value={[avatarOffsetX]}
+                    min={-100}
+                    max={100}
+                    step={1}
+                    onValueChange={([value]) => setAvatarOffsetX(value ?? 0)}
+                  />
+                </div>
+
+                <div>
+                  <div className="mb-2 flex items-center justify-between text-sm">
+                    <span className="font-medium text-zinc-700">세로 위치</span>
+                    <span className="text-zinc-400">{avatarOffsetY}</span>
+                  </div>
+                  <Slider
+                    value={[avatarOffsetY]}
+                    min={-100}
+                    max={100}
+                    step={1}
+                    onValueChange={([value]) => setAvatarOffsetY(value ?? 0)}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={closeAvatarEditor} disabled={uploadingAvatar}>
+              취소
+            </Button>
+            <Button
+              onClick={applyAvatarEdit}
+              disabled={uploadingAvatar}
+              className="bg-zinc-900 text-white hover:bg-zinc-700"
+            >
+              {uploadingAvatar ? "적용 중..." : "적용"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={resumeEditorOpen} onOpenChange={setResumeEditorOpen}>
         <DialogContent className="max-h-[88vh] max-w-4xl overflow-y-auto">
