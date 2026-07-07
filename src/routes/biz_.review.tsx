@@ -419,21 +419,16 @@ function ApplicantDetail({ applicant }: { applicant: Applicant }) {
             </InfoBlock>
 
             <InfoBlock title="직무 시뮬레이션 제출 내용">
-              <ol className="space-y-6">
+              <div className="space-y-6">
                 {applicant.simulation.map((step) => (
-                  <li key={step.step} className="grid grid-cols-[32px_1fr] gap-4">
-                    <div className="flex h-7 w-7 items-center justify-center rounded-full bg-blue-600 text-xs font-semibold text-white">
-                      {step.step}
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-semibold text-neutral-900">{step.title}</h4>
-                      <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-neutral-700">
-                        {step.answer}
-                      </p>
-                    </div>
-                  </li>
+                  <p
+                    key={step.step}
+                    className="whitespace-pre-line text-sm leading-relaxed text-neutral-700"
+                  >
+                    {step.answer}
+                  </p>
                 ))}
-              </ol>
+              </div>
             </InfoBlock>
           </div>
         </section>
