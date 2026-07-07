@@ -241,6 +241,10 @@ function splitTags(value: string) {
     .filter(Boolean);
 }
 
+function fallbackDisplayName(userEmail: string) {
+  return userEmail.split("@")[0] || "이름";
+}
+
 function buildBlankResumeForm(userEmail: string, seeker: JobSeeker | null): ResumeForm {
   return {
     ...EMPTY_RESUME_FORM,
@@ -393,6 +397,7 @@ function MyPage() {
 
   const [hasProfile, setHasProfile] = useState<boolean | null>(null);
   const [seeker, setSeeker] = useState<JobSeeker | null>(null);
+  const [displayName, setDisplayName] = useState("");
   const [oneLineIntro, setOneLineIntro] = useState("");
   const [links, setLinks] = useState<ExternalLinks>({});
   const [profileForm, setProfileFormRaw] = useState<ProfileFormData>(INITIAL_PROFILE_FORM);
@@ -401,6 +406,7 @@ function MyPage() {
   const [savingProfileCard, setSavingProfileCard] = useState(false);
   const [editingSection, setEditingSection] = useState<SectionKey | null>(null);
   const [savingSection, setSavingSection] = useState(false);
+  const [draftDisplayName, setDraftDisplayName] = useState("");
   const [draftIntro, setDraftIntro] = useState("");
   const [draftLinks, setDraftLinks] = useState<ExternalLinks>({});
   const [draftForm, setDraftFormRaw] = useState<ProfileFormData>(INITIAL_PROFILE_FORM);
@@ -457,6 +463,7 @@ function MyPage() {
 
       setHasProfile(!!seeker);
       setSeeker(seeker ?? null);
+      setDisplayName(seeker?.display_name ?? fallbackDisplayName(user.email ?? ""));
       setOneLineIntro(seeker?.one_line_intro ?? "");
       setLinks((seeker?.external_links as ExternalLinks) ?? {});
       setAvatarUrl(seeker?.avatar_url ?? null);
@@ -568,6 +575,7 @@ function MyPage() {
   };
 
   const startEditProfileCard = () => {
+    setDraftDisplayName(displayName);
     setDraftIntro(oneLineIntro);
     setDraftLinks(links);
     setEditingProfileCard(true);
@@ -582,6 +590,7 @@ function MyPage() {
 
     setSavingProfileCard(true);
     const patch: TablesUpdate<"job_seekers"> = {
+      display_name: draftDisplayName.trim() || null,
       one_line_intro: draftIntro || null,
       external_links: draftLinks,
     };
@@ -593,6 +602,7 @@ function MyPage() {
       return;
     }
 
+    setDisplayName(draftDisplayName.trim() || fallbackDisplayName(userEmail));
     setOneLineIntro(draftIntro);
     setLinks(draftLinks);
     setEditingProfileCard(false);
@@ -881,25 +891,30 @@ function MyPage() {
             </div>
 
             <div className="min-w-0">
-              {editingProfileCard ? (
-                <Input
-                  value={draftIntro}
-                  onChange={(e) => setDraftIntro(e.target.value)}
-                  placeholder="나를 한 줄로 소개해보세요"
-                  maxLength={100}
-                  className="text-base font-semibold"
-                />
-              ) : (
-                <p className="text-lg font-bold text-zinc-900">
-                  {oneLineIntro || (
-                    <span className="font-normal text-zinc-400">한줄소개를 작성해보세요</span>
-                  )}
-                </p>
-              )}
+              <p className="text-lg font-bold text-zinc-900">{displayName}</p>
               <p className="mt-1 text-sm text-zinc-400">{user?.email}</p>
 
               {editingProfileCard ? (
                 <div className="mt-4 grid gap-3">
+                  <div>
+                    <Label htmlFor="display-name">이름</Label>
+                    <Input
+                      id="display-name"
+                      value={draftDisplayName}
+                      onChange={(e) => setDraftDisplayName(e.target.value)}
+                      placeholder="이름을 입력해주세요"
+                      className="mt-2"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="profile-email">이메일</Label>
+                    <Input
+                      id="profile-email"
+                      value={userEmail}
+                      readOnly
+                      className="mt-2 bg-zinc-50 text-zinc-500"
+                    />
+                  </div>
                   <div>
                     <Label htmlFor="github">GitHub</Label>
                     <Input
@@ -913,18 +928,6 @@ function MyPage() {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="portfolio">포트폴리오</Label>
-                    <Input
-                      id="portfolio"
-                      value={draftLinks.portfolio ?? ""}
-                      onChange={(e) =>
-                        setDraftLinks((prev) => ({ ...prev, portfolio: e.target.value }))
-                      }
-                      placeholder="https://..."
-                      className="mt-2"
-                    />
-                  </div>
-                  <div>
                     <Label htmlFor="linkedin">LinkedIn</Label>
                     <Input
                       id="linkedin"
@@ -933,6 +936,18 @@ function MyPage() {
                         setDraftLinks((prev) => ({ ...prev, linkedin: e.target.value }))
                       }
                       placeholder="https://linkedin.com/in/..."
+                      className="mt-2"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="portfolio">포트폴리오</Label>
+                    <Input
+                      id="portfolio"
+                      value={draftLinks.portfolio ?? ""}
+                      onChange={(e) =>
+                        setDraftLinks((prev) => ({ ...prev, portfolio: e.target.value }))
+                      }
+                      placeholder="https://..."
                       className="mt-2"
                     />
                   </div>
@@ -987,7 +1002,9 @@ function MyPage() {
                     </a>
                   )}
                   {!hasAnyLink && (
-                    <p className="text-sm text-zinc-400">수정하기를 눌러 링크를 등록해보세요</p>
+                    <p className="text-sm text-zinc-400">
+                      내 GitHub, LinkedIn, 포트폴리오 링크를 등록해보세요.
+                    </p>
                   )}
                 </div>
               )}

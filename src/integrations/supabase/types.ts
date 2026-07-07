@@ -174,6 +174,7 @@ export type Database = {
           company_interests: string[] | null
           created_at: string | null
           discovery_consent: boolean | null
+          display_name: string | null
           education_level: string | null
           email: string
           employment_types: string[] | null
@@ -192,6 +193,7 @@ export type Database = {
           company_interests?: string[] | null
           created_at?: string | null
           discovery_consent?: boolean | null
+          display_name?: string | null
           education_level?: string | null
           email: string
           employment_types?: string[] | null
@@ -210,6 +212,7 @@ export type Database = {
           company_interests?: string[] | null
           created_at?: string | null
           discovery_consent?: boolean | null
+          display_name?: string | null
           education_level?: string | null
           email?: string
           employment_types?: string[] | null
