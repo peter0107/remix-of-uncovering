@@ -366,6 +366,7 @@ export type Database = {
           job_seeker_id: string
           job_simulation_id: string
           paste_detected: boolean | null
+          response_json: Json | null
           response_text: string | null
           score_json: Json | null
           started_at: string | null
@@ -379,6 +380,7 @@ export type Database = {
           job_seeker_id: string
           job_simulation_id: string
           paste_detected?: boolean | null
+          response_json?: Json | null
           response_text?: string | null
           score_json?: Json | null
           started_at?: string | null
@@ -392,6 +394,7 @@ export type Database = {
           job_seeker_id?: string
           job_simulation_id?: string
           paste_detected?: boolean | null
+          response_json?: Json | null
           response_text?: string | null
           score_json?: Json | null
           started_at?: string | null

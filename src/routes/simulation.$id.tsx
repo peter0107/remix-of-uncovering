@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate, useBlocker } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Building2, CheckCircle2, Clock, AlertTriangle } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -21,6 +21,14 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import {
+  allAnswered,
+  buildResponseJson,
+  buildResponseText,
+  parseSimulationSteps,
+  stepAnswered,
+  type ParsedSimulation,
+} from "@/lib/simulation-steps";
 
 export const Route = createFileRoute("/simulation/$id")({
   head: () => ({ meta: [{ title: "시뮬레이션 — Beginner" }] }),
@@ -51,6 +59,8 @@ function SimulationDetailPage() {
   const [sim, setSim] = useState<SimulationDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [responseText, setResponseText] = useState("");
+  const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [stepIdx, setStepIdx] = useState(0);
   const [consent, setConsent] = useState<boolean | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [applying, setApplying] = useState(false);
@@ -86,6 +96,12 @@ function SimulationDetailPage() {
     return () => clearInterval(iv);
   }, [sim?.estimated_minutes, submittedAt, startedAt]);
 
+  const parsed: ParsedSimulation | null = useMemo(
+    () => parseSimulationSteps(sim?.task_prompt),
+    [sim?.task_prompt],
+  );
+  const draftKey = `sim-draft-${id}`;
+
   useEffect(() => {
     if (authLoading) return;
 
@@ -117,12 +133,57 @@ function SimulationDetailPage() {
       });
   }, [id, user, authLoading, navigate]);
 
+  // 위저드 임시저장 복원 (이탈 방지)
+  useEffect(() => {
+    if (!parsed || typeof window === "undefined") return;
+    try {
+      const raw = window.localStorage.getItem(draftKey);
+      if (raw) {
+        const saved = JSON.parse(raw) as { answers?: Record<string, string>; stepIdx?: number };
+        if (saved.answers) setAnswers(saved.answers);
+        if (typeof saved.stepIdx === "number") {
+          setStepIdx(Math.min(Math.max(saved.stepIdx, 0), parsed.steps.length - 1));
+        }
+      }
+    } catch {
+      // 무시
+    }
+  }, [parsed, draftKey]);
+
+  // 위저드 임시저장
+  useEffect(() => {
+    if (!parsed || typeof window === "undefined" || submittedAt) return;
+    try {
+      window.localStorage.setItem(draftKey, JSON.stringify({ answers, stepIdx }));
+    } catch {
+      // 무시
+    }
+  }, [answers, stepIdx, parsed, draftKey, submittedAt]);
+
+  const setAnswer = (qid: string, value: string) =>
+    setAnswers((prev) => ({ ...prev, [qid]: value }));
+
   const handleSubmit = async () => {
     if (!sim) return;
-    if (!responseText.trim()) {
-      toast.error("답안을 작성해주세요.");
-      return;
+
+    let response_text: string;
+    let response_json: ReturnType<typeof buildResponseJson> | null = null;
+
+    if (parsed) {
+      if (!allAnswered(parsed, answers)) {
+        toast.error("모든 항목에 답변을 작성해주세요.");
+        return;
+      }
+      response_text = buildResponseText(parsed, answers);
+      response_json = buildResponseJson(parsed, answers);
+    } else {
+      if (!responseText.trim()) {
+        toast.error("답안을 작성해주세요.");
+        return;
+      }
+      response_text = responseText;
     }
+
     if (consent === null) {
       toast.error("답안 전송 동의 여부를 선택해주세요.");
       return;
@@ -140,11 +201,12 @@ function SimulationDetailPage() {
       .insert({
         job_seeker_id: user.id,
         job_simulation_id: sim.id,
-        response_text: responseText,
+        response_text,
         started_at: startedAt.toISOString(),
         submitted_at: now.toISOString(),
         duration_sec: Math.round((now.getTime() - startedAt.getTime()) / 1000),
         answer_transmission_consent: consent,
+        ...(response_json ? { response_json } : {}),
       })
       .select("id")
       .single();
@@ -157,6 +219,13 @@ function SimulationDetailPage() {
     if (!submission) {
       toast.error("제출 확인 중 오류가 발생했어요. 다시 시도해 주세요.");
       return;
+    }
+    if (typeof window !== "undefined") {
+      try {
+        window.localStorage.removeItem(draftKey);
+      } catch {
+        // 무시
+      }
     }
     setSubmittedId(submission.id);
     setApplicationSent(consent === true);
@@ -259,48 +328,234 @@ function SimulationDetailPage() {
     );
   }
 
+  const header = (
+    <div>
+      <div className="flex items-center gap-1.5 text-xs text-zinc-400">
+        <Building2 className="h-3.5 w-3.5" />
+        {sim.company_name}
+      </div>
+      <h1 className="mt-1 text-2xl font-bold text-zinc-900">{sim.title}</h1>
+      {sim.estimated_minutes && (
+        <div className="mt-2 flex items-center gap-1 text-xs text-zinc-400">
+          <Clock className="h-3.5 w-3.5" />약 {sim.estimated_minutes}분
+          {parsed && <span className="text-zinc-300">· 스텝별로 나눠서 진행돼요</span>}
+        </div>
+      )}
+    </div>
+  );
+
+  const consentBlock = (
+    <div className="mt-6 shrink-0 rounded-2xl border border-zinc-200 p-5">
+      <p className="text-sm font-semibold text-zinc-900">
+        이 답안을 {sim.company_name}에 전송하는 것에 동의하시나요?
+      </p>
+      <p className="mt-1 text-xs text-zinc-400">
+        동의하면 답안 원문이 기업 담당자에게 그대로 전달돼요. 동의하지 않아도 제출 자체는 되고,
+        마이페이지 이력에는 남아요.
+      </p>
+      <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+        <button
+          type="button"
+          onClick={() => setConsent(true)}
+          className={cn(
+            "flex-1 rounded-xl border-2 px-4 py-3 text-left text-sm transition-all",
+            consent === true
+              ? "border-zinc-900 bg-zinc-900 text-white"
+              : "border-zinc-200 bg-white text-zinc-800 hover:border-zinc-400",
+          )}
+        >
+          네, 전송할게요
+        </button>
+        <button
+          type="button"
+          onClick={() => setConsent(false)}
+          className={cn(
+            "flex-1 rounded-xl border-2 px-4 py-3 text-left text-sm transition-all",
+            consent === false
+              ? "border-zinc-900 bg-zinc-900 text-white"
+              : "border-zinc-200 bg-white text-zinc-800 hover:border-zinc-400",
+          )}
+        >
+          아니요, 이번엔 비공개로 할게요
+        </button>
+      </div>
+    </div>
+  );
+
+  const blockerDialog = (
+    <AlertDialog open={blocker.status === "blocked"}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle className="flex items-center gap-2">
+            <AlertTriangle className="h-5 w-5 text-red-500" />
+            지금 나가시겠어요?
+          </AlertDialogTitle>
+          <AlertDialogDescription>
+            진행 중인 시뮬레이션을 나가면 <b>응시 기록이 남아요.</b> 작성 중인 답안은 저장되지
+            않으니, 마저 작성하고 제출하는 걸 권해요.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel onClick={() => blocker.reset?.()}>계속 진행하기</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={() => blocker.proceed?.()}
+            className="bg-red-600 text-white hover:bg-red-700"
+          >
+            기록 남기고 나가기
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+
+  const timerBadge = remainingSec !== null && (
+    <div
+      className={cn(
+        "mb-4 flex shrink-0 items-center justify-between rounded-xl border px-4 py-3 transition-colors",
+        remainingSec <= LOW_TIME_THRESHOLD_SEC
+          ? "border-red-200 bg-red-50 text-red-600"
+          : "border-zinc-200 bg-zinc-50 text-zinc-700",
+      )}
+    >
+      <div className="flex items-center gap-1.5 text-xs font-medium">
+        <Clock className="h-3.5 w-3.5" />
+        남은 시간
+      </div>
+      <div className="flex items-center gap-1.5">
+        {remainingSec <= LOW_TIME_THRESHOLD_SEC && <AlertTriangle className="h-4 w-4" />}
+        <span className="font-mono text-lg font-bold tabular-nums">
+          {formatRemaining(remainingSec)}
+        </span>
+      </div>
+    </div>
+  );
+
+  // ---------- 스텝 위저드 ----------
+  if (parsed) {
+    const step = parsed.steps[stepIdx];
+    const isLast = stepIdx === parsed.steps.length - 1;
+    const canAdvance = stepAnswered(step, answers);
+
+    return (
+      <div className="mx-auto max-w-6xl px-4 py-12">
+        {blockerDialog}
+        {header}
+
+        <div className="mt-8 grid gap-8 lg:grid-cols-2">
+          {/* 왼쪽: 과제 배경·자료 (모든 스텝에서 참고) */}
+          <div className="lg:sticky lg:top-20 lg:max-h-[calc(100vh-6rem)] lg:self-start lg:overflow-y-auto">
+            <details open className="group">
+              <summary className="cursor-pointer list-none text-xs font-semibold uppercase tracking-wide text-zinc-400">
+                과제 배경·자료 <span className="text-zinc-300 group-open:hidden">펼치기</span>
+              </summary>
+              <Card className="mt-3 p-6">
+                <div className="prose prose-sm prose-zinc max-w-none prose-table:text-sm">
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{parsed.background}</ReactMarkdown>
+                </div>
+              </Card>
+            </details>
+          </div>
+
+          {/* 오른쪽: 현재 스텝 질문 */}
+          <div className="flex flex-col">
+            {timerBadge}
+            {/* 진행바 */}
+            <div className="flex gap-1.5">
+              {parsed.steps.map((s, i) => (
+                <div
+                  key={i}
+                  className={cn(
+                    "h-1.5 flex-1 rounded-full transition-colors",
+                    i < stepIdx ? "bg-zinc-900" : i === stepIdx ? "bg-zinc-900/50" : "bg-zinc-200",
+                  )}
+                />
+              ))}
+            </div>
+            <p className="mt-2 text-xs text-zinc-400">
+              Step {stepIdx + 1} / {parsed.steps.length}
+            </p>
+
+            {/* 질문들 */}
+            <div className="mt-4 flex flex-col gap-8">
+              {step.questions.map((q) => (
+                <div key={q.id}>
+                  <h2 className="text-base font-bold text-zinc-900">
+                    {q.num}. {q.title}
+                  </h2>
+                  {q.bodyMarkdown && (
+                    <div className="prose prose-sm prose-zinc mt-2 max-w-none prose-table:text-sm prose-headings:text-sm prose-headings:font-semibold">
+                      <ReactMarkdown remarkPlugins={[remarkGfm]}>{q.bodyMarkdown}</ReactMarkdown>
+                    </div>
+                  )}
+                  <Textarea
+                    value={answers[q.id] ?? ""}
+                    onChange={(e) => setAnswer(q.id, e.target.value)}
+                    placeholder="여기에 답안을 작성해주세요"
+                    className="mt-3 min-h-40 resize-none"
+                  />
+                </div>
+              ))}
+            </div>
+
+            {/* 마지막 스텝: 동의 */}
+            {isLast && consentBlock}
+
+            {/* 네비게이션 */}
+            <div className="mt-8 flex gap-2">
+              {stepIdx > 0 && (
+                <Button
+                  variant="outline"
+                  className="rounded-xl"
+                  onClick={() => {
+                    setStepIdx((i) => i - 1);
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                  }}
+                >
+                  이전
+                </Button>
+              )}
+              {isLast ? (
+                <Button
+                  onClick={handleSubmit}
+                  disabled={submitting}
+                  size="lg"
+                  className="flex-1 rounded-xl bg-zinc-900 text-white hover:bg-zinc-700"
+                >
+                  {submitting ? "제출 중..." : "제출하기"}
+                </Button>
+              ) : (
+                <Button
+                  onClick={() => {
+                    if (!canAdvance) {
+                      toast.error("이 스텝의 답변을 먼저 작성해주세요.");
+                      return;
+                    }
+                    setStepIdx((i) => i + 1);
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                  }}
+                  disabled={!canAdvance}
+                  size="lg"
+                  className="flex-1 rounded-xl bg-zinc-900 text-white hover:bg-zinc-700"
+                >
+                  다음 스텝 →
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ---------- 폴백: 단일 화면 (템플릿을 벗어난 과제) ----------
   return (
     <div className="mx-auto max-w-6xl px-4 py-12">
-      <AlertDialog open={blocker.status === "blocked"}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-red-500" />
-              지금 나가시겠어요?
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              진행 중인 시뮬레이션을 나가면 <b>응시 기록이 남아요.</b> 작성 중인 답안은 저장되지
-              않으니, 마저 작성하고 제출하는 걸 권해요.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => blocker.reset?.()}>
-              계속 진행하기
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => blocker.proceed?.()}
-              className="bg-red-600 text-white hover:bg-red-700"
-            >
-              기록 남기고 나가기
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {blockerDialog}
 
       <div className="grid gap-8 lg:grid-cols-2">
         {/* 왼쪽: 과제 내용 */}
         <div>
-          <div className="flex items-center gap-1.5 text-xs text-zinc-400">
-            <Building2 className="h-3.5 w-3.5" />
-            {sim.company_name}
-          </div>
-          <h1 className="mt-1 text-2xl font-bold text-zinc-900">{sim.title}</h1>
-          {sim.estimated_minutes && (
-            <div className="mt-2 flex items-center gap-1 text-xs text-zinc-400">
-              <Clock className="h-3.5 w-3.5" />약 {sim.estimated_minutes}분
-            </div>
-          )}
-
+          {header}
           <Card className="mt-6 p-6">
             <div className="prose prose-sm sm:prose-base prose-zinc max-w-none prose-table:text-sm">
               <ReactMarkdown remarkPlugins={[remarkGfm]}>{sim.task_prompt ?? ""}</ReactMarkdown>
@@ -310,29 +565,7 @@ function SimulationDetailPage() {
 
         {/* 오른쪽: 제출 관련 */}
         <div className="flex flex-col lg:sticky lg:top-20 lg:h-[calc(100vh-6rem)]">
-          {remainingSec !== null && (
-            <div
-              className={cn(
-                "mb-4 flex shrink-0 items-center justify-between rounded-xl border px-4 py-3 transition-colors",
-                remainingSec <= LOW_TIME_THRESHOLD_SEC
-                  ? "border-red-200 bg-red-50 text-red-600"
-                  : "border-zinc-200 bg-zinc-50 text-zinc-700",
-              )}
-            >
-              <div className="flex items-center gap-1.5 text-xs font-medium">
-                <Clock className="h-3.5 w-3.5" />
-                남은 시간
-              </div>
-              <div className="flex items-center gap-1.5">
-                {remainingSec <= LOW_TIME_THRESHOLD_SEC && (
-                  <AlertTriangle className="h-4 w-4" />
-                )}
-                <span className="font-mono text-lg font-bold tabular-nums">
-                  {formatRemaining(remainingSec)}
-                </span>
-              </div>
-            </div>
-          )}
+          {timerBadge}
           <div className="flex min-h-0 flex-1 flex-col">
             <label htmlFor="response" className="text-sm font-medium text-zinc-700">
               답안 작성
@@ -346,41 +579,7 @@ function SimulationDetailPage() {
             />
           </div>
 
-          <div className="mt-6 shrink-0 rounded-2xl border border-zinc-200 p-5">
-            <p className="text-sm font-semibold text-zinc-900">
-              이 답안을 {sim.company_name}에 전송하는 것에 동의하시나요?
-            </p>
-            <p className="mt-1 text-xs text-zinc-400">
-              동의하면 답안 원문이 기업 담당자에게 그대로 전달돼요. 동의하지 않아도 제출 자체는
-              되고, 마이페이지 이력에는 남아요.
-            </p>
-            <div className="mt-4 flex flex-col gap-2 sm:flex-row">
-              <button
-                type="button"
-                onClick={() => setConsent(true)}
-                className={cn(
-                  "flex-1 rounded-xl border-2 px-4 py-3 text-left text-sm transition-all",
-                  consent === true
-                    ? "border-zinc-900 bg-zinc-900 text-white"
-                    : "border-zinc-200 bg-white text-zinc-800 hover:border-zinc-400",
-                )}
-              >
-                네, 전송할게요
-              </button>
-              <button
-                type="button"
-                onClick={() => setConsent(false)}
-                className={cn(
-                  "flex-1 rounded-xl border-2 px-4 py-3 text-left text-sm transition-all",
-                  consent === false
-                    ? "border-zinc-900 bg-zinc-900 text-white"
-                    : "border-zinc-200 bg-white text-zinc-800 hover:border-zinc-400",
-                )}
-              >
-                아니요, 이번엔 비공개로 할게요
-              </button>
-            </div>
-          </div>
+          {consentBlock}
 
           <Button
             onClick={handleSubmit}
