@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Building2, ListChecks, Plus, RefreshCw, Save } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 
 import { useAuth } from "@/hooks/use-auth";
 import {
@@ -102,6 +102,8 @@ function AdminSimulations() {
   const [isCreatingCompany, setIsCreatingCompany] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const loadedUserIdRef = useRef<string | null>(null);
+  const userId = user?.id ?? null;
 
   const companiesWithCounts = useMemo(() => {
     const counts = new Map<string, number>();
@@ -163,12 +165,14 @@ function AdminSimulations() {
 
   useEffect(() => {
     if (authLoading) return;
-    if (!user) {
+    if (!userId) {
       navigate({ to: "/login", search: { redirect: "/admin/simulations" } });
       return;
     }
+    if (loadedUserIdRef.current === userId) return;
+    loadedUserIdRef.current = userId;
     void loadSimulations();
-  }, [authLoading, user, navigate, loadSimulations]);
+  }, [authLoading, userId, navigate, loadSimulations]);
 
   useEffect(() => {
     if (isLoading || hasInitializedSelection || companies.length === 0) return;

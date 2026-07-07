@@ -1,6 +1,6 @@
 import { createFileRoute, Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import { ArrowRight, BriefcaseBusiness, ListChecks } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { useAuth } from "@/hooks/use-auth";
 import {
@@ -25,7 +25,9 @@ function AdminHome() {
   const [simulations, setSimulations] = useState<AdminCompanySimulation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const loadedUserIdRef = useRef<string | null>(null);
   const isAdminHome = pathname.replace(/\/+$/, "") === "/admin";
+  const userId = user?.id ?? null;
 
   const loadDashboard = useCallback(async () => {
     setIsLoading(true);
@@ -43,12 +45,14 @@ function AdminHome() {
   useEffect(() => {
     if (!isAdminHome) return;
     if (authLoading) return;
-    if (!user) {
+    if (!userId) {
       navigate({ to: "/login", search: { redirect: "/admin" } });
       return;
     }
+    if (loadedUserIdRef.current === userId) return;
+    loadedUserIdRef.current = userId;
     void loadDashboard();
-  }, [authLoading, user, navigate, loadDashboard, isAdminHome]);
+  }, [authLoading, userId, navigate, loadDashboard, isAdminHome]);
 
   if (!isAdminHome) {
     return <Outlet />;
