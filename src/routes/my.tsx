@@ -2136,16 +2136,18 @@ function MyPage() {
                       <FileText className="h-5 w-5" />
                     </span>
                     <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
-                      {resume.is_default ? (
+                      {resume.is_default && (
                         <span className="whitespace-nowrap rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-600">
                           기본
                         </span>
-                      ) : (
+                      )}
+                      {isUpload && (
                         <span className="whitespace-nowrap rounded-full bg-zinc-100 px-2.5 py-1 text-xs font-semibold text-zinc-500">
-                          {isUpload ? "파일" : "작성"}
+                          파일
                         </span>
                       )}
                     </div>
+
 
                     <div className="flex shrink-0 items-center gap-0.5">
                       <Button
