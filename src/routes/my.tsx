@@ -2129,35 +2129,38 @@ function MyPage() {
               return (
                 <Card
                   key={resume.id}
-                  className="flex min-h-52 flex-col rounded-[28px] border-zinc-200 p-6 shadow-[0_8px_18px_rgba(15,23,42,0.08)]"
+                  className="flex min-h-36 flex-col rounded-2xl border-zinc-200 p-5 shadow-sm"
                 >
-                  <div className="flex items-center gap-3">
-                    <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-zinc-100 text-zinc-700">
-                      <FileText className="h-7 w-7" />
+                  <div className="flex items-center gap-2">
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-zinc-100 text-zinc-700">
+                      <FileText className="h-5 w-5" />
                     </span>
-                    <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+                    <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
                       {resume.is_default && (
-                        <span className="whitespace-nowrap rounded-full bg-blue-50 px-3 py-1.5 text-sm font-semibold text-blue-600">
+                        <span className="whitespace-nowrap rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-600">
                           기본
                         </span>
                       )}
-                      <span className="whitespace-nowrap rounded-full bg-zinc-100 px-3 py-1.5 text-sm font-semibold text-zinc-600">
-                        {isUpload ? "파일" : "작성"}
-                      </span>
+                      {isUpload && (
+                        <span className="whitespace-nowrap rounded-full bg-zinc-100 px-2.5 py-1 text-xs font-semibold text-zinc-500">
+                          파일
+                        </span>
+                      )}
                     </div>
 
-                    <div className="flex shrink-0 items-center gap-1">
+
+                    <div className="flex shrink-0 items-center gap-0.5">
                       <Button
                         type="button"
                         variant="ghost"
                         size="icon"
                         onClick={() => makeDefaultResume(resume.id)}
                         aria-label="기본 이력서 설정"
-                        className="h-9 w-9 rounded-full"
+                        className="h-8 w-8 rounded-full"
                       >
                         <Check
                           className={
-                            resume.is_default ? "h-5 w-5 text-blue-600" : "h-5 w-5 text-zinc-400"
+                            resume.is_default ? "h-4 w-4 text-blue-600" : "h-4 w-4 text-zinc-400"
                           }
                         />
                       </Button>
@@ -2167,9 +2170,9 @@ function MyPage() {
                         size="icon"
                         onClick={() => openResumeEditor(resume)}
                         aria-label="이력서 편집"
-                        className="h-9 w-9 rounded-full"
+                        className="h-8 w-8 rounded-full"
                       >
-                        <Pencil className="h-5 w-5 text-zinc-500" />
+                        <Pencil className="h-4 w-4 text-zinc-500" />
                       </Button>
                       <Button
                         type="button"
@@ -2177,28 +2180,28 @@ function MyPage() {
                         size="icon"
                         onClick={() => deleteResume(resume)}
                         aria-label="이력서 삭제"
-                        className="h-9 w-9 rounded-full"
+                        className="h-8 w-8 rounded-full"
                       >
-                        <Trash2 className="h-5 w-5 text-zinc-400" />
+                        <Trash2 className="h-4 w-4 text-zinc-400" />
                       </Button>
                     </div>
                   </div>
 
-
-                  <div className="mt-8">
-                    <h3 className="line-clamp-2 text-2xl font-bold tracking-tight text-zinc-900">
+                  <div className="mt-4">
+                    <h3 className="line-clamp-2 text-sm font-semibold text-zinc-900">
                       {resume.title}
                     </h3>
-                    <p className="mt-4 line-clamp-2 text-base text-zinc-400">
+                    <p className="mt-1 line-clamp-2 text-xs leading-5 text-zinc-400">
                       {resume.memo?.trim() || "메모 없음"}
                     </p>
                   </div>
 
-                  <div className="mt-auto flex items-center gap-2 pt-9 text-base text-zinc-400">
-                    <CalendarDays className="h-5 w-5" />
+                  <div className="mt-auto flex items-center gap-1.5 pt-4 text-xs text-zinc-400">
+                    <CalendarDays className="h-3.5 w-3.5" />
                     수정 {toDateLabel(resume.updated_at)}
                   </div>
                 </Card>
+
               );
             })}
           </div>
