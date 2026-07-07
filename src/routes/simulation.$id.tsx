@@ -49,6 +49,7 @@ function SimulationDetailPage() {
       .select("id, title, task_prompt, estimated_minutes, companies(name)")
       .eq("id", id)
       .eq("is_public", true)
+      .is("deleted_at", null)
       .maybeSingle()
       .then(({ data }) => {
         if (data) {

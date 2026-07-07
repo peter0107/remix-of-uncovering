@@ -260,6 +260,7 @@ export const getApplicantsByCompanyCode = createServerFn({ method: "GET" })
       .select("id, title, role_label, job_family, domain, estimated_minutes, description")
       .eq("company_id", company.id)
       .eq("is_public", true)
+      .is("deleted_at", null)
       .order("created_at", { ascending: false });
 
     if (simulationsError) {

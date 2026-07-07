@@ -27,6 +27,7 @@ export type AdminCompanySimulation = {
   description: string;
   taskPrompt: string;
   isPublic: boolean;
+  deletedAt: string | null;
   createdAt: string;
 };
 
@@ -141,6 +142,7 @@ function mapAdminSimulation(row: Record<string, unknown>): AdminCompanySimulatio
     description: String(row.description ?? ""),
     taskPrompt: String(row.task_prompt ?? ""),
     isPublic: row.is_public !== false,
+    deletedAt: row.deleted_at ? String(row.deleted_at) : null,
     createdAt: formatDateTime(String(row.created_at)),
   };
 }
@@ -185,8 +187,9 @@ export const getAdminCompanySimulations = createServerFn({ method: "GET" }).hand
     const { data, error } = await supabaseAdmin
       .from("job_simulations")
       .select(
-        "id, company_id, title, role_label, job_family, domain, estimated_minutes, description, task_prompt, is_public, created_at, companies(code, unique_code, name)",
+        "id, company_id, title, role_label, job_family, domain, estimated_minutes, description, task_prompt, is_public, deleted_at, created_at, companies(code, unique_code, name)",
       )
+      .is("deleted_at", null)
       .order("created_at", { ascending: false });
 
     if (error) {
@@ -329,7 +332,8 @@ export const setCompanySimulationVisibility = createServerFn({ method: "POST" })
     const { error } = await supabaseAdmin
       .from("job_simulations")
       .update({ is_public: data.isPublic })
-      .eq("id", data.id);
+      .eq("id", data.id)
+      .is("deleted_at", null);
 
     if (error) {
       console.error("Failed to update simulation visibility:", error);
@@ -345,7 +349,16 @@ export const deleteCompanySimulation = createServerFn({ method: "POST" })
     await assertAdmin();
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    const { error } = await supabaseAdmin.from("job_simulations").delete().eq("id", data.id);
+    const { error } = await supabaseAdmin
+      .from("job_simulations")
+      .update({
+        deleted_at: new Date().toISOString(),
+        is_public: false,
+      })
+      .eq("id", data.id)
+      .is("deleted_at", null)
+      .select("id")
+      .single();
 
     if (error) {
       console.error("Failed to delete simulation:", error);
