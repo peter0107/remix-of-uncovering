@@ -2,23 +2,38 @@ import { useEffect, useState } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
+let cachedSession: Session | null = null;
+let cachedUser: User | null = null;
+let authInitialized = false;
+
 export function useAuth() {
-  const [session, setSession] = useState<Session | null>(null);
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [session, setSession] = useState<Session | null>(cachedSession);
+  const [user, setUser] = useState<User | null>(cachedUser);
+  const [loading, setLoading] = useState(!authInitialized);
   const [signingOut, setSigningOut] = useState(false);
 
   useEffect(() => {
     const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => {
+      cachedSession = s;
+      cachedUser = s?.user ?? null;
+      authInitialized = true;
       setSession(s);
       setUser(s?.user ?? null);
-    });
-
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
-      setUser(data.session?.user ?? null);
       setLoading(false);
     });
+
+    if (!authInitialized) {
+      supabase.auth.getSession().then(({ data }) => {
+        cachedSession = data.session;
+        cachedUser = data.session?.user ?? null;
+        authInitialized = true;
+        setSession(data.session);
+        setUser(data.session?.user ?? null);
+        setLoading(false);
+      });
+    } else {
+      setLoading(false);
+    }
 
     return () => sub.subscription.unsubscribe();
   }, []);

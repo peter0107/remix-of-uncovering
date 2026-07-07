@@ -82,6 +82,19 @@ type Resume = Tables<"resumes">;
 type ResumeSource = "manual" | "upload";
 type JsonRecord = Record<string, Json | undefined>;
 
+type MyProfileCache = {
+  hasProfile: boolean;
+  seeker: JobSeeker | null;
+  displayName: string;
+  links: ExternalLinks;
+  profileForm: ProfileFormData;
+  avatarUrl: string | null;
+  history: CompletedSimulation[] | null;
+};
+
+const profileCache = new Map<string, MyProfileCache>();
+const resumeCache = new Map<string, Resume[]>();
+
 type ResumeForm = {
   title: string;
   memo: string;
@@ -257,6 +270,21 @@ function fallbackDisplayName(userEmail: string) {
 
 function normalizeJobInterests(values: string[] | null | undefined) {
   return (values ?? []).filter(isDomainCategory);
+}
+
+function profileFormFromSeeker(seeker: JobSeeker | null): ProfileFormData {
+  return {
+    university_name: seeker?.university_name ?? "",
+    education_level: seeker?.education_level ?? "",
+    majors: seeker?.majors ?? [],
+    academic_mark: seeker?.academic_mark != null ? String(seeker.academic_mark) : "",
+    job_interests: normalizeJobInterests(seeker?.job_interests),
+    company_interests: seeker?.company_interests ?? [],
+    work_regions: seeker?.work_regions ?? [],
+    employment_types: seeker?.employment_types ?? [],
+    willing_to_relocate: seeker?.willing_to_relocate ?? false,
+    discovery_consent: seeker?.discovery_consent ?? false,
+  };
 }
 
 function loadImage(src: string) {
@@ -456,12 +484,15 @@ function MyPage() {
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const resumeFileInputRef = useRef<HTMLInputElement>(null);
+  const cachedProfile = user ? profileCache.get(user.id) : undefined;
 
-  const [hasProfile, setHasProfile] = useState<boolean | null>(null);
-  const [seeker, setSeeker] = useState<JobSeeker | null>(null);
-  const [displayName, setDisplayName] = useState("");
-  const [links, setLinks] = useState<ExternalLinks>({});
-  const [profileForm, setProfileFormRaw] = useState<ProfileFormData>(INITIAL_PROFILE_FORM);
+  const [hasProfile, setHasProfile] = useState<boolean | null>(cachedProfile?.hasProfile ?? null);
+  const [seeker, setSeeker] = useState<JobSeeker | null>(cachedProfile?.seeker ?? null);
+  const [displayName, setDisplayName] = useState(cachedProfile?.displayName ?? "");
+  const [links, setLinks] = useState<ExternalLinks>(cachedProfile?.links ?? {});
+  const [profileForm, setProfileFormRaw] = useState<ProfileFormData>(
+    cachedProfile?.profileForm ?? INITIAL_PROFILE_FORM,
+  );
 
   const [editingProfileCard, setEditingProfileCard] = useState(false);
   const [savingProfileCard, setSavingProfileCard] = useState(false);
@@ -472,15 +503,18 @@ function MyPage() {
   const [draftForm, setDraftFormRaw] = useState<ProfileFormData>(INITIAL_PROFILE_FORM);
 
   const [discoverySaving, setDiscoverySaving] = useState(false);
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(cachedProfile?.avatarUrl ?? null);
   const [avatarEditor, setAvatarEditor] = useState<AvatarEditorState | null>(null);
   const [avatarZoom, setAvatarZoom] = useState(1);
   const [avatarOffsetX, setAvatarOffsetX] = useState(0);
   const [avatarOffsetY, setAvatarOffsetY] = useState(0);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
-  const [history, setHistory] = useState<CompletedSimulation[] | null>(null);
-  const [resumes, setResumes] = useState<Resume[]>([]);
-  const [resumesLoading, setResumesLoading] = useState(true);
+  const [history, setHistory] = useState<CompletedSimulation[] | null>(
+    cachedProfile?.history ?? null,
+  );
+  const cachedResumes = user ? resumeCache.get(user.id) : undefined;
+  const [resumes, setResumes] = useState<Resume[]>(cachedResumes ?? []);
+  const [resumesLoading, setResumesLoading] = useState(!cachedResumes);
   const [resumeEditorOpen, setResumeEditorOpen] = useState(false);
   const [editingResume, setEditingResume] = useState<Resume | null>(null);
   const [resumeSourceType, setResumeSourceType] = useState<ResumeSource>("manual");
@@ -494,9 +528,18 @@ function MyPage() {
   const setDraftForm = (partial: Partial<ProfileFormData>) =>
     setDraftFormRaw((prev) => ({ ...prev, ...partial }));
 
-  const refreshResumes = useCallback(async () => {
+  const refreshResumes = useCallback(async (options?: { showLoading?: boolean }) => {
     if (!user) return;
-    setResumesLoading(true);
+    const cached = resumeCache.get(user.id);
+    const showLoading = options?.showLoading ?? !cached;
+
+    if (cached) {
+      setResumes(cached);
+      setResumesLoading(false);
+    } else if (showLoading) {
+      setResumesLoading(true);
+    }
+
     const { data, error } = await supabase
       .from("resumes")
       .select("*")
@@ -506,7 +549,9 @@ function MyPage() {
     if (error) {
       toast.error("이력서를 불러오지 못했어요. Supabase SQL 적용 여부를 확인해주세요.");
     } else {
-      setResumes(data ?? []);
+      const nextResumes = data ?? [];
+      resumeCache.set(user.id, nextResumes);
+      setResumes(nextResumes);
     }
     setResumesLoading(false);
   }, [user]);
@@ -527,25 +572,29 @@ function MyPage() {
 
       setHasProfile(!!seeker);
       setSeeker(seeker ?? null);
-      setDisplayName(seeker?.display_name ?? fallbackDisplayName(user.email ?? ""));
-      setLinks((seeker?.external_links as ExternalLinks) ?? {});
-      setAvatarUrl(seeker?.avatar_url ?? null);
-      const normalizedJobInterests = normalizeJobInterests(seeker?.job_interests);
-      setProfileFormRaw({
-        university_name: seeker?.university_name ?? "",
-        education_level: seeker?.education_level ?? "",
-        majors: seeker?.majors ?? [],
-        academic_mark: seeker?.academic_mark != null ? String(seeker.academic_mark) : "",
-        job_interests: normalizedJobInterests,
-        company_interests: seeker?.company_interests ?? [],
-        work_regions: seeker?.work_regions ?? [],
-        employment_types: seeker?.employment_types ?? [],
-        willing_to_relocate: seeker?.willing_to_relocate ?? false,
-        discovery_consent: seeker?.discovery_consent ?? false,
+      const nextDisplayName = seeker?.display_name ?? fallbackDisplayName(user.email ?? "");
+      const nextLinks = (seeker?.external_links as ExternalLinks) ?? {};
+      const nextAvatarUrl = seeker?.avatar_url ?? null;
+      const nextProfileForm = profileFormFromSeeker(seeker ?? null);
+
+      setDisplayName(nextDisplayName);
+      setLinks(nextLinks);
+      setAvatarUrl(nextAvatarUrl);
+      setProfileFormRaw(nextProfileForm);
+
+      profileCache.set(user.id, {
+        hasProfile: !!seeker,
+        seeker: seeker ?? null,
+        displayName: nextDisplayName,
+        links: nextLinks,
+        profileForm: nextProfileForm,
+        avatarUrl: nextAvatarUrl,
+        history: profileCache.get(user.id)?.history ?? null,
       });
       if (seeker) {
-        await refreshResumes();
+        await refreshResumes({ showLoading: !resumeCache.has(user.id) });
       } else {
+        setResumes([]);
         setResumesLoading(false);
       }
 
@@ -562,14 +611,17 @@ function MyPage() {
         job_simulations: { title: string; companies: { name: string } | null } | null;
       };
       const rows = (submissions ?? []) as unknown as Row[];
-      setHistory(
-        rows.map((r) => ({
-          submissionId: r.id,
-          title: r.job_simulations?.title ?? "",
-          companyName: r.job_simulations?.companies?.name ?? "",
-          submittedAt: r.submitted_at,
-        })),
-      );
+      const nextHistory = rows.map((r) => ({
+        submissionId: r.id,
+        title: r.job_simulations?.title ?? "",
+        companyName: r.job_simulations?.companies?.name ?? "",
+        submittedAt: r.submitted_at,
+      }));
+      setHistory(nextHistory);
+      const currentCache = profileCache.get(user.id);
+      if (currentCache) {
+        profileCache.set(user.id, { ...currentCache, history: nextHistory });
+      }
     })();
   }, [user, authLoading, navigate, refreshResumes]);
 
@@ -650,6 +702,10 @@ function MyPage() {
     }
 
     setAvatarUrl(url);
+    const currentCache = profileCache.get(user.id);
+    if (currentCache) {
+      profileCache.set(user.id, { ...currentCache, avatarUrl: url });
+    }
     setAvatarEditor(null);
     toast.success("프로필 사진이 업데이트됐어요.");
   };
@@ -669,6 +725,13 @@ function MyPage() {
     }
 
     setProfileFormRaw((prev) => ({ ...prev, discovery_consent: next }));
+    const currentCache = profileCache.get(user.id);
+    if (currentCache) {
+      profileCache.set(user.id, {
+        ...currentCache,
+        profileForm: { ...currentCache.profileForm, discovery_consent: next },
+      });
+    }
     toast.success(next ? "채용 제안 받기로 변경됐어요." : "채용 제안 받기를 해제했어요.");
   };
 
@@ -698,8 +761,17 @@ function MyPage() {
       return;
     }
 
-    setDisplayName(draftDisplayName.trim() || fallbackDisplayName(userEmail));
+    const nextDisplayName = draftDisplayName.trim() || fallbackDisplayName(userEmail);
+    setDisplayName(nextDisplayName);
     setLinks(draftLinks);
+    const currentCache = profileCache.get(user.id);
+    if (currentCache) {
+      profileCache.set(user.id, {
+        ...currentCache,
+        displayName: nextDisplayName,
+        links: draftLinks,
+      });
+    }
     setEditingProfileCard(false);
     toast.success("저장됐어요.");
   };
@@ -733,7 +805,14 @@ function MyPage() {
       return;
     }
 
-    setProfileFormRaw((prev) => ({ ...prev, ...draftForm }));
+    setProfileFormRaw((prev) => {
+      const nextProfileForm = { ...prev, ...draftForm };
+      const currentCache = profileCache.get(user.id);
+      if (currentCache) {
+        profileCache.set(user.id, { ...currentCache, profileForm: nextProfileForm });
+      }
+      return nextProfileForm;
+    });
     setEditingSection(null);
     toast.success("저장됐어요.");
   };
@@ -902,7 +981,11 @@ function MyPage() {
       return;
     }
 
-    setResumes((prev) => prev.map((resume) => ({ ...resume, is_default: resume.id === resumeId })));
+    setResumes((prev) => {
+      const nextResumes = prev.map((resume) => ({ ...resume, is_default: resume.id === resumeId }));
+      resumeCache.set(user.id, nextResumes);
+      return nextResumes;
+    });
     toast.success("기본 이력서로 설정됐어요.");
   };
 
