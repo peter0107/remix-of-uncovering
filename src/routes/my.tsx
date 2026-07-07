@@ -233,6 +233,33 @@ function SectionRow({
 const LINK_PILL_CLASS =
   "inline-flex items-center gap-1.5 rounded-full border border-zinc-200 px-3 py-1 text-xs font-medium text-zinc-600 hover:border-zinc-400 hover:text-zinc-900";
 
+function normalizeExternalUrl(value: string | undefined) {
+  const trimmed = value?.trim();
+  if (!trimmed) return undefined;
+
+  const withProtocol = /^[a-z][a-z\d+.-]*:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+
+  try {
+    const url = new URL(withProtocol);
+    return url.protocol === "http:" || url.protocol === "https:" ? url.toString() : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function normalizeExternalLinks(links: ExternalLinks): ExternalLinks {
+  const normalized: ExternalLinks = {};
+  const github = normalizeExternalUrl(links.github);
+  const linkedin = normalizeExternalUrl(links.linkedin);
+  const portfolio = normalizeExternalUrl(links.portfolio);
+
+  if (github) normalized.github = github;
+  if (linkedin) normalized.linkedin = linkedin;
+  if (portfolio) normalized.portfolio = portfolio;
+
+  return normalized;
+}
+
 function toDateLabel(value: string | null) {
   if (!value) return "";
   return new Intl.DateTimeFormat("ko-KR", {
@@ -748,10 +775,12 @@ function MyPage() {
   const saveProfileCard = async () => {
     if (!user) return;
 
+    const nextLinks = normalizeExternalLinks(draftLinks);
+
     setSavingProfileCard(true);
     const patch: TablesUpdate<"job_seekers"> = {
       display_name: draftDisplayName.trim() || null,
-      external_links: draftLinks,
+      external_links: nextLinks,
     };
     const { error } = await supabase.from("job_seekers").update(patch).eq("id", user.id);
     setSavingProfileCard(false);
@@ -763,13 +792,13 @@ function MyPage() {
 
     const nextDisplayName = draftDisplayName.trim() || fallbackDisplayName(userEmail);
     setDisplayName(nextDisplayName);
-    setLinks(draftLinks);
+    setLinks(nextLinks);
     const currentCache = profileCache.get(user.id);
     if (currentCache) {
       profileCache.set(user.id, {
         ...currentCache,
         displayName: nextDisplayName,
-        links: draftLinks,
+        links: nextLinks,
       });
     }
     setEditingProfileCard(false);
@@ -1151,7 +1180,7 @@ function MyPage() {
                 <div className="mt-3 flex flex-wrap gap-2">
                   {links.github && (
                     <a
-                      href={links.github}
+                      href={normalizeExternalUrl(links.github)}
                       target="_blank"
                       rel="noreferrer"
                       className={LINK_PILL_CLASS}
@@ -1161,7 +1190,7 @@ function MyPage() {
                   )}
                   {links.portfolio && (
                     <a
-                      href={links.portfolio}
+                      href={normalizeExternalUrl(links.portfolio)}
                       target="_blank"
                       rel="noreferrer"
                       className={LINK_PILL_CLASS}
@@ -1171,7 +1200,7 @@ function MyPage() {
                   )}
                   {links.linkedin && (
                     <a
-                      href={links.linkedin}
+                      href={normalizeExternalUrl(links.linkedin)}
                       target="_blank"
                       rel="noreferrer"
                       className={LINK_PILL_CLASS}
