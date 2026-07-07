@@ -1609,15 +1609,15 @@ function MyPage() {
       </Dialog>
 
       <Dialog open={resumeEditorOpen} onOpenChange={setResumeEditorOpen}>
-        <DialogContent className="max-h-[88vh] max-w-4xl overflow-y-auto">
-          <DialogHeader>
+        <DialogContent className="flex max-h-[88vh] max-w-4xl flex-col overflow-hidden p-0">
+          <DialogHeader className="shrink-0 px-6 pt-6">
             <DialogTitle>{editingResume ? "이력서 수정" : "새 이력서 작성"}</DialogTitle>
             <DialogDescription>
               회사나 직무별로 다른 내용을 저장할 수 있어요. 비어 있는 항목은 저장해도 괜찮아요.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="grid gap-8 py-2">
+          <div className="grid gap-8 overflow-y-auto px-6 py-4">
             <section>
               <h3 className="text-sm font-bold text-zinc-900">이력서 정보</h3>
               <div className="mt-4 grid gap-4 md:grid-cols-2">
@@ -1792,7 +1792,7 @@ function MyPage() {
             </section>
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="shrink-0 border-t border-zinc-200 bg-white px-6 py-4">
             <Button
               variant="outline"
               onClick={() => setResumeEditorOpen(false)}
