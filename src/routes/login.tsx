@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Mail, Lock } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
+import { useAuth } from "@/hooks/use-auth";
+import { getPostLoginPath } from "@/lib/admin";
 import { toast } from "sonner";
 import { usePostHog } from "@posthog/react";
 
@@ -22,6 +24,7 @@ export const Route = createFileRoute("/login")({
 function LoginPage() {
   const navigate = useNavigate();
   const { redirect } = useSearch({ from: "/login" });
+  const { user, loading: authLoading } = useAuth();
   const [mode, setMode] = useState<"signup" | "login">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -35,6 +38,12 @@ function LoginPage() {
     email.includes("@") &&
     password.length >= 6 &&
     (!isSignup || (password === passwordConfirm && agree));
+
+  useEffect(() => {
+    if (!authLoading && user) {
+      navigate({ to: getPostLoginPath(user.email, redirect), replace: true });
+    }
+  }, [authLoading, user, redirect, navigate]);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -55,15 +64,15 @@ function LoginPage() {
         posthog.capture("user_signed_up", { email, method: "email" });
         toast.success("회원가입이 완료되었습니다. 메일함에서 인증을 완료해주세요.");
       } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) {
           toast.error(error.message);
           return;
         }
-        posthog.identify(email, { email });
-        posthog.capture("user_logged_in", { email, method: "email" });
-        toast.success("로그인되었습니다.");
-        navigate({ to: redirect === "/" ? "/start" : redirect });
+        const signedInEmail = data.user?.email ?? email;
+        posthog.identify(signedInEmail, { email: signedInEmail });
+        posthog.capture("user_logged_in", { email: signedInEmail, method: "email" });
+        navigate({ to: getPostLoginPath(signedInEmail, redirect), replace: true });
       }
     } finally {
       setSubmitting(false);
@@ -164,7 +173,7 @@ function LoginPage() {
           size="lg"
           className="w-full"
           onClick={async () => {
-            const target = redirect === "/" ? "/start" : redirect;
+            const target = getPostLoginPath(email, redirect);
             const result = await lovable.auth.signInWithOAuth("google", {
               redirect_uri: `${window.location.origin}${target}`,
               extraParams: { prompt: "select_account" },
@@ -175,7 +184,7 @@ function LoginPage() {
             }
             posthog.capture("user_logged_in", { method: "google" });
             if (result.redirected) return;
-            navigate({ to: target });
+            navigate({ to: target, replace: true });
           }}
         >
           <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
