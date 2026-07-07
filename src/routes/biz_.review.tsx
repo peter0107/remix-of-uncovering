@@ -164,33 +164,43 @@ function BizReview() {
 
   return (
     <div className="min-h-screen bg-white text-neutral-900">
-      <header className="relative border-b border-neutral-200">
-        <div className="mx-auto flex min-h-14 max-w-7xl items-center justify-between gap-3 px-6 py-2 xl:grid xl:h-14 xl:grid-cols-[360px_1fr_auto] xl:gap-6 xl:py-0">
-          <div className="flex shrink-0 items-center gap-4 xl:absolute xl:left-6 xl:top-0 xl:h-14">
-            <div className="shrink-0">
-              <span className="text-sm font-semibold tracking-tight">Beginner</span>
-              <span className="ml-2 text-xs text-neutral-500">for Business</span>
+      <header className="border-b border-neutral-200">
+        <div className="mx-auto flex max-w-7xl flex-col gap-3 px-6 py-3 md:min-h-14 md:flex-row md:items-center md:justify-between md:gap-6 md:py-2">
+          <div className="flex min-w-0 shrink-0 items-center justify-between gap-4 md:max-w-[46%] md:justify-start">
+            <div className="flex min-w-0 items-center gap-4">
+              <div className="shrink-0 whitespace-nowrap">
+                <span className="text-sm font-semibold tracking-tight">Beginner</span>
+                <span className="ml-2 text-xs text-neutral-500">for Business</span>
+              </div>
+              <span className="truncate text-sm font-medium text-neutral-500">
+                {data.company.name}
+              </span>
             </div>
-            <span className="truncate text-sm font-medium text-neutral-500">
-              {data.company.name}
-            </span>
+            <Link
+              to="/biz"
+              className="shrink-0 whitespace-nowrap text-xs font-medium text-neutral-500 hover:text-neutral-900 md:hidden"
+            >
+              코드 변경
+            </Link>
           </div>
-          <select
-            value={roleFilter}
-            onChange={(event) => setRoleFilter(event.target.value)}
-            aria-label="직무 선택"
-            className="h-9 w-44 rounded-md border border-neutral-300 bg-white px-3 text-sm font-medium text-neutral-900 outline-none focus:border-neutral-900 md:w-64 xl:col-start-1 xl:w-full xl:max-w-[320px]"
-          >
-            <option value="all">전체 직무</option>
-            {roleOptions.map((role) => (
-              <option key={role} value={role}>
-                {role}
-              </option>
-            ))}
-          </select>
+          <div className="min-w-0 flex-1 md:flex md:justify-center">
+            <select
+              value={roleFilter}
+              onChange={(event) => setRoleFilter(event.target.value)}
+              aria-label="직무 선택"
+              className="h-9 w-full min-w-0 rounded-md border border-neutral-300 bg-white px-3 text-sm font-medium text-neutral-900 outline-none focus:border-neutral-900 md:max-w-[320px]"
+            >
+              <option value="all">전체 직무</option>
+              {roleOptions.map((role) => (
+                <option key={role} value={role}>
+                  {role}
+                </option>
+              ))}
+            </select>
+          </div>
           <Link
             to="/biz"
-            className="shrink-0 text-xs font-medium text-neutral-500 hover:text-neutral-900 xl:col-start-3"
+            className="hidden shrink-0 whitespace-nowrap text-xs font-medium text-neutral-500 hover:text-neutral-900 md:block"
           >
             코드 변경
           </Link>
