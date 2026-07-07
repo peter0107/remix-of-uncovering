@@ -4,9 +4,12 @@ import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react
 
 import { useAuth } from "@/hooks/use-auth";
 import {
+  createCompany,
   createCompanySimulation,
+  getAdminCompanies,
   getAdminCompanySimulations,
   updateCompanySimulation,
+  type AdminCompany,
   type AdminCompanySimulation,
 } from "@/lib/simulations.functions";
 import { DOMAIN_CATEGORIES } from "@/lib/domain-categories";
@@ -20,6 +23,18 @@ type SimulationForm = {
   domain: string;
   estimatedMinutes: string;
   taskPrompt: string;
+};
+
+type CompanyForm = {
+  name: string;
+  code: string;
+  roleLabel: string;
+};
+
+const EMPTY_COMPANY_FORM: CompanyForm = {
+  name: "",
+  code: "",
+  roleLabel: "",
 };
 
 function createEmptyForm(companyCode = ""): SimulationForm {
@@ -74,42 +89,35 @@ export const Route = createFileRoute("/admin/simulations")({
 function AdminSimulations() {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
+  const [companies, setCompanies] = useState<AdminCompany[]>([]);
   const [simulations, setSimulations] = useState<AdminCompanySimulation[]>([]);
   const [form, setForm] = useState<SimulationForm>(EMPTY_FORM);
+  const [companyForm, setCompanyForm] = useState<CompanyForm>(EMPTY_COMPANY_FORM);
+  const [isCompanyFormOpen, setIsCompanyFormOpen] = useState(false);
   const [selectedCompanyCode, setSelectedCompanyCode] = useState("");
   const [selectedSimulationId, setSelectedSimulationId] = useState<string | null>(null);
   const [hasInitializedSelection, setHasInitializedSelection] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isCreatingCompany, setIsCreatingCompany] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const companies = useMemo(() => {
-    const map = new Map<
-      string,
-      { code: string; name: string; simulationCount: number; companyId: string }
-    >();
-
+  const companiesWithCounts = useMemo(() => {
+    const counts = new Map<string, number>();
     for (const simulation of simulations) {
-      const current = map.get(simulation.companyCode);
-      if (current) {
-        current.simulationCount += 1;
-      } else {
-        map.set(simulation.companyCode, {
-          code: simulation.companyCode,
-          name: simulation.companyName,
-          companyId: simulation.companyId,
-          simulationCount: 1,
-        });
-      }
+      counts.set(simulation.companyCode, (counts.get(simulation.companyCode) ?? 0) + 1);
     }
 
-    return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name, "ko-KR"));
-  }, [simulations]);
+    return companies.map((company) => ({
+      ...company,
+      simulationCount: counts.get(company.code) ?? 0,
+    }));
+  }, [companies, simulations]);
 
   const selectedCompany = useMemo(
-    () => companies.find((company) => company.code === selectedCompanyCode) ?? null,
-    [companies, selectedCompanyCode],
+    () => companiesWithCounts.find((company) => company.code === selectedCompanyCode) ?? null,
+    [companiesWithCounts, selectedCompanyCode],
   );
 
   const companySimulations = useMemo(
@@ -140,7 +148,11 @@ function AdminSimulations() {
     setIsLoading(true);
     setError(null);
     try {
-      const simulationData = await getAdminCompanySimulations();
+      const [companyData, simulationData] = await Promise.all([
+        getAdminCompanies(),
+        getAdminCompanySimulations(),
+      ]);
+      setCompanies(companyData);
       setSimulations(simulationData);
     } catch (err) {
       setError(err instanceof Error ? err.message : "관리자 목록을 불러오지 못했습니다.");
@@ -159,15 +171,33 @@ function AdminSimulations() {
   }, [authLoading, user, navigate, loadSimulations]);
 
   useEffect(() => {
-    if (isLoading || hasInitializedSelection || simulations.length === 0) return;
-    const firstSimulation = simulations[0];
-    setSelectedCompanyCode(firstSimulation.companyCode);
-    selectSimulation(firstSimulation);
+    if (isLoading || hasInitializedSelection || companies.length === 0) return;
+    const firstCompany = companies[0];
+    setSelectedCompanyCode(firstCompany.code);
+    const firstSimulation = simulations.find(
+      (simulation) => simulation.companyCode === firstCompany.code,
+    );
+    if (firstSimulation) {
+      selectSimulation(firstSimulation);
+    } else {
+      startNewSimulation(firstCompany.code);
+    }
     setHasInitializedSelection(true);
-  }, [hasInitializedSelection, isLoading, selectSimulation, simulations]);
+  }, [
+    companies,
+    hasInitializedSelection,
+    isLoading,
+    selectSimulation,
+    simulations,
+    startNewSimulation,
+  ]);
 
   function updateForm<K extends keyof SimulationForm>(key: K, value: SimulationForm[K]) {
     setForm((current) => ({ ...current, [key]: value }));
+  }
+
+  function updateCompanyForm<K extends keyof CompanyForm>(key: K, value: CompanyForm[K]) {
+    setCompanyForm((current) => ({ ...current, [key]: value }));
   }
 
   function selectCompany(companyCode: string) {
@@ -179,6 +209,38 @@ function AdminSimulations() {
       selectSimulation(firstSimulation);
     } else {
       startNewSimulation(companyCode);
+    }
+  }
+
+  async function submitCompany(event: FormEvent) {
+    event.preventDefault();
+    if (isCreatingCompany) return;
+
+    setIsCreatingCompany(true);
+    setMessage(null);
+    setError(null);
+    try {
+      const company = await createCompany({
+        data: {
+          name: companyForm.name.trim(),
+          code: companyForm.code.trim(),
+          roleLabel: companyForm.roleLabel.trim(),
+        },
+      });
+
+      setCompanyForm(EMPTY_COMPANY_FORM);
+      setIsCompanyFormOpen(false);
+      setHasInitializedSelection(true);
+      setSelectedCompanyCode(company.code);
+      startNewSimulation(company.code);
+      await loadSimulations();
+      setMessage(
+        `${company.name} 기업을 추가했습니다. /biz에서 ${company.code} 코드로 접속할 수 있습니다.`,
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "기업을 추가하지 못했습니다.");
+    } finally {
+      setIsCreatingCompany(false);
     }
   }
 
@@ -277,13 +339,65 @@ function AdminSimulations() {
           <div className="flex items-center justify-between border-b border-neutral-200 p-4">
             <div>
               <h2 className="text-sm font-semibold text-neutral-900">기업</h2>
-              <p className="mt-1 text-xs text-neutral-500">등록 기업 {companies.length}곳</p>
+              <p className="mt-1 text-xs text-neutral-500">
+                등록 기업 {companiesWithCounts.length}곳
+              </p>
             </div>
             <Building2 className="h-4 w-4 text-neutral-400" />
           </div>
 
+          <div className="border-b border-neutral-200 p-3">
+            <button
+              type="button"
+              onClick={() => setIsCompanyFormOpen((current) => !current)}
+              className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-md bg-neutral-900 px-3 text-xs font-medium text-white hover:bg-neutral-800"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              기업 추가
+            </button>
+
+            {isCompanyFormOpen && (
+              <form
+                onSubmit={submitCompany}
+                className="mt-3 space-y-3 rounded-md bg-neutral-50 p-3"
+              >
+                <InputField
+                  label="기업 이름"
+                  value={companyForm.name}
+                  onChange={(value) => updateCompanyForm("name", value)}
+                  placeholder="예: B기업"
+                  required
+                />
+                <InputField
+                  label="기업 코드"
+                  value={companyForm.code}
+                  onChange={(value) => updateCompanyForm("code", value)}
+                  placeholder="예: BGNR-2024-B"
+                  required
+                />
+                <InputField
+                  label="기업 화면 표시명"
+                  value={companyForm.roleLabel}
+                  onChange={(value) => updateCompanyForm("roleLabel", value)}
+                  placeholder="비워두면 기업 이름"
+                />
+                <button
+                  type="submit"
+                  disabled={
+                    isCreatingCompany ||
+                    companyForm.name.trim().length === 0 ||
+                    companyForm.code.trim().length < 4
+                  }
+                  className="h-9 w-full rounded-md bg-neutral-900 px-3 text-xs font-medium text-white hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {isCreatingCompany ? "추가 중..." : "기업 저장"}
+                </button>
+              </form>
+            )}
+          </div>
+
           <div className="max-h-[640px] space-y-2 overflow-y-auto p-3">
-            {companies.map((company) => (
+            {companiesWithCounts.map((company) => (
               <button
                 key={company.code}
                 type="button"
@@ -302,7 +416,7 @@ function AdminSimulations() {
               </button>
             ))}
 
-            {companies.length === 0 && (
+            {companiesWithCounts.length === 0 && (
               <div className="rounded-md border border-dashed border-neutral-200 p-8 text-center text-sm text-neutral-500">
                 등록된 기업이 없습니다.
               </div>
@@ -324,8 +438,10 @@ function AdminSimulations() {
           <div className="border-b border-neutral-200 p-3">
             <button
               type="button"
-              onClick={() => startNewSimulation(selectedCompanyCode || companies[0]?.code || "")}
-              disabled={!selectedCompanyCode && companies.length === 0}
+              onClick={() =>
+                startNewSimulation(selectedCompanyCode || companiesWithCounts[0]?.code || "")
+              }
+              disabled={!selectedCompanyCode && companiesWithCounts.length === 0}
               className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-md bg-neutral-900 px-3 text-xs font-medium text-white hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-50"
             >
               <Plus className="h-3.5 w-3.5" />이 기업에 추가

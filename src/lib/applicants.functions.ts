@@ -217,7 +217,7 @@ export const getApplicantsByCompanyCode = createServerFn({ method: "GET" })
     const { data: company, error: companyError } = await supabase
       .from("companies")
       .select("id, code, name, role_label")
-      .eq("code", data.code)
+      .or(`code.eq.${data.code},unique_code.eq.${data.code}`)
       .single();
 
     if (companyError || !company) {
@@ -249,9 +249,9 @@ export const getApplicantsByCompanyCode = createServerFn({ method: "GET" })
     return companyApplicantsSchema.parse({
       company: {
         id: company.id,
-        code: company.code,
+        code: company.code ?? data.code,
         name: company.name,
-        roleLabel: company.role_label,
+        roleLabel: company.role_label ?? company.name,
       },
       applicants,
       simulations: ((simulationRows ?? []) as Record<string, unknown>[]).map(mapSimulation),

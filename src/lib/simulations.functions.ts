@@ -5,6 +5,15 @@ import { z } from "zod";
 
 import { DOMAIN_CATEGORIES } from "@/lib/domain-categories";
 
+export type AdminCompany = {
+  id: string;
+  code: string;
+  uniqueCode: string;
+  name: string;
+  roleLabel: string;
+  createdAt: string;
+};
+
 export type AdminCompanySimulation = {
   id: string;
   companyId: string;
@@ -21,6 +30,12 @@ export type AdminCompanySimulation = {
 };
 
 const domainCategorySchema = z.enum(DOMAIN_CATEGORIES);
+
+const createCompanyInputSchema = z.object({
+  name: z.string().min(1),
+  code: z.string().min(4),
+  roleLabel: z.string().optional().default(""),
+});
 
 const createCompanySimulationInputSchema = z.object({
   companyCode: z.string().min(1),
@@ -120,6 +135,38 @@ function mapAdminSimulation(row: Record<string, unknown>): AdminCompanySimulatio
   };
 }
 
+function mapAdminCompany(row: Record<string, unknown>): AdminCompany {
+  const code = String(row.code ?? row.unique_code ?? "");
+  const name = String(row.name ?? "");
+  return {
+    id: String(row.id),
+    code,
+    uniqueCode: String(row.unique_code ?? code),
+    name,
+    roleLabel: String(row.role_label ?? name),
+    createdAt: formatDateTime(String(row.created_at)),
+  };
+}
+
+export const getAdminCompanies = createServerFn({ method: "GET" }).handler(
+  async (): Promise<AdminCompany[]> => {
+    await assertAdmin();
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { data, error } = await supabaseAdmin
+      .from("companies")
+      .select("id, code, unique_code, name, role_label, created_at")
+      .order("name", { ascending: true });
+
+    if (error) {
+      console.error("Failed to load companies:", error);
+      throw new Error("Failed to load companies");
+    }
+
+    return ((data ?? []) as Record<string, unknown>[]).map(mapAdminCompany);
+  },
+);
+
 export const getAdminCompanySimulations = createServerFn({ method: "GET" }).handler(
   async (): Promise<AdminCompanySimulation[]> => {
     await assertAdmin();
@@ -140,6 +187,50 @@ export const getAdminCompanySimulations = createServerFn({ method: "GET" }).hand
     return ((data ?? []) as Record<string, unknown>[]).map(mapAdminSimulation);
   },
 );
+
+export const createCompany = createServerFn({ method: "POST" })
+  .inputValidator(createCompanyInputSchema)
+  .handler(async ({ data }) => {
+    await assertAdmin();
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const code = data.code.trim().toUpperCase();
+    const name = data.name.trim();
+    const roleLabel = data.roleLabel.trim() || name;
+
+    const { data: existing, error: existingError } = await supabaseAdmin
+      .from("companies")
+      .select("id")
+      .or(`code.eq.${code},unique_code.eq.${code}`)
+      .maybeSingle();
+
+    if (existingError) {
+      console.error("Failed to check company code:", existingError);
+      throw new Error("Failed to check company code");
+    }
+
+    if (existing) {
+      throw new Error("이미 사용 중인 기업 코드입니다.");
+    }
+
+    const { data: row, error } = await supabaseAdmin
+      .from("companies")
+      .insert({
+        name,
+        code,
+        unique_code: code,
+        role_label: roleLabel,
+      })
+      .select("id, code, unique_code, name, role_label, created_at")
+      .single();
+
+    if (error) {
+      console.error("Failed to create company:", error);
+      throw new Error("Failed to create company");
+    }
+
+    return mapAdminCompany(row as Record<string, unknown>);
+  });
 
 export const createCompanySimulation = createServerFn({ method: "POST" })
   .inputValidator(createCompanySimulationInputSchema)
