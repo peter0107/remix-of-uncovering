@@ -2125,8 +2125,6 @@ function MyPage() {
         ) : (
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
             {resumes.map((resume) => {
-              const basics = asRecord(resume.basics);
-              const experience = firstRecord(resume.experiences);
               const isUpload = resume.source_type === "upload";
 
               return (
@@ -2188,10 +2186,7 @@ function MyPage() {
                       {resume.title}
                     </h3>
                     <p className="mt-1 line-clamp-1 text-xs text-zinc-400">
-                      {resume.target_role ||
-                        asString(experience.role) ||
-                        asString(basics.headline) ||
-                        "직무 미지정"}
+                      {resume.memo?.trim() || "메모 없음"}
                     </p>
                   </div>
 
