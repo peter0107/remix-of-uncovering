@@ -2131,11 +2131,11 @@ function MyPage() {
                   key={resume.id}
                   className="flex min-h-52 flex-col rounded-[28px] border-zinc-200 p-6 shadow-[0_8px_18px_rgba(15,23,42,0.08)]"
                 >
-                  <div className="grid grid-cols-[auto_auto_1fr] items-start gap-4">
+                  <div className="flex items-center gap-3">
                     <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-zinc-100 text-zinc-700">
                       <FileText className="h-7 w-7" />
                     </span>
-                    <div className="flex min-w-max flex-wrap items-center gap-2">
+                    <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
                       {resume.is_default && (
                         <span className="whitespace-nowrap rounded-full bg-blue-50 px-3 py-1.5 text-sm font-semibold text-blue-600">
                           기본
@@ -2146,7 +2146,7 @@ function MyPage() {
                       </span>
                     </div>
 
-                    <div className="ml-auto flex shrink-0 gap-2">
+                    <div className="flex shrink-0 items-center gap-1">
                       <Button
                         type="button"
                         variant="ghost"
@@ -2183,6 +2183,7 @@ function MyPage() {
                       </Button>
                     </div>
                   </div>
+
 
                   <div className="mt-8">
                     <h3 className="line-clamp-2 text-2xl font-bold tracking-tight text-zinc-900">
