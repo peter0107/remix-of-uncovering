@@ -6,7 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
-import { DOMAIN_DESCRIPTIONS, isDomainCategory } from "@/lib/domain-categories";
+import { isDomainCategory } from "@/lib/domain-categories";
 
 export const Route = createFileRoute("/simulations")({
   head: () => ({ meta: [{ title: "추천 시뮬레이션 — Beginner" }] }),
@@ -18,6 +18,7 @@ export const Route = createFileRoute("/simulations")({
 type Simulation = {
   id: string;
   title: string;
+  role_label: string | null;
   description: string | null;
   job_family: string | null;
   domain: string | null;
@@ -35,6 +36,7 @@ type JobSeeker = {
 type RawRow = {
   id: string;
   title: string;
+  role_label: string | null;
   description: string | null;
   job_family: string | null;
   domain: string | null;
@@ -46,6 +48,7 @@ function toSimulation(row: RawRow): Simulation {
   return {
     id: row.id,
     title: row.title,
+    role_label: row.role_label,
     description: row.description,
     job_family: row.job_family,
     domain: row.domain,
@@ -61,7 +64,7 @@ async function fetchRecommended(seeker: JobSeeker): Promise<Simulation[]> {
   // job_simulations + companies 조인, 관심 도메인 일치 우선 정렬
   const { data, error } = await supabase
     .from("job_simulations")
-    .select("id, title, description, job_family, domain, estimated_minutes, companies(name)")
+    .select("id, title, role_label, description, job_family, domain, estimated_minutes, companies(name)")
     .eq("is_public", true)
     .is("deleted_at", null)
     .limit(20); // 클라이언트에서 필터·정렬 후 3개 추출
@@ -90,7 +93,7 @@ async function fetchRecommended(seeker: JobSeeker): Promise<Simulation[]> {
 async function fetchAll(): Promise<Simulation[]> {
   const { data, error } = await supabase
     .from("job_simulations")
-    .select("id, title, description, job_family, domain, estimated_minutes, companies(name)")
+    .select("id, title, role_label, description, job_family, domain, estimated_minutes, companies(name)")
     .eq("is_public", true)
     .is("deleted_at", null)
     .order("created_at", { ascending: false });
@@ -103,6 +106,8 @@ async function fetchAll(): Promise<Simulation[]> {
 // ─── 카드 컴포넌트 ────────────────────────────────────────────
 
 function SimCard({ sim, rank }: { sim: Simulation; rank?: number }) {
+  const displayTitle = sim.role_label || sim.job_family || sim.title;
+
   return (
     <Link
       to="/simulation/$id"
@@ -116,16 +121,10 @@ function SimCard({ sim, rank }: { sim: Simulation; rank?: number }) {
         </span>
       )}
 
-      {/* 도메인 */}
-      {sim.domain && (
-        <h3 className="mt-4 text-2xl font-bold leading-snug text-zinc-900">{sim.domain}</h3>
-      )}
+      <h3 className="mt-4 text-2xl font-bold leading-snug text-zinc-900">{displayTitle}</h3>
 
-      {/* 도메인 설명 */}
-      {sim.domain && sim.domain in DOMAIN_DESCRIPTIONS && (
-        <p className="mt-1.5 text-sm leading-relaxed text-zinc-500">
-          {DOMAIN_DESCRIPTIONS[sim.domain as keyof typeof DOMAIN_DESCRIPTIONS]}
-        </p>
+      {sim.description && (
+        <p className="mt-1.5 text-sm leading-relaxed text-zinc-500">{sim.description}</p>
       )}
 
       {/* 소요시간 */}
