@@ -232,6 +232,7 @@ export type Database = {
           domain: string | null
           estimated_minutes: number | null
           id: string
+          is_public: boolean
           job_family: string | null
           role_label: string | null
           task_prompt: string | null
@@ -244,6 +245,7 @@ export type Database = {
           domain?: string | null
           estimated_minutes?: number | null
           id?: string
+          is_public?: boolean
           job_family?: string | null
           role_label?: string | null
           task_prompt?: string | null
@@ -256,6 +258,7 @@ export type Database = {
           domain?: string | null
           estimated_minutes?: number | null
           id?: string
+          is_public?: boolean
           job_family?: string | null
           role_label?: string | null
           task_prompt?: string | null

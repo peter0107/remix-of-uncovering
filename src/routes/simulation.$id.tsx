@@ -48,6 +48,7 @@ function SimulationDetailPage() {
       .from("job_simulations")
       .select("id, title, task_prompt, estimated_minutes, companies(name)")
       .eq("id", id)
+      .eq("is_public", true)
       .maybeSingle()
       .then(({ data }) => {
         if (data) {

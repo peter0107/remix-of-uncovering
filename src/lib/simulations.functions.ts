@@ -26,6 +26,7 @@ export type AdminCompanySimulation = {
   estimatedMinutes: number | null;
   description: string;
   taskPrompt: string;
+  isPublic: boolean;
   createdAt: string;
 };
 
@@ -50,6 +51,14 @@ const createCompanySimulationInputSchema = z.object({
 
 const updateCompanySimulationInputSchema = createCompanySimulationInputSchema.extend({
   id: z.string().uuid(),
+});
+
+const simulationIdInputSchema = z.object({
+  id: z.string().uuid(),
+});
+
+const simulationVisibilityInputSchema = simulationIdInputSchema.extend({
+  isPublic: z.boolean(),
 });
 
 function createPublicServerClient() {
@@ -131,6 +140,7 @@ function mapAdminSimulation(row: Record<string, unknown>): AdminCompanySimulatio
     estimatedMinutes: typeof row.estimated_minutes === "number" ? row.estimated_minutes : null,
     description: String(row.description ?? ""),
     taskPrompt: String(row.task_prompt ?? ""),
+    isPublic: row.is_public !== false,
     createdAt: formatDateTime(String(row.created_at)),
   };
 }
@@ -175,7 +185,7 @@ export const getAdminCompanySimulations = createServerFn({ method: "GET" }).hand
     const { data, error } = await supabaseAdmin
       .from("job_simulations")
       .select(
-        "id, company_id, title, role_label, job_family, domain, estimated_minutes, description, task_prompt, created_at, companies(code, unique_code, name)",
+        "id, company_id, title, role_label, job_family, domain, estimated_minutes, description, task_prompt, is_public, created_at, companies(code, unique_code, name)",
       )
       .order("created_at", { ascending: false });
 
@@ -259,6 +269,7 @@ export const createCompanySimulation = createServerFn({ method: "POST" })
         domain: data.domain,
         estimated_minutes: data.estimatedMinutes,
         task_prompt: data.taskPrompt,
+        is_public: true,
       })
       .select("id")
       .single();
@@ -304,6 +315,41 @@ export const updateCompanySimulation = createServerFn({ method: "POST" })
     if (error) {
       console.error("Failed to update company simulation:", error);
       throw new Error("Failed to update company simulation");
+    }
+
+    return { ok: true };
+  });
+
+export const setCompanySimulationVisibility = createServerFn({ method: "POST" })
+  .inputValidator(simulationVisibilityInputSchema)
+  .handler(async ({ data }) => {
+    await assertAdmin();
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { error } = await supabaseAdmin
+      .from("job_simulations")
+      .update({ is_public: data.isPublic })
+      .eq("id", data.id);
+
+    if (error) {
+      console.error("Failed to update simulation visibility:", error);
+      throw new Error("Failed to update simulation visibility");
+    }
+
+    return { ok: true };
+  });
+
+export const deleteCompanySimulation = createServerFn({ method: "POST" })
+  .inputValidator(simulationIdInputSchema)
+  .handler(async ({ data }) => {
+    await assertAdmin();
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { error } = await supabaseAdmin.from("job_simulations").delete().eq("id", data.id);
+
+    if (error) {
+      console.error("Failed to delete simulation:", error);
+      throw new Error("Failed to delete simulation");
     }
 
     return { ok: true };

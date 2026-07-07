@@ -62,6 +62,7 @@ async function fetchRecommended(seeker: JobSeeker): Promise<Simulation[]> {
   const { data, error } = await supabase
     .from("job_simulations")
     .select("id, title, description, job_family, domain, estimated_minutes, companies(name)")
+    .eq("is_public", true)
     .limit(20); // 클라이언트에서 필터·정렬 후 3개 추출
 
   if (error) throw error;
@@ -89,6 +90,7 @@ async function fetchAll(): Promise<Simulation[]> {
   const { data, error } = await supabase
     .from("job_simulations")
     .select("id, title, description, job_family, domain, estimated_minutes, companies(name)")
+    .eq("is_public", true)
     .order("created_at", { ascending: false });
 
   if (error) throw error;

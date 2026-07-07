@@ -1,13 +1,15 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { Building2, ListChecks, Plus, RefreshCw, Save } from "lucide-react";
+import { Building2, ListChecks, Plus, RefreshCw, Save, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 
 import { useAuth } from "@/hooks/use-auth";
 import {
   createCompany,
   createCompanySimulation,
+  deleteCompanySimulation,
   getAdminCompanies,
   getAdminCompanySimulations,
+  setCompanySimulationVisibility,
   updateCompanySimulation,
   type AdminCompany,
   type AdminCompanySimulation,
@@ -100,6 +102,7 @@ function AdminSimulations() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isCreatingCompany, setIsCreatingCompany] = useState(false);
+  const [actioningSimulationId, setActioningSimulationId] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const loadedUserIdRef = useRef<string | null>(null);
@@ -294,6 +297,66 @@ function AdminSimulations() {
     }
   }
 
+  async function toggleSimulationVisibility(simulation: AdminCompanySimulation) {
+    if (actioningSimulationId) return;
+
+    setActioningSimulationId(simulation.id);
+    setMessage(null);
+    setError(null);
+    const nextIsPublic = !simulation.isPublic;
+
+    try {
+      await setCompanySimulationVisibility({
+        data: {
+          id: simulation.id,
+          isPublic: nextIsPublic,
+        },
+      });
+      setSimulations((current) =>
+        current.map((item) =>
+          item.id === simulation.id ? { ...item, isPublic: nextIsPublic } : item,
+        ),
+      );
+      setMessage(
+        nextIsPublic ? "직무 시뮬레이션을 공개했습니다." : "직무 시뮬레이션을 비공개했습니다.",
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "공개 상태를 변경하지 못했습니다.");
+    } finally {
+      setActioningSimulationId(null);
+    }
+  }
+
+  async function deleteSimulation(simulation: AdminCompanySimulation) {
+    if (actioningSimulationId) return;
+    const confirmed = window.confirm(
+      `${simulation.roleLabel} 직무 시뮬레이션을 삭제할까요? 제출 데이터도 함께 삭제될 수 있습니다.`,
+    );
+    if (!confirmed) return;
+
+    setActioningSimulationId(simulation.id);
+    setMessage(null);
+    setError(null);
+
+    try {
+      await deleteCompanySimulation({ data: { id: simulation.id } });
+      setSimulations((current) => current.filter((item) => item.id !== simulation.id));
+      if (selectedSimulationId === simulation.id) {
+        const nextSimulation = companySimulations.find((item) => item.id !== simulation.id);
+        if (nextSimulation) {
+          selectSimulation(nextSimulation);
+        } else {
+          startNewSimulation(selectedCompanyCode);
+        }
+      }
+      setMessage("직무 시뮬레이션을 삭제했습니다.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "직무 시뮬레이션을 삭제하지 못했습니다.");
+    } finally {
+      setActioningSimulationId(null);
+    }
+  }
+
   if (authLoading || isLoading) {
     return (
       <AdminShell>
@@ -454,10 +517,8 @@ function AdminSimulations() {
 
           <div className="min-h-0 flex-1 space-y-2 overflow-y-auto p-3">
             {companySimulations.map((simulation) => (
-              <button
+              <div
                 key={simulation.id}
-                type="button"
-                onClick={() => selectSimulation(simulation)}
                 className={`w-full rounded-md border p-4 text-left transition-colors ${
                   simulation.id === selectedSimulationId
                     ? "border-neutral-900 bg-neutral-50"
@@ -465,25 +526,55 @@ function AdminSimulations() {
                 }`}
               >
                 <div className="flex items-start justify-between gap-3">
-                  <div>
+                  <button
+                    type="button"
+                    onClick={() => selectSimulation(simulation)}
+                    className="min-w-0 flex-1 text-left"
+                  >
                     <h3 className="text-sm font-semibold text-neutral-900">
                       {simulation.roleLabel}
                     </h3>
                     <p className="mt-1 line-clamp-2 text-xs text-neutral-500">{simulation.title}</p>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => deleteSimulation(simulation)}
+                    disabled={actioningSimulationId === simulation.id}
+                    aria-label={`${simulation.roleLabel} 삭제`}
+                    className="grid h-8 w-8 shrink-0 place-items-center rounded-md text-neutral-400 transition-colors hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+                <div className="mt-3 flex items-end justify-between gap-3">
+                  <div className="flex flex-wrap gap-2 text-xs text-neutral-500">
+                    <span className="rounded bg-neutral-50 px-2 py-1">{simulation.domain}</span>
+                    {simulation.jobFamily && (
+                      <span className="rounded bg-neutral-50 px-2 py-1">
+                        {simulation.jobFamily}
+                      </span>
+                    )}
                   </div>
-                  {simulation.estimatedMinutes && (
-                    <span className="shrink-0 rounded bg-neutral-100 px-2 py-1 text-xs font-medium text-neutral-600">
-                      {simulation.estimatedMinutes}분
-                    </span>
-                  )}
+                  <button
+                    type="button"
+                    onClick={() => toggleSimulationVisibility(simulation)}
+                    disabled={actioningSimulationId === simulation.id}
+                    aria-pressed={simulation.isPublic}
+                    className={`inline-flex h-7 shrink-0 items-center gap-1.5 rounded-full border px-1.5 pr-2 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+                      simulation.isPublic
+                        ? "border-neutral-900 bg-neutral-900 text-white"
+                        : "border-neutral-200 bg-white text-neutral-500"
+                    }`}
+                  >
+                    <span
+                      className={`h-4 w-4 rounded-full transition-colors ${
+                        simulation.isPublic ? "bg-white" : "bg-neutral-300"
+                      }`}
+                    />
+                    {simulation.isPublic ? "공개" : "비공개"}
+                  </button>
                 </div>
-                <div className="mt-3 flex flex-wrap gap-2 text-xs text-neutral-500">
-                  <span className="rounded bg-neutral-50 px-2 py-1">{simulation.domain}</span>
-                  {simulation.jobFamily && (
-                    <span className="rounded bg-neutral-50 px-2 py-1">{simulation.jobFamily}</span>
-                  )}
-                </div>
-              </button>
+              </div>
             ))}
 
             {companySimulations.length === 0 && (
