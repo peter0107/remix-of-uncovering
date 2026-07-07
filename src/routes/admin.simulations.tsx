@@ -557,14 +557,14 @@ function AdminSimulations() {
                     onClick={() => toggleSimulationVisibility(simulation)}
                     disabled={actioningSimulationId === simulation.id}
                     aria-pressed={simulation.isPublic}
-                    className={`inline-flex h-7 shrink-0 items-center gap-1.5 rounded-full border px-1.5 pr-2 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+                    className={`inline-flex h-6 shrink-0 items-center gap-1 rounded-full border px-1 pr-1.5 text-[11px] font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
                       simulation.isPublic
                         ? "border-neutral-900 bg-neutral-900 text-white"
                         : "border-neutral-200 bg-white text-neutral-500"
                     }`}
                   >
                     <span
-                      className={`h-4 w-4 rounded-full transition-colors ${
+                      className={`h-3.5 w-3.5 rounded-full transition-colors ${
                         simulation.isPublic ? "bg-white" : "bg-neutral-300"
                       }`}
                     />
