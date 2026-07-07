@@ -854,23 +854,6 @@ function MyPage() {
     return (
       <div className="mt-4 rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
         <SectionComponent data={draftForm} setData={setDraftForm} />
-        <div className="mt-6 flex gap-2">
-          <Button
-            onClick={saveSection}
-            disabled={savingSection}
-            className="rounded-xl bg-zinc-900 text-white hover:bg-zinc-700"
-          >
-            {savingSection ? "저장 중..." : "저장"}
-          </Button>
-          <Button
-            variant="outline"
-            onClick={cancelEditSection}
-            disabled={savingSection}
-            className="rounded-xl"
-          >
-            취소
-          </Button>
-        </div>
       </div>
     );
   };
@@ -1065,8 +1048,22 @@ function MyPage() {
   }
 
   const hasAnyLink = Boolean(links.github || links.portfolio || links.linkedin);
+  const profileAction = editingProfileCard
+    ? {
+        saving: savingProfileCard,
+        onCancel: cancelEditProfileCard,
+        onSave: saveProfileCard,
+      }
+    : editingSection
+      ? {
+          saving: savingSection,
+          onCancel: cancelEditSection,
+          onSave: saveSection,
+        }
+      : null;
+
   return (
-    <div className="mx-auto max-w-2xl px-4 py-12">
+    <div className={`mx-auto max-w-2xl px-4 py-12 ${profileAction ? "pb-28" : ""}`}>
       <h1 className="text-2xl font-bold text-zinc-900">프로필</h1>
 
       <Card className="mt-6 p-6">
@@ -1157,23 +1154,6 @@ function MyPage() {
                       placeholder="https://..."
                       className="mt-2"
                     />
-                  </div>
-                  <div className="flex gap-2 pt-1">
-                    <Button
-                      onClick={saveProfileCard}
-                      disabled={savingProfileCard}
-                      className="rounded-xl bg-zinc-900 text-white hover:bg-zinc-700"
-                    >
-                      {savingProfileCard ? "저장 중..." : "저장"}
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={cancelEditProfileCard}
-                      disabled={savingProfileCard}
-                      className="rounded-xl"
-                    >
-                      취소
-                    </Button>
                   </div>
                 </div>
               ) : (
@@ -1607,6 +1587,28 @@ function MyPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {profileAction && (
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-zinc-200 bg-white/95 px-4 py-3 shadow-[0_-10px_30px_rgba(15,23,42,0.08)] backdrop-blur">
+          <div className="mx-auto flex max-w-2xl justify-end gap-3">
+            <Button
+              variant="outline"
+              onClick={profileAction.onCancel}
+              disabled={profileAction.saving}
+              className="h-12 min-w-24 rounded-xl bg-white text-base font-semibold shadow-sm"
+            >
+              취소
+            </Button>
+            <Button
+              onClick={profileAction.onSave}
+              disabled={profileAction.saving}
+              className="h-12 min-w-24 rounded-xl bg-zinc-900 text-base font-semibold text-white shadow-sm hover:bg-zinc-700"
+            >
+              {profileAction.saving ? "저장 중..." : "저장"}
+            </Button>
+          </div>
+        </div>
+      )}
 
       <Dialog open={resumeEditorOpen} onOpenChange={setResumeEditorOpen}>
         <DialogContent className="max-h-[88vh] max-w-4xl overflow-y-auto">
