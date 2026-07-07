@@ -12,7 +12,7 @@ import {
   type AdminCompany,
   type AdminCompanySimulation,
 } from "@/lib/simulations.functions";
-import { DOMAIN_CATEGORIES } from "@/lib/domain-categories";
+import { DOMAIN_CATEGORIES, type DomainCategory } from "@/lib/domain-categories";
 
 type SimulationForm = {
   companyCode: string;
@@ -262,7 +262,7 @@ function AdminSimulations() {
         title: form.title.trim(),
         description: form.description.trim(),
         jobFamily: form.jobFamily.trim(),
-        domain: form.domain,
+        domain: form.domain as DomainCategory,
         estimatedMinutes: Number.isFinite(estimatedMinutes) ? estimatedMinutes : null,
         taskPrompt: form.taskPrompt.trim(),
       };
