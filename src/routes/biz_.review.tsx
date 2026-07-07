@@ -165,9 +165,24 @@ function BizReview() {
   return (
     <div className="min-h-screen bg-white text-neutral-900">
       <header className="flex h-14 items-center justify-between border-b border-neutral-200 px-6">
-        <div>
-          <span className="text-sm font-semibold tracking-tight">Beginner</span>
-          <span className="ml-2 text-xs text-neutral-500">for Business</span>
+        <div className="flex min-w-0 items-center gap-6">
+          <div className="shrink-0">
+            <span className="text-sm font-semibold tracking-tight">Beginner</span>
+            <span className="ml-2 text-xs text-neutral-500">for Business</span>
+          </div>
+          <select
+            value={roleFilter}
+            onChange={(event) => setRoleFilter(event.target.value)}
+            aria-label="직무 선택"
+            className="h-9 w-52 rounded-md border border-neutral-300 bg-white px-3 text-sm font-medium text-neutral-900 outline-none focus:border-neutral-900 md:w-64"
+          >
+            <option value="all">전체 직무</option>
+            {roleOptions.map((role) => (
+              <option key={role} value={role}>
+                {role}
+              </option>
+            ))}
+          </select>
         </div>
         <Link to="/biz" className="text-xs font-medium text-neutral-500 hover:text-neutral-900">
           코드 변경
@@ -182,27 +197,7 @@ function BizReview() {
             총 {data.applicants.length}명의 제출자가 있습니다.
           </p>
 
-          <label className="mt-5 block">
-            <span className="text-xs font-medium text-neutral-600">직무 선택</span>
-            <select
-              value={roleFilter}
-              onChange={(event) => setRoleFilter(event.target.value)}
-              className="mt-2 h-10 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm font-medium text-neutral-900 outline-none focus:border-neutral-900"
-            >
-              <option value="all">전체 직무</option>
-              {roleOptions.map((role) => (
-                <option key={role} value={role}>
-                  {role}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <p className="mt-3 text-xs text-neutral-500">
-            현재 조건에 맞는 지원자 {visibleApplicants.length}명
-          </p>
-
-          <div className="mt-4 grid grid-cols-2 rounded-md border border-neutral-200 bg-white p-1">
+          <div className="mt-5 grid grid-cols-2 rounded-md border border-neutral-200 bg-white p-1">
             <button
               type="button"
               onClick={() => setShowSavedOnly(false)}
