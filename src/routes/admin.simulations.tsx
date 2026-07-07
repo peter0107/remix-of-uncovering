@@ -335,7 +335,7 @@ function AdminSimulations() {
       )}
 
       <div className="mt-6 grid gap-6 xl:grid-cols-[280px_360px_1fr]">
-        <section className="rounded-md border border-neutral-200">
+        <section className="flex min-h-0 flex-col rounded-md border border-neutral-200">
           <div className="flex items-center justify-between border-b border-neutral-200 p-4">
             <div>
               <h2 className="text-sm font-semibold text-neutral-900">기업</h2>
@@ -396,7 +396,7 @@ function AdminSimulations() {
             )}
           </div>
 
-          <div className="max-h-[640px] space-y-2 overflow-y-auto p-3">
+          <div className="min-h-0 flex-1 space-y-2 overflow-y-auto p-3">
             {companiesWithCounts.map((company) => (
               <button
                 key={company.code}
@@ -424,7 +424,7 @@ function AdminSimulations() {
           </div>
         </section>
 
-        <section className="rounded-md border border-neutral-200">
+        <section className="flex min-h-0 flex-col rounded-md border border-neutral-200">
           <div className="flex items-center justify-between border-b border-neutral-200 p-4">
             <div>
               <h2 className="text-sm font-semibold text-neutral-900">직무 시뮬레이션</h2>
@@ -448,7 +448,7 @@ function AdminSimulations() {
             </button>
           </div>
 
-          <div className="max-h-[584px] space-y-2 overflow-y-auto p-3">
+          <div className="min-h-0 flex-1 space-y-2 overflow-y-auto p-3">
             {companySimulations.map((simulation) => (
               <button
                 key={simulation.id}
