@@ -300,7 +300,7 @@ export const setSavedApplicantByCompanyCode = createServerFn({ method: "POST" })
 
     const { data: saved, error } = await supabase.rpc("set_saved_applicant_by_company_code", {
       company_code: data.code,
-      submission_id: data.applicantId,
+      applicant_id: data.applicantId,
       is_saved: data.isSaved,
     });
 
