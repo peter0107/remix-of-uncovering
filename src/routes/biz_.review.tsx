@@ -10,6 +10,7 @@ import {
   type CompanyApplicants,
   type Status,
 } from "@/lib/applicants.functions";
+import { WORK_REGIONS } from "@/lib/profile-fields";
 import { toast } from "sonner";
 
 const searchSchema = z.object({
@@ -45,6 +46,7 @@ const SORT_OPTIONS: Array<{ value: ApplicantSortKey; label: string }> = [
 type ApplicantFilters = {
   salaryRange: [number, number];
   employmentTypes: string[];
+  preferredRegions: string[];
   school: string;
   experienceRange: [number, number];
 };
@@ -52,6 +54,7 @@ type ApplicantFilters = {
 const DEFAULT_FILTERS: ApplicantFilters = {
   salaryRange: [...SALARY_RANGE],
   employmentTypes: [],
+  preferredRegions: [],
   school: "",
   experienceRange: [...EXPERIENCE_RANGE],
 };
@@ -147,6 +150,18 @@ function BizReview() {
       }
     }
     return Array.from(options).sort((a, b) => a.localeCompare(b, "ko-KR"));
+  }, [data]);
+
+  const preferredRegionOptions = useMemo(() => {
+    const options = new Set<string>();
+    for (const applicant of data?.applicants ?? []) {
+      for (const region of getApplicantPreferredRegions(applicant)) {
+        options.add(region);
+      }
+    }
+    return Array.from(options).sort(
+      (a, b) => WORK_REGIONS.indexOf(a) - WORK_REGIONS.indexOf(b) || a.localeCompare(b, "ko-KR"),
+    );
   }, [data]);
 
   const schoolOptions = useMemo(() => {
@@ -409,6 +424,7 @@ function BizReview() {
         <ApplicantFilterDialog
           filters={filters}
           employmentOptions={employmentOptions}
+          preferredRegionOptions={preferredRegionOptions}
           schoolOptions={schoolOptions}
           onApply={(nextFilters) => {
             setFilters(nextFilters);
@@ -434,6 +450,13 @@ function matchesApplicantFilters(applicant: Applicant, filters: ApplicantFilters
   if (filters.employmentTypes.length > 0) {
     const applicantTypes = splitEmploymentTypes(applicant.employmentType);
     if (!filters.employmentTypes.some((type) => applicantTypes.includes(type))) return false;
+  }
+
+  if (filters.preferredRegions.length > 0) {
+    const applicantRegions = getApplicantPreferredRegions(applicant);
+    if (!filters.preferredRegions.some((region) => applicantRegions.includes(region))) {
+      return false;
+    }
   }
 
   if (filters.school) {
@@ -540,6 +563,7 @@ function countActiveFilters(filters: ApplicantFilters) {
     count += 1;
   }
   if (filters.employmentTypes.length > 0) count += 1;
+  if (filters.preferredRegions.length > 0) count += 1;
   if (filters.school) count += 1;
   if (
     filters.experienceRange[0] !== EXPERIENCE_RANGE[0] ||
@@ -593,6 +617,25 @@ function splitEmploymentTypes(value: string) {
     .filter((item) => item && item !== "근무 형태 미입력");
 }
 
+function getApplicantPreferredRegions(applicant: Applicant) {
+  const preferred = splitPreferredRegions(applicant.preferredRegion);
+  if (preferred.length) return preferred;
+  return splitPreferredRegions(normalizeLocation(applicant.location));
+}
+
+function splitPreferredRegions(value: string) {
+  const normalized = value.trim();
+  if (!normalized || normalized === "희망 지역 미입력") return [];
+
+  const matchedRegions = WORK_REGIONS.filter((region) => normalized.includes(region));
+  if (matchedRegions.length) return matchedRegions;
+
+  return normalized
+    .split(/[,/]/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
 function extractSchoolName(education: string) {
   const normalized = education.replace(/\([^)]*\)/g, "").trim();
   if (!normalized) return "";
@@ -617,12 +660,14 @@ function extractSchoolName(education: string) {
 function ApplicantFilterDialog({
   filters,
   employmentOptions,
+  preferredRegionOptions,
   schoolOptions,
   onApply,
   onClose,
 }: {
   filters: ApplicantFilters;
   employmentOptions: string[];
+  preferredRegionOptions: string[];
   schoolOptions: string[];
   onApply: (filters: ApplicantFilters) => void;
   onClose: () => void;
@@ -644,6 +689,15 @@ function ApplicantFilterDialog({
       employmentTypes: current.employmentTypes.includes(type)
         ? current.employmentTypes.filter((item) => item !== type)
         : [...current.employmentTypes, type],
+    }));
+  }
+
+  function togglePreferredRegion(region: string) {
+    setDraft((current) => ({
+      ...current,
+      preferredRegions: current.preferredRegions.includes(region)
+        ? current.preferredRegions.filter((item) => item !== region)
+        : [...current.preferredRegions, region],
     }));
   }
 
@@ -698,6 +752,32 @@ function ApplicantFilterDialog({
                 })
               ) : (
                 <p className="text-sm text-neutral-500">선택 가능한 근무형태가 없습니다.</p>
+              )}
+            </div>
+          </FilterSection>
+
+          <FilterSection title="희망 지역">
+            <div className="flex flex-wrap gap-2">
+              {preferredRegionOptions.length ? (
+                preferredRegionOptions.map((region) => {
+                  const selected = draft.preferredRegions.includes(region);
+                  return (
+                    <button
+                      key={region}
+                      type="button"
+                      onClick={() => togglePreferredRegion(region)}
+                      className={`h-9 rounded-full border px-3 text-xs font-medium transition-colors ${
+                        selected
+                          ? "border-neutral-900 bg-neutral-900 text-white"
+                          : "border-neutral-200 bg-white text-neutral-600 hover:bg-neutral-50"
+                      }`}
+                    >
+                      {region}
+                    </button>
+                  );
+                })
+              ) : (
+                <p className="text-sm text-neutral-500">선택 가능한 희망 지역이 없습니다.</p>
               )}
             </div>
           </FilterSection>
