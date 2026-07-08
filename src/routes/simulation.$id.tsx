@@ -114,6 +114,35 @@ function SimulationDetailPage() {
   const [applicationSent, setApplicationSent] = useState(false);
   const [startedAt] = useState(() => new Date());
 
+  // AI 어시스트 대화 (제출 시 함께 저장돼 기업 담당자 화면에도 노출됨)
+  type ChatMessage = { role: "user" | "assistant"; content: string; at: string };
+  const [chatOpen, setChatOpen] = useState(false);
+  const [chatInput, setChatInput] = useState("");
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [chatSending, setChatSending] = useState(false);
+
+  const sendChat = async () => {
+    const text = chatInput.trim();
+    if (!text || chatSending) return;
+    const now = new Date().toISOString();
+    const userMsg: ChatMessage = { role: "user", content: text, at: now };
+    setChatMessages((prev) => [...prev, userMsg]);
+    setChatInput("");
+    setChatSending(true);
+    // TODO: 실제 AI API 연결. 현재는 목업 응답.
+    await new Promise((r) => setTimeout(r, 600));
+    setChatMessages((prev) => [
+      ...prev,
+      {
+        role: "assistant",
+        content:
+          "곧 AI가 이 자리에서 답을 드릴 거예요. 지금은 준비 중이라 임시로 응답만 남기고 있어요. 질문 자체는 기업 담당자 화면에 남아요.",
+        at: new Date().toISOString(),
+      },
+    ]);
+    setChatSending(false);
+  };
+
   // 시뮬레이션 진행 중(제출 전)일 때만 이탈을 차단
   const inProgress = Boolean(sim && !submittedAt);
 
