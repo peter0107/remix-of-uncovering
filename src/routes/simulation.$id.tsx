@@ -468,6 +468,115 @@ function SimulationDetailPage() {
     </AlertDialog>
   );
 
+  const aiPanel = (
+    <>
+      {!chatOpen && (
+        <button
+          type="button"
+          onClick={() => setChatOpen(true)}
+          className="fixed bottom-6 right-6 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-zinc-900 text-white shadow-lg transition-transform hover:scale-105"
+          aria-label="AI 어시스트 열기"
+        >
+          <Sparkles className="h-6 w-6" />
+        </button>
+      )}
+      {chatOpen && (
+        <div className="fixed bottom-6 right-6 z-40 flex h-[520px] w-[360px] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-2xl">
+          <div className="flex items-center justify-between border-b border-zinc-100 bg-zinc-50 px-4 py-3">
+            <div className="flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-zinc-900 text-white">
+                <Sparkles className="h-4 w-4" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-zinc-900">AI 어시스트</p>
+                <p className="text-[11px] text-zinc-400">
+                  대화 내용은 제출 시 담당자에게 함께 전달돼요
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setChatOpen(false)}
+              className="rounded-md p-1 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700"
+              aria-label="닫기"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+
+          <div className="flex-1 space-y-3 overflow-y-auto px-4 py-4">
+            {chatMessages.length === 0 && (
+              <div className="flex h-full flex-col items-center justify-center text-center text-xs text-zinc-400">
+                <MessageCircle className="mb-2 h-8 w-8 text-zinc-300" />
+                과제 이해가 어렵거나 접근 방법이 막힐 때<br />
+                편하게 물어보세요.
+              </div>
+            )}
+            {chatMessages.map((m, i) => (
+              <div
+                key={i}
+                className={cn(
+                  "flex",
+                  m.role === "user" ? "justify-end" : "justify-start",
+                )}
+              >
+                <div
+                  className={cn(
+                    "max-w-[80%] whitespace-pre-wrap rounded-2xl px-3 py-2 text-sm leading-relaxed",
+                    m.role === "user"
+                      ? "bg-zinc-900 text-white"
+                      : "bg-zinc-100 text-zinc-800",
+                  )}
+                >
+                  {m.content}
+                </div>
+              </div>
+            ))}
+            {chatSending && (
+              <div className="flex justify-start">
+                <div className="rounded-2xl bg-zinc-100 px-3 py-2 text-sm text-zinc-500">
+                  생각 중…
+                </div>
+              </div>
+            )}
+          </div>
+
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              void sendChat();
+            }}
+            className="flex items-end gap-2 border-t border-zinc-100 bg-white p-3"
+          >
+            <Textarea
+              value={chatInput}
+              onChange={(e) => setChatInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  void sendChat();
+                }
+              }}
+              placeholder="AI에게 질문하기…"
+              rows={1}
+              className="min-h-9 flex-1 resize-none rounded-xl text-sm"
+            />
+            <Button
+              type="submit"
+              size="icon"
+              disabled={!chatInput.trim() || chatSending}
+              className="h-9 w-9 shrink-0 rounded-xl bg-zinc-900 text-white hover:bg-zinc-700"
+            >
+              <Send className="h-4 w-4" />
+            </Button>
+          </form>
+        </div>
+      )}
+    </>
+  );
+
+
+
   // ---------- 스텝 위저드 ----------
   if (model) {
     const step = model.steps[stepIdx];
