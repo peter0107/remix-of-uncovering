@@ -121,9 +121,11 @@ export function SectionHeader({ title, subtitle }: { title: string; subtitle?: s
 export function EducationFields({
   data,
   setData,
+  showHeader = true,
 }: {
   data: ProfileFormData;
   setData: (d: Partial<ProfileFormData>) => void;
+  showHeader?: boolean;
 }) {
   const toggleMajor = (m: string) => {
     setData({
@@ -133,7 +135,9 @@ export function EducationFields({
 
   return (
     <div>
-      <SectionHeader title="학력을 알려주세요" subtitle="맞춤 시뮬레이션 추천에 활용됩니다" />
+      {showHeader && (
+        <SectionHeader title="학력을 알려주세요" subtitle="맞춤 시뮬레이션 추천에 활용됩니다" />
+      )}
 
       {/* 학교명 */}
       <div className="mb-6">
@@ -203,9 +207,11 @@ export function EducationFields({
 export function JobInterestFields({
   data,
   setData,
+  showHeader = true,
 }: {
   data: ProfileFormData;
   setData: (d: Partial<ProfileFormData>) => void;
+  showHeader?: boolean;
 }) {
   const toggle = (item: string) => {
     setData({
@@ -217,10 +223,12 @@ export function JobInterestFields({
 
   return (
     <div>
-      <SectionHeader
-        title="관심 있는 직무를 선택해주세요"
-        subtitle="시뮬레이션 추천의 핵심 기준이 됩니다 · 복수 선택 가능"
-      />
+      {showHeader && (
+        <SectionHeader
+          title="관심 있는 직무를 선택해주세요"
+          subtitle="시뮬레이션 추천의 핵심 기준이 됩니다 · 복수 선택 가능"
+        />
+      )}
       <div className="flex flex-wrap gap-3">
         {JOB_INTERESTS.map((job) => (
           <Chip
@@ -238,9 +246,11 @@ export function JobInterestFields({
 export function CompanyInterestFields({
   data,
   setData,
+  showHeader = true,
 }: {
   data: ProfileFormData;
   setData: (d: Partial<ProfileFormData>) => void;
+  showHeader?: boolean;
 }) {
   const toggle = (company: string) => {
     setData({
@@ -252,10 +262,12 @@ export function CompanyInterestFields({
 
   return (
     <div>
-      <SectionHeader
-        title="관심 있는 기업을 선택해주세요"
-        subtitle="해당 기업의 실제 업무 시뮬레이션을 먼저 추천해 드려요 · 복수 선택 가능"
-      />
+      {showHeader && (
+        <SectionHeader
+          title="관심 있는 기업을 선택해주세요"
+          subtitle="해당 기업의 실제 업무 시뮬레이션을 먼저 추천해 드려요 · 복수 선택 가능"
+        />
+      )}
       <div className="flex flex-wrap gap-3">
         {COMPANIES.map((c) => (
           <Chip
@@ -273,9 +285,11 @@ export function CompanyInterestFields({
 export function WorkPreferenceFields({
   data,
   setData,
+  showHeader = true,
 }: {
   data: ProfileFormData;
   setData: (d: Partial<ProfileFormData>) => void;
+  showHeader?: boolean;
 }) {
   const toggleRegion = (r: string) => {
     setData({
@@ -294,10 +308,12 @@ export function WorkPreferenceFields({
 
   return (
     <div>
-      <SectionHeader
-        title="근무 조건을 알려주세요"
-        subtitle="모두 선택 사항이에요 · 나중에 언제든 수정할 수 있어요"
-      />
+      {showHeader && (
+        <SectionHeader
+          title="근무 조건을 알려주세요"
+          subtitle="모두 선택 사항이에요 · 나중에 언제든 수정할 수 있어요"
+        />
+      )}
 
       {/* 지역 */}
       <div className="mb-6">

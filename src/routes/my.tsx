@@ -477,6 +477,7 @@ type SectionKey = "education" | "jobInterests" | "companyInterests" | "workPrefe
 type ProfileFieldsProps = {
   data: ProfileFormData;
   setData: (d: Partial<ProfileFormData>) => void;
+  showHeader?: boolean;
 };
 
 const PROFILE_SECTIONS: {
@@ -1536,7 +1537,7 @@ function MyPage() {
     const SectionComponent = section.Component;
     return (
       <div className="mt-4 rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
-        <SectionComponent data={draftForm} setData={setDraftForm} />
+        <SectionComponent data={draftForm} setData={setDraftForm} showHeader={false} />
         <div className="mt-6 flex gap-2">
           <Button
             onClick={saveSection}
