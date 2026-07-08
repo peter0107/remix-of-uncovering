@@ -149,6 +149,13 @@ const applicantSchema = z.object({
   employmentType: z.string(),
   resumeTitle: z.string(),
   resumeSourceType: z.string(),
+  aiChatLog: z.array(
+    z.object({
+      role: z.enum(["user", "assistant"]),
+      content: z.string(),
+      at: z.string(),
+    }),
+  ),
 });
 
 const companyApplicantsSchema = z.object({
