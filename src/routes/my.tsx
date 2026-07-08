@@ -28,6 +28,7 @@ import {
   Pencil,
   Trash2,
   Upload,
+  X,
   type LucideIcon,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
@@ -528,13 +529,20 @@ function SectionRow({
   icon: Icon,
   label,
   children,
+  isEditing = false,
   onEdit,
+  onCancel,
 }: {
   icon: LucideIcon;
   label: string;
   children: ReactNode;
+  isEditing?: boolean;
   onEdit: () => void;
+  onCancel?: () => void;
 }) {
+  const ActionIcon = isEditing ? X : Pencil;
+  const actionLabel = isEditing ? `${label} 수정 취소` : `${label} 수정`;
+
   return (
     <div className="py-5 first:pt-0 last:pb-0">
       <div className="mb-3 flex items-center justify-between gap-3">
@@ -544,11 +552,11 @@ function SectionRow({
         </div>
         <button
           type="button"
-          onClick={onEdit}
-          aria-label={`${label} 수정`}
+          onClick={isEditing ? (onCancel ?? onEdit) : onEdit}
+          aria-label={actionLabel}
           className="flex h-8 w-8 items-center justify-center rounded-full text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-900"
         >
-          <Pencil className="h-4 w-4" />
+          <ActionIcon className="h-4 w-4" />
         </button>
       </div>
       {children}
@@ -1987,7 +1995,9 @@ function MyPage() {
           <SectionRow
             icon={GraduationCap}
             label="학력"
+            isEditing={editingSection === "education"}
             onEdit={() => startEditSection("education")}
+            onCancel={cancelEditSection}
           >
             {editingSection === "education" ? (
               renderSectionEditor("education")
@@ -2021,7 +2031,9 @@ function MyPage() {
           <SectionRow
             icon={Briefcase}
             label="관심 직무"
+            isEditing={editingSection === "jobInterests"}
             onEdit={() => startEditSection("jobInterests")}
+            onCancel={cancelEditSection}
           >
             {editingSection === "jobInterests" ? (
               renderSectionEditor("jobInterests")
@@ -2041,7 +2053,9 @@ function MyPage() {
           <SectionRow
             icon={Building2}
             label="관심 기업"
+            isEditing={editingSection === "companyInterests"}
             onEdit={() => startEditSection("companyInterests")}
+            onCancel={cancelEditSection}
           >
             {editingSection === "companyInterests" ? (
               renderSectionEditor("companyInterests")
@@ -2061,7 +2075,9 @@ function MyPage() {
           <SectionRow
             icon={MapPin}
             label="근무 선호"
+            isEditing={editingSection === "workPreference"}
             onEdit={() => startEditSection("workPreference")}
+            onCancel={cancelEditSection}
           >
             {editingSection === "workPreference" ? (
               renderSectionEditor("workPreference")
