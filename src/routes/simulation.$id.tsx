@@ -729,6 +729,7 @@ function SimulationDetailPage() {
   return (
     <div className="mx-auto max-w-6xl px-4 py-12">
       {blockerDialog}
+      {aiPanel}
 
       <div className="grid gap-8 lg:grid-cols-2">
         {/* 왼쪽: 과제 내용 */}
