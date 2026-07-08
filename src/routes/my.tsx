@@ -581,6 +581,8 @@ function SectionRow({
 
 const LINK_PILL_CLASS =
   "inline-flex items-center gap-1.5 rounded-full border border-zinc-200 px-3 py-1 text-xs font-medium text-zinc-600 hover:border-zinc-400 hover:text-zinc-900";
+const PROFILE_LINK_INPUT_CLASS =
+  "inline-flex h-10 items-center gap-2 rounded-full border border-zinc-200 bg-white px-4 text-sm text-zinc-700 shadow-sm transition-colors focus-within:border-zinc-400";
 
 function normalizeExternalUrl(value: string | undefined) {
   const trimmed = value?.trim();
@@ -1994,68 +1996,61 @@ function MyPage() {
               />
             </div>
 
-            <div className="min-w-0">
-              <p className="text-lg font-bold text-zinc-900">{displayName}</p>
+            <div className="min-w-0 flex-1">
+              {editingProfileCard ? (
+                <Input
+                  id="display-name"
+                  value={draftDisplayName}
+                  onChange={(e) => setDraftDisplayName(e.target.value)}
+                  placeholder="이름을 입력해주세요"
+                  className="h-10 max-w-xs rounded-xl text-lg font-bold text-zinc-900"
+                />
+              ) : (
+                <p className="text-lg font-bold text-zinc-900">{displayName}</p>
+              )}
               <p className="mt-1 text-sm text-zinc-400">{user?.email}</p>
 
               {editingProfileCard ? (
                 <div className="mt-4 grid gap-3">
-                  <div>
-                    <Label htmlFor="display-name">이름</Label>
-                    <Input
-                      id="display-name"
-                      value={draftDisplayName}
-                      onChange={(e) => setDraftDisplayName(e.target.value)}
-                      placeholder="이름을 입력해주세요"
-                      className="mt-2"
-                    />
+                  <div className="grid gap-2">
+                    <label className={PROFILE_LINK_INPUT_CLASS} htmlFor="linkedin">
+                      <Linkedin className="h-4 w-4 shrink-0 text-zinc-500" />
+                      <Input
+                        id="linkedin"
+                        value={draftLinks.linkedin ?? ""}
+                        onChange={(e) =>
+                          setDraftLinks((prev) => ({ ...prev, linkedin: e.target.value }))
+                        }
+                        placeholder="LinkedIn"
+                        className="h-auto border-0 bg-transparent p-0 shadow-none focus-visible:ring-0"
+                      />
+                    </label>
+                    <label className={PROFILE_LINK_INPUT_CLASS} htmlFor="github">
+                      <Github className="h-4 w-4 shrink-0 text-zinc-500" />
+                      <Input
+                        id="github"
+                        value={draftLinks.github ?? ""}
+                        onChange={(e) =>
+                          setDraftLinks((prev) => ({ ...prev, github: e.target.value }))
+                        }
+                        placeholder="GitHub"
+                        className="h-auto border-0 bg-transparent p-0 shadow-none focus-visible:ring-0"
+                      />
+                    </label>
+                    <label className={PROFILE_LINK_INPUT_CLASS} htmlFor="portfolio">
+                      <Globe className="h-4 w-4 shrink-0 text-zinc-500" />
+                      <Input
+                        id="portfolio"
+                        value={draftLinks.portfolio ?? ""}
+                        onChange={(e) =>
+                          setDraftLinks((prev) => ({ ...prev, portfolio: e.target.value }))
+                        }
+                        placeholder="포트폴리오"
+                        className="h-auto border-0 bg-transparent p-0 shadow-none focus-visible:ring-0"
+                      />
+                    </label>
                   </div>
-                  <div>
-                    <Label htmlFor="profile-email">이메일</Label>
-                    <Input
-                      id="profile-email"
-                      value={userEmail}
-                      readOnly
-                      className="mt-2 bg-zinc-50 text-zinc-500"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="linkedin">LinkedIn</Label>
-                    <Input
-                      id="linkedin"
-                      value={draftLinks.linkedin ?? ""}
-                      onChange={(e) =>
-                        setDraftLinks((prev) => ({ ...prev, linkedin: e.target.value }))
-                      }
-                      placeholder="https://linkedin.com/in/..."
-                      className="mt-2"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="github">GitHub</Label>
-                    <Input
-                      id="github"
-                      value={draftLinks.github ?? ""}
-                      onChange={(e) =>
-                        setDraftLinks((prev) => ({ ...prev, github: e.target.value }))
-                      }
-                      placeholder="https://github.com/..."
-                      className="mt-2"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="portfolio">포트폴리오</Label>
-                    <Input
-                      id="portfolio"
-                      value={draftLinks.portfolio ?? ""}
-                      onChange={(e) =>
-                        setDraftLinks((prev) => ({ ...prev, portfolio: e.target.value }))
-                      }
-                      placeholder="https://..."
-                      className="mt-2"
-                    />
-                  </div>
-                  <div className="flex gap-2 pt-1">
+                  <div className="flex gap-2">
                     <Button
                       onClick={saveProfileCard}
                       disabled={savingProfileCard}
