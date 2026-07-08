@@ -181,7 +181,7 @@ function BizReview() {
   }, [data]);
 
   const activeFilterCount = useMemo(() => countActiveFilters(filters), [filters]);
-  const reviewTitle = roleFilter === "all" ? data?.company.roleLabel : roleFilter;
+  const reviewTitle = roleFilter === "all" ? "전체 직무" : roleFilter;
 
   const selectedApplicant = useMemo(
     () =>
