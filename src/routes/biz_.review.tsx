@@ -463,10 +463,10 @@ function BizReview() {
                   <button
                     type="button"
                     onClick={() => toggleMailSent(applicant.id)}
-                    disabled={mailingIds.has(applicant.id)}
+                    aria-disabled={mailingIds.has(applicant.id)}
                     aria-label={`${applicant.name} 메일 발송 표시`}
                     aria-pressed={mailSentIds.has(applicant.id)}
-                    className={`grid h-8 w-8 place-items-center rounded-md transition-colors hover:bg-white disabled:opacity-50 ${
+                    className={`grid h-8 w-8 place-items-center rounded-md transition-colors hover:bg-white ${
                       mailSentIds.has(applicant.id)
                         ? "text-blue-600"
                         : "text-pink-500 hover:text-pink-600"
@@ -481,10 +481,10 @@ function BizReview() {
                   <button
                     type="button"
                     onClick={() => toggleSaved(applicant.id)}
-                    disabled={savingIds.has(applicant.id)}
+                    aria-disabled={savingIds.has(applicant.id)}
                     aria-label={`${applicant.name} 관심 지원자`}
                     aria-pressed={savedIds.has(applicant.id)}
-                    className="grid h-8 w-8 place-items-center rounded-md text-neutral-400 hover:bg-white hover:text-neutral-900 disabled:opacity-50"
+                    className="grid h-8 w-8 place-items-center rounded-md text-neutral-400 hover:bg-white hover:text-neutral-900"
                   >
                     <Bookmark
                       className={`h-4 w-4 ${
