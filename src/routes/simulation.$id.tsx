@@ -474,10 +474,11 @@ function SimulationDetailPage() {
         <button
           type="button"
           onClick={() => setChatOpen(true)}
-          className="fixed bottom-6 right-6 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-zinc-900 text-white shadow-lg transition-transform hover:scale-105"
+          className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-full bg-zinc-900 px-5 py-3.5 text-sm font-medium text-white shadow-xl ring-1 ring-zinc-900/10 transition-transform hover:scale-105"
           aria-label="AI 어시스트 열기"
         >
-          <Sparkles className="h-6 w-6" />
+          <Sparkles className="h-5 w-5" />
+          <span>AI에게 질문</span>
         </button>
       )}
       {chatOpen && (
