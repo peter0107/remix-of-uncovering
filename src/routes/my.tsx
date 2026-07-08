@@ -1511,7 +1511,7 @@ function MyPage() {
     if (editingSection === "education") {
       const hasSchoolType = EDUCATION_SCHOOL_TYPES.some((item) =>
         draftForm.education_level.includes(item),
-      );
+      ) || draftForm.education_level.includes("대학교");
       const hasStatus = EDUCATION_STATUS_OPTIONS.some((item) =>
         draftForm.education_level.includes(item),
       );

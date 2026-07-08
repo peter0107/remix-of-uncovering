@@ -3,7 +3,7 @@ import { DOMAIN_CATEGORIES } from "@/lib/domain-categories";
 
 // ─── 상수 ────────────────────────────────────────────────────
 
-export const EDUCATION_SCHOOL_TYPES = ["고등학교", "대학교", "대학원"];
+export const EDUCATION_SCHOOL_TYPES = ["고등학교", "학부", "대학원"];
 export const EDUCATION_STATUS_OPTIONS = ["재학", "휴학", "졸업", "졸업예정", "중퇴", "수료"];
 
 export const UNIVERSITY_OPTIONS = [
@@ -316,7 +316,9 @@ export function SectionHeader({ title, subtitle }: { title: string; subtitle?: s
 }
 
 function splitEducationLevel(value: string) {
-  const schoolType = EDUCATION_SCHOOL_TYPES.find((item) => value.includes(item)) ?? "";
+  const schoolType =
+    EDUCATION_SCHOOL_TYPES.find((item) => value.includes(item)) ??
+    (value.includes("대학교") ? "학부" : "");
   const status =
     [...EDUCATION_STATUS_OPTIONS].sort((a, b) => b.length - a.length).find((item) =>
       value.includes(item),
