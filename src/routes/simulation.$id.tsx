@@ -587,6 +587,7 @@ function SimulationDetailPage() {
     return (
       <div className="mx-auto max-w-6xl px-4 py-12">
         {blockerDialog}
+        {aiPanel}
         {header}
 
         <div className="mt-8 grid gap-8 lg:grid-cols-2">
