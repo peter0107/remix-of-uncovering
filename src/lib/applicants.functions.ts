@@ -403,6 +403,40 @@ export const getApplicantsByCompanyCode = createServerFn({ method: "GET" })
 
     const applicants = ((rows ?? []) as Record<string, unknown>[]).map(mapApplicant);
 
+    // AI 어시스트 대화 로그를 submission id로 조회해 응시자 데이터에 병합
+    const applicantIds = applicants.map((a) => a.id);
+    if (applicantIds.length > 0) {
+      const { data: chatRows, error: chatError } = await supabase
+        .from("submissions")
+        .select("id, ai_chat_log")
+        .in("id", applicantIds);
+
+      if (chatError) {
+        console.error("Failed to load ai chat logs:", chatError);
+      } else {
+        const chatMap = new Map<string, AiChatMessage[]>();
+        for (const row of (chatRows ?? []) as { id: string; ai_chat_log: unknown }[]) {
+          const raw = Array.isArray(row.ai_chat_log) ? row.ai_chat_log : [];
+          const parsed: AiChatMessage[] = [];
+          for (const m of raw) {
+            if (typeof m !== "object" || m === null) continue;
+            const rec = m as Record<string, unknown>;
+            const role = rec.role === "user" || rec.role === "assistant" ? rec.role : null;
+            if (!role) continue;
+            parsed.push({
+              role,
+              content: String(rec.content ?? ""),
+              at: String(rec.at ?? ""),
+            });
+          }
+          chatMap.set(String(row.id), parsed);
+        }
+        for (const a of applicants) {
+          a.aiChatLog = chatMap.get(a.id) ?? [];
+        }
+      }
+    }
+
     const { data: reviewStateRows, error: reviewStateError } = await supabase
       .from("company_applicant_review_states")
       .select("applicant_id, read_at, mail_sent_at")
