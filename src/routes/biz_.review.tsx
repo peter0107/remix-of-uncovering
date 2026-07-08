@@ -136,6 +136,7 @@ function BizReview() {
   }, [data]);
 
   const activeFilterCount = useMemo(() => countActiveFilters(filters), [filters]);
+  const reviewTitle = roleFilter === "all" ? data?.company.roleLabel : roleFilter;
 
   const selectedApplicant = useMemo(
     () =>
@@ -257,9 +258,9 @@ function BizReview() {
 
       <main className="mx-auto grid max-w-7xl gap-6 px-6 py-8 xl:grid-cols-[360px_1fr]">
         <aside>
-          <h1 className="text-2xl font-semibold tracking-tight">{data.company.roleLabel}</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">{reviewTitle}</h1>
           <p className="mt-2 text-sm text-neutral-500">
-            총 {data.applicants.length}명의 제출자가 있습니다.
+            총 {visibleApplicants.length}명의 제출자가 있습니다.
           </p>
 
           <div className="mt-5 grid grid-cols-2 rounded-md border border-neutral-200 bg-white p-1">
