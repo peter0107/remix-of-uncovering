@@ -70,6 +70,7 @@ import {
   WorkPreferenceFields,
   WORK_REGIONS,
   EMPLOYMENT_TYPES,
+  EDUCATION_SCHOOL_TYPES,
 } from "@/lib/profile-fields";
 import { isDomainCategory } from "@/lib/domain-categories";
 
@@ -174,7 +175,7 @@ const EMPTY_RESUME_FORM: ResumeForm = {
 const EMPTY_SELECT_VALUE = "__empty__";
 const MONTH_OPTIONS = Array.from({ length: 12 }, (_, index) => String(index + 1).padStart(2, "0"));
 const SALARY_OPTIONS = Array.from({ length: 40 }, (_, index) => (index + 1) * 500);
-const EDUCATION_STATUS_OPTIONS = ["재학", "휴학", "수료", "졸업"];
+const EDUCATION_STATUS_OPTIONS = ["재학", "휴학", "졸업", "졸업예정", "중퇴", "수료"];
 const UNIVERSITY_OPTIONS = [
   "가야대학교",
   "가천대학교",
@@ -628,10 +629,10 @@ function asString(value: Json | undefined) {
 
 function normalizeEducationStatus(value: string) {
   if (EDUCATION_STATUS_OPTIONS.includes(value)) return value;
-  if (value.includes("졸")) return "졸업";
-  if (value.includes("재")) return "재학";
-  if (value.includes("휴")) return "휴학";
-  if (value.includes("수료")) return "수료";
+  const matched = [...EDUCATION_STATUS_OPTIONS]
+    .sort((a, b) => b.length - a.length)
+    .find((status) => value.includes(status));
+  if (matched) return matched;
   return "";
 }
 
@@ -649,9 +650,11 @@ function splitEducationDescription(description: string) {
     return { school: "", major: "", status: "" };
   }
 
-  const statusMatch = description.match(/\((재학|휴학|수료|졸업)\)$/);
+  const statusMatch = description.match(/\((재학|휴학|졸업|졸업예정|중퇴|수료)\)$/);
   const status = statusMatch?.[1] ?? "";
-  const withoutStatus = status ? description.replace(/\s*\((재학|휴학|수료|졸업)\)$/, "") : description;
+  const withoutStatus = status
+    ? description.replace(/\s*\((재학|휴학|졸업|졸업예정|중퇴|수료)\)$/, "")
+    : description;
   const matchedSchool = UNIVERSITY_OPTIONS.find((school) => withoutStatus.startsWith(school));
 
   if (!matchedSchool) {
@@ -1504,6 +1507,25 @@ function MyPage() {
     if (!user || !editingSection) return;
     const section = PROFILE_SECTIONS.find((item) => item.key === editingSection);
     if (!section) return;
+
+    if (editingSection === "education") {
+      const hasSchoolType = EDUCATION_SCHOOL_TYPES.some((item) =>
+        draftForm.education_level.includes(item),
+      );
+      const hasStatus = EDUCATION_STATUS_OPTIONS.some((item) =>
+        draftForm.education_level.includes(item),
+      );
+
+      if (
+        !draftForm.university_name.trim() ||
+        !hasSchoolType ||
+        !hasStatus ||
+        !draftForm.academic_mark
+      ) {
+        toast.error("학교명, 최종 학력, 학점을 입력해주세요.");
+        return;
+      }
+    }
 
     setSavingSection(true);
     const patch: TablesUpdate<"job_seekers"> = {};

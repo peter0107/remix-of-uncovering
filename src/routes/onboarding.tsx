@@ -14,6 +14,8 @@ import {
   CompanyInterestFields,
   WorkPreferenceFields,
   DiscoveryConsentFields,
+  EDUCATION_SCHOOL_TYPES,
+  EDUCATION_STATUS_OPTIONS,
 } from "@/lib/profile-fields";
 
 export const Route = createFileRoute("/onboarding")({
@@ -45,7 +47,17 @@ function OnboardingPage() {
     setDataRaw((prev) => ({ ...prev, ...partial }));
 
   const canProceed = () => {
-    if (step === 1) return data.education_level !== "";
+    if (step === 1) {
+      const hasSchoolType = EDUCATION_SCHOOL_TYPES.some((item) =>
+        data.education_level.includes(item),
+      );
+      const hasStatus = EDUCATION_STATUS_OPTIONS.some((item) =>
+        data.education_level.includes(item),
+      );
+      return Boolean(
+        data.university_name.trim() && hasSchoolType && hasStatus && data.academic_mark,
+      );
+    }
     if (step === 2) return data.job_interests.length > 0;
     return true;
   };

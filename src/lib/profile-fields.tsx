@@ -3,23 +3,222 @@ import { DOMAIN_CATEGORIES } from "@/lib/domain-categories";
 
 // ─── 상수 ────────────────────────────────────────────────────
 
-export const EDUCATION_LEVELS = [
-  "고등학교 재학·졸업",
-  "대학교 재학 중",
-  "대학교 졸업",
-  "대학원 재학 중",
-  "대학원 졸업",
-];
+export const EDUCATION_SCHOOL_TYPES = ["고등학교", "대학교", "대학원"];
+export const EDUCATION_STATUS_OPTIONS = ["재학", "휴학", "졸업", "졸업예정", "중퇴", "수료"];
 
-export const MAJORS = [
-  "경영·경제",
-  "컴퓨터공학·SW",
-  "통계·데이터",
-  "디자인",
-  "인문학",
-  "사회과학",
-  "공학 (비SW)",
-  "기타",
+export const UNIVERSITY_OPTIONS = [
+  "가야대학교",
+  "가천대학교",
+  "가톨릭관동대학교",
+  "가톨릭꽃동네대학교",
+  "가톨릭대학교",
+  "감리교신학대학교",
+  "강남대학교",
+  "강서대학교",
+  "강원대학교",
+  "건국대학교",
+  "건국대학교 GLOCAL캠퍼스",
+  "건양대학교",
+  "경기대학교",
+  "경남대학교",
+  "경동대학교",
+  "경북대학교",
+  "경상국립대학교",
+  "경성대학교",
+  "경운대학교",
+  "경인교육대학교",
+  "경일대학교",
+  "경찰대학",
+  "경희대학교",
+  "계명대학교",
+  "고려대학교",
+  "고려대학교 세종캠퍼스",
+  "고신대학교",
+  "공군사관학교",
+  "공주교육대학교",
+  "광신대학교",
+  "광운대학교",
+  "광주대학교",
+  "광주가톨릭대학교",
+  "광주과학기술원",
+  "광주교육대학교",
+  "광주여자대학교",
+  "국군간호사관학교",
+  "국립경국대학교",
+  "국립공주대학교",
+  "국립군산대학교",
+  "국립금오공과대학교",
+  "국립목포대학교",
+  "국립목포해양대학교",
+  "국립부경대학교",
+  "국립순천대학교",
+  "국립창원대학교",
+  "국립한국교통대학교",
+  "국립한국해양대학교",
+  "국립한밭대학교",
+  "국민대학교",
+  "극동대학교",
+  "금강대학교",
+  "김천대학교",
+  "나사렛대학교",
+  "나주대학교",
+  "남부대학교",
+  "남서울대학교",
+  "단국대학교",
+  "대구대학교",
+  "대구가톨릭대학교",
+  "대구경북과학기술원",
+  "대구교육대학교",
+  "대구예술대학교",
+  "대구한의대학교",
+  "대신대학교",
+  "대전대학교",
+  "대전가톨릭대학교",
+  "대전신학대학교",
+  "대진대학교",
+  "덕성여자대학교",
+  "동국대학교",
+  "동국대학교 WISE캠퍼스",
+  "동덕여자대학교",
+  "동명대학교",
+  "동서대학교",
+  "동신대학교",
+  "동아대학교",
+  "동아방송예술대학교",
+  "동양대학교",
+  "동의대학교",
+  "두원공과대학교",
+  "루터대학교",
+  "명지대학교",
+  "목원대학교",
+  "목포가톨릭대학교",
+  "배재대학교",
+  "백석대학교",
+  "부산대학교",
+  "부산가톨릭대학교",
+  "부산교육대학교",
+  "부산외국어대학교",
+  "부산장신대학교",
+  "삼육대학교",
+  "상명대학교",
+  "상지대학교",
+  "서강대학교",
+  "서경대학교",
+  "서울대학교",
+  "서울과학기술대학교",
+  "서울교육대학교",
+  "서울기독대학교",
+  "서울시립대학교",
+  "서울신학대학교",
+  "서울여자대학교",
+  "서울장신대학교",
+  "서울한영대학교",
+  "서원대학교",
+  "선문대학교",
+  "성결대학교",
+  "성공회대학교",
+  "성균관대학교",
+  "성신여자대학교",
+  "세명대학교",
+  "세종대학교",
+  "세한대학교",
+  "송원대학교",
+  "수원대학교",
+  "수원가톨릭대학교",
+  "숙명여자대학교",
+  "순천향대학교",
+  "숭실대학교",
+  "신경주대학교",
+  "신라대학교",
+  "신한대학교",
+  "서일대학교",
+  "아신대학교",
+  "아주대학교",
+  "안양대학교",
+  "연세대학교",
+  "연세대학교 미래캠퍼스",
+  "영남대학교",
+  "영남신학대학교",
+  "영산대학교",
+  "영산선학대학교",
+  "예수대학교",
+  "예원예술대학교",
+  "용인대학교",
+  "우석대학교",
+  "우송대학교",
+  "울산대학교",
+  "울산과학기술원",
+  "웅지세무대학교",
+  "원광대학교",
+  "위덕대학교",
+  "유원대학교",
+  "육군사관학교",
+  "을지대학교",
+  "이화여자대학교",
+  "인제대학교",
+  "인천대학교",
+  "인천가톨릭대학교",
+  "인하대학교",
+  "장로회신학대학교",
+  "전남대학교",
+  "전북대학교",
+  "전주대학교",
+  "전주교육대학교",
+  "제주대학교",
+  "제주국제대학교",
+  "제주한라대학교",
+  "조선대학교",
+  "중부대학교",
+  "중앙대학교",
+  "중앙승가대학교",
+  "중원대학교",
+  "진주교육대학교",
+  "차의과학대학교",
+  "창신대학교",
+  "청운대학교",
+  "청주교육대학교",
+  "청주대학교",
+  "초당대학교",
+  "총신대학교",
+  "추계예술대학교",
+  "춘천교육대학교",
+  "충남대학교",
+  "충북대학교",
+  "칼빈대학교",
+  "평택대학교",
+  "포항공과대학교",
+  "한경국립대학교",
+  "한국공학대학교",
+  "한국과학기술원",
+  "한국교원대학교",
+  "한국기술교육대학교",
+  "한국방송통신대학교",
+  "한국성서대학교",
+  "한국예술종합학교",
+  "한국외국어대학교",
+  "한국전통문화대학교",
+  "한국체육대학교",
+  "한국침례신학대학교",
+  "한국항공대학교",
+  "한남대학교",
+  "한동대학교",
+  "한라대학교",
+  "한림대학교",
+  "한서대학교",
+  "한성대학교",
+  "한세대학교",
+  "한신대학교",
+  "한양대학교",
+  "한양대학교 ERICA캠퍼스",
+  "한일장신대학교",
+  "해군사관학교",
+  "협성대학교",
+  "호남대학교",
+  "호남신학대학교",
+  "호서대학교",
+  "호원대학교",
+  "홍익대학교",
+  "화성의과학대학교",
 ];
 
 export const JOB_INTERESTS = DOMAIN_CATEGORIES;
@@ -116,6 +315,19 @@ export function SectionHeader({ title, subtitle }: { title: string; subtitle?: s
   );
 }
 
+function splitEducationLevel(value: string) {
+  const schoolType = EDUCATION_SCHOOL_TYPES.find((item) => value.includes(item)) ?? "";
+  const status =
+    [...EDUCATION_STATUS_OPTIONS].sort((a, b) => b.length - a.length).find((item) =>
+      value.includes(item),
+    ) ?? "";
+  return { schoolType, status };
+}
+
+function composeEducationLevel(schoolType: string, status: string) {
+  return [schoolType, status].filter(Boolean).join(" ");
+}
+
 // ─── 필드 섹션 ───────────────────────────────────────────────
 
 export function EducationFields({
@@ -127,11 +339,8 @@ export function EducationFields({
   setData: (d: Partial<ProfileFormData>) => void;
   showHeader?: boolean;
 }) {
-  const toggleMajor = (m: string) => {
-    setData({
-      majors: data.majors.includes(m) ? data.majors.filter((x) => x !== m) : [...data.majors, m],
-    });
-  };
+  const { schoolType, status } = splitEducationLevel(data.education_level);
+  const major = data.majors[0] ?? "";
 
   return (
     <div>
@@ -144,55 +353,72 @@ export function EducationFields({
         <p className="mb-3 text-sm font-semibold text-zinc-700">대학교 이름</p>
         <input
           type="text"
+          list="profile-university-options"
           placeholder="예: 연세대학교"
           value={data.university_name}
           onChange={(e) => setData({ university_name: e.target.value })}
           className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm outline-none focus:border-zinc-900"
         />
+        <datalist id="profile-university-options">
+          {UNIVERSITY_OPTIONS.map((school) => (
+            <option key={school} value={school} />
+          ))}
+        </datalist>
       </div>
 
       {/* 학력 */}
       <div className="mb-6">
-        <p className="mb-3 text-sm font-semibold text-zinc-700">현재/최종 학력</p>
-        <div className="flex flex-wrap gap-2">
-          {EDUCATION_LEVELS.map((level) => (
-            <Chip
-              key={level}
-              label={level}
-              selected={data.education_level === level}
-              onClick={() => setData({ education_level: level })}
-            />
-          ))}
+        <p className="mb-3 text-sm font-semibold text-zinc-700">최종 학력</p>
+        <div className="space-y-3">
+          <div className="flex flex-wrap gap-2">
+            {EDUCATION_SCHOOL_TYPES.map((type) => (
+              <Chip
+                key={type}
+                label={type}
+                selected={schoolType === type}
+                onClick={() => setData({ education_level: composeEducationLevel(type, status) })}
+              />
+            ))}
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {EDUCATION_STATUS_OPTIONS.map((option) => (
+              <Chip
+                key={option}
+                label={option}
+                selected={status === option}
+                onClick={() =>
+                  setData({ education_level: composeEducationLevel(schoolType, option) })
+                }
+              />
+            ))}
+          </div>
         </div>
       </div>
 
       {/* 전공 */}
       <div className="mb-6">
-        <p className="mb-3 text-sm font-semibold text-zinc-700">
-          전공 <span className="font-normal text-zinc-400">(복수 선택 가능)</span>
-        </p>
-        <div className="flex flex-wrap gap-2">
-          {MAJORS.map((m) => (
-            <Chip
-              key={m}
-              label={m}
-              selected={data.majors.includes(m)}
-              onClick={() => toggleMajor(m)}
-            />
-          ))}
-        </div>
+        <p className="mb-3 text-sm font-semibold text-zinc-700">전공</p>
+        <input
+          type="text"
+          placeholder="예: 신소재공학부"
+          value={major}
+          onChange={(e) => {
+            const value = e.target.value;
+            setData({ majors: value.trim() ? [value] : [] });
+          }}
+          className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm outline-none focus:border-zinc-900"
+        />
       </div>
 
       {/* 학점 */}
       <div>
-        <p className="mb-3 text-sm font-semibold text-zinc-700">
-          학점 <span className="font-normal text-zinc-400">(선택)</span>
-        </p>
+        <p className="mb-3 text-sm font-semibold text-zinc-700">학점</p>
         <input
           type="number"
           min={0}
           max={4.5}
           step={0.01}
+          required
           placeholder="예: 3.8"
           value={data.academic_mark}
           onChange={(e) => setData({ academic_mark: e.target.value })}
