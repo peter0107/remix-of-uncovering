@@ -32,6 +32,12 @@ export type SimulationStep = {
   answer: string;
 };
 
+export type AiChatMessage = {
+  role: "user" | "assistant";
+  content: string;
+  at: string;
+};
+
 export type Applicant = {
   id: string;
   name: string;
