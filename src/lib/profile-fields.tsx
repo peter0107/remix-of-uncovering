@@ -366,6 +366,21 @@ export function EducationFields({
         </datalist>
       </div>
 
+      {/* 전공 */}
+      <div className="mb-6">
+        <p className="mb-3 text-sm font-semibold text-zinc-700">전공</p>
+        <input
+          type="text"
+          placeholder="예: 신소재공학부"
+          value={major}
+          onChange={(e) => {
+            const value = e.target.value;
+            setData({ majors: value.trim() ? [value] : [] });
+          }}
+          className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm outline-none focus:border-zinc-900"
+        />
+      </div>
+
       {/* 학력 */}
       <div className="mb-6">
         <p className="mb-3 text-sm font-semibold text-zinc-700">최종 학력</p>
@@ -393,21 +408,6 @@ export function EducationFields({
             ))}
           </div>
         </div>
-      </div>
-
-      {/* 전공 */}
-      <div className="mb-6">
-        <p className="mb-3 text-sm font-semibold text-zinc-700">전공</p>
-        <input
-          type="text"
-          placeholder="예: 신소재공학부"
-          value={major}
-          onChange={(e) => {
-            const value = e.target.value;
-            setData({ majors: value.trim() ? [value] : [] });
-          }}
-          className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm outline-none focus:border-zinc-900"
-        />
       </div>
 
       {/* 학점 */}
