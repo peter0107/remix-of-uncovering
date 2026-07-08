@@ -333,6 +333,7 @@ function mapApplicant(row: Record<string, unknown>): Applicant {
       normalizeEmploymentType(String(row.employment_type ?? "")) || "근무 형태 미입력",
     resumeTitle: String(row.resume_title ?? "기본 프로필"),
     resumeSourceType: String(row.resume_source_type ?? ""),
+    aiChatLog: [],
   };
 }
 
