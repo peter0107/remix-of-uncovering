@@ -265,6 +265,7 @@ function SimulationDetailPage() {
         submitted_at: now.toISOString(),
         duration_sec: Math.round((now.getTime() - startedAt.getTime()) / 1000),
         answer_transmission_consent: consent,
+        ai_chat_log: chatMessages,
         ...(response_json ? { response_json } : {}),
       })
       .select("id")
