@@ -1,6 +1,15 @@
 import { createFileRoute, Link, useNavigate, useBlocker } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { Building2, CheckCircle2, Clock, AlertTriangle } from "lucide-react";
+import {
+  Building2,
+  CheckCircle2,
+  Clock,
+  AlertTriangle,
+  Sparkles,
+  Send,
+  X,
+  MessageCircle,
+} from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Card } from "@/components/ui/card";
