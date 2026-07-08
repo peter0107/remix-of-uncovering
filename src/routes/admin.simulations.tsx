@@ -218,7 +218,7 @@ function AdminSimulations() {
       roleLabel: company.roleLabel === company.name ? "" : company.roleLabel,
     });
     setEditingCompanyId(company.id);
-    setIsCompanyFormOpen(true);
+    setIsCompanyFormOpen(false);
   }
 
   function selectCompany(companyCode: string) {
@@ -467,59 +467,19 @@ function AdminSimulations() {
               기업 추가
             </button>
 
-            {isCompanyFormOpen && (
-              <form
+            {isCompanyFormOpen && !editingCompanyId && (
+              <CompanyFormEditor
+                title="새 기업 등록"
+                form={companyForm}
+                isSaving={isCreatingCompany}
+                submitLabel="기업 저장"
                 onSubmit={submitCompany}
-                className="mt-3 space-y-3 rounded-md bg-neutral-50 p-3"
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <p className="text-xs font-semibold text-neutral-700">
-                    {editingCompanyId ? "기업 정보 수정" : "새 기업 등록"}
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      resetCompanyForm();
-                      setIsCompanyFormOpen(false);
-                    }}
-                    className="grid h-7 w-7 place-items-center rounded-md text-neutral-400 hover:bg-white hover:text-neutral-900"
-                    aria-label="기업 폼 닫기"
-                  >
-                    <X className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-                <InputField
-                  label="기업 이름"
-                  value={companyForm.name}
-                  onChange={(value) => updateCompanyForm("name", value)}
-                  placeholder="예: B기업"
-                  required
-                />
-                <InputField
-                  label="기업 코드"
-                  value={companyForm.code}
-                  onChange={(value) => updateCompanyForm("code", value)}
-                  placeholder="예: BGNR-2024-B"
-                  required
-                />
-                <InputField
-                  label="기업 화면 표시명"
-                  value={companyForm.roleLabel}
-                  onChange={(value) => updateCompanyForm("roleLabel", value)}
-                  placeholder="비워두면 기업 이름"
-                />
-                <button
-                  type="submit"
-                  disabled={
-                    isCreatingCompany ||
-                    companyForm.name.trim().length === 0 ||
-                    companyForm.code.trim().length < 4
-                  }
-                  className="h-9 w-full rounded-md bg-neutral-900 px-3 text-xs font-medium text-white hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {isCreatingCompany ? "저장 중..." : editingCompanyId ? "수정 저장" : "기업 저장"}
-                </button>
-              </form>
+                onCancel={() => {
+                  resetCompanyForm();
+                  setIsCompanyFormOpen(false);
+                }}
+                onChange={updateCompanyForm}
+              />
             )}
           </div>
 
@@ -564,6 +524,19 @@ function AdminSimulations() {
                     <Trash2 className="h-4 w-4" />
                   </button>
                 </div>
+                {editingCompanyId === company.id && (
+                  <div className="col-span-2 mt-2 border-t border-neutral-200 pt-3">
+                    <CompanyFormEditor
+                      title="기업 정보 수정"
+                      form={companyForm}
+                      isSaving={isCreatingCompany}
+                      submitLabel="수정 저장"
+                      onSubmit={submitCompany}
+                      onCancel={resetCompanyForm}
+                      onChange={updateCompanyForm}
+                    />
+                  </div>
+                )}
               </div>
             ))}
 
@@ -785,6 +758,67 @@ function AdminShell({ children }: { children: React.ReactNode }) {
       </header>
       <main className="mx-auto max-w-7xl px-6 py-8">{children}</main>
     </div>
+  );
+}
+
+function CompanyFormEditor({
+  title,
+  form,
+  isSaving,
+  submitLabel,
+  onSubmit,
+  onCancel,
+  onChange,
+}: {
+  title: string;
+  form: CompanyForm;
+  isSaving: boolean;
+  submitLabel: string;
+  onSubmit: (event: FormEvent) => void;
+  onCancel: () => void;
+  onChange: <K extends keyof CompanyForm>(key: K, value: CompanyForm[K]) => void;
+}) {
+  return (
+    <form onSubmit={onSubmit} className="space-y-3 rounded-md bg-neutral-50 p-3">
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-xs font-semibold text-neutral-700">{title}</p>
+        <button
+          type="button"
+          onClick={onCancel}
+          className="grid h-7 w-7 place-items-center rounded-md text-neutral-400 hover:bg-white hover:text-neutral-900"
+          aria-label={`${title} 닫기`}
+        >
+          <X className="h-3.5 w-3.5" />
+        </button>
+      </div>
+      <InputField
+        label="기업 이름"
+        value={form.name}
+        onChange={(value) => onChange("name", value)}
+        placeholder="예: B기업"
+        required
+      />
+      <InputField
+        label="기업 코드"
+        value={form.code}
+        onChange={(value) => onChange("code", value)}
+        placeholder="예: BGNR-2024-B"
+        required
+      />
+      <InputField
+        label="기업 화면 표시명"
+        value={form.roleLabel}
+        onChange={(value) => onChange("roleLabel", value)}
+        placeholder="비워두면 기업 이름"
+      />
+      <button
+        type="submit"
+        disabled={isSaving || form.name.trim().length === 0 || form.code.trim().length < 4}
+        className="h-9 w-full rounded-md bg-neutral-900 px-3 text-xs font-medium text-white hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        {isSaving ? "저장 중..." : submitLabel}
+      </button>
+    </form>
   );
 }
 
