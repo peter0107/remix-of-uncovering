@@ -1212,9 +1212,53 @@ function ApplicantDetail({ applicant }: { applicant: Applicant }) {
                 ))}
               </div>
             </InfoBlock>
+
+            <InfoBlock
+              title={`AI 어시스트 활용 내역 (${applicant.aiChatLog.filter((m) => m.role === "user").length}건)`}
+            >
+              {applicant.aiChatLog.length === 0 ? (
+                <p className="text-sm text-neutral-500">
+                  응시 중 AI 어시스트를 사용하지 않았습니다.
+                </p>
+              ) : (
+                <ul className="space-y-3">
+                  {applicant.aiChatLog.map((m, i) => (
+                    <li
+                      key={i}
+                      className="rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2"
+                    >
+                      <div className="flex items-center gap-2 text-[11px] font-medium uppercase tracking-wide text-neutral-500">
+                        <span
+                          className={
+                            m.role === "user" ? "text-neutral-900" : "text-indigo-600"
+                          }
+                        >
+                          {m.role === "user" ? "응시자 질문" : "AI 응답"}
+                        </span>
+                        {m.at && (
+                          <span className="font-normal normal-case tracking-normal text-neutral-400">
+                            {new Date(m.at).toLocaleString("ko-KR", {
+                              timeZone: "Asia/Seoul",
+                              month: "2-digit",
+                              day: "2-digit",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </span>
+                        )}
+                      </div>
+                      <p className="mt-1 whitespace-pre-line text-sm leading-relaxed text-neutral-800">
+                        {m.content}
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </InfoBlock>
           </div>
         </section>
       </div>
+
 
       {isMailOpen && (
         <InterviewMailDialog applicant={applicant} onClose={() => setIsMailOpen(false)} />
