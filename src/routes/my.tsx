@@ -2164,12 +2164,12 @@ function MyPage() {
                   <span className="text-sm text-zinc-800">{profileForm.university_name}</span>
                 )}
                 {profileForm.majors.map((m) => (
-                  <Tag key={m}>{m}</Tag>
+                  <span key={m} className="text-sm text-zinc-800">
+                    {m}
+                  </span>
                 ))}
                 {profileForm.education_level && (
-                  <span className="text-sm text-zinc-800">
-                    {formatEducationLevelLabel(profileForm.education_level)}
-                  </span>
+                  <Tag>{formatEducationLevelLabel(profileForm.education_level)}</Tag>
                 )}
                 {profileForm.academic_mark && (
                   <span className="text-sm text-zinc-500">
