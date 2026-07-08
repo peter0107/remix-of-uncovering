@@ -417,6 +417,7 @@ export type Database = {
       }
       submissions: {
         Row: {
+          ai_chat_log: Json
           answer_transmission_consent: boolean | null
           created_at: string | null
           duration_sec: number | null
@@ -431,6 +432,7 @@ export type Database = {
           submitted_at: string | null
         }
         Insert: {
+          ai_chat_log?: Json
           answer_transmission_consent?: boolean | null
           created_at?: string | null
           duration_sec?: number | null
@@ -445,6 +447,7 @@ export type Database = {
           submitted_at?: string | null
         }
         Update: {
+          ai_chat_log?: Json
           answer_transmission_consent?: boolean | null
           created_at?: string | null
           duration_sec?: number | null
