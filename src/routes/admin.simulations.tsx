@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { Building2, ListChecks, Plus, RefreshCw, Save, Trash2 } from "lucide-react";
+import { Building2, ListChecks, Pencil, Plus, RefreshCw, Save, Trash2, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 
@@ -7,10 +7,12 @@ import { useAuth } from "@/hooks/use-auth";
 import {
   createCompany,
   createCompanySimulation,
+  deleteCompany,
   deleteCompanySimulation,
   getAdminCompanies,
   getAdminCompanySimulations,
   setCompanySimulationVisibility,
+  updateCompany,
   updateCompanySimulation,
   type AdminCompany,
   type AdminCompanySimulation,
@@ -93,12 +95,14 @@ function AdminSimulations() {
   const [form, setForm] = useState<SimulationForm>(EMPTY_FORM);
   const [companyForm, setCompanyForm] = useState<CompanyForm>(EMPTY_COMPANY_FORM);
   const [isCompanyFormOpen, setIsCompanyFormOpen] = useState(false);
+  const [editingCompanyId, setEditingCompanyId] = useState<string | null>(null);
   const [selectedCompanyCode, setSelectedCompanyCode] = useState("");
   const [selectedSimulationId, setSelectedSimulationId] = useState<string | null>(null);
   const [hasInitializedSelection, setHasInitializedSelection] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isCreatingCompany, setIsCreatingCompany] = useState(false);
+  const [actioningCompanyId, setActioningCompanyId] = useState<string | null>(null);
   const [actioningSimulationId, setActioningSimulationId] = useState<string | null>(null);
   const loadedUserIdRef = useRef<string | null>(null);
   const userId = user?.id ?? null;
@@ -197,6 +201,26 @@ function AdminSimulations() {
     setCompanyForm((current) => ({ ...current, [key]: value }));
   }
 
+  function resetCompanyForm() {
+    setCompanyForm(EMPTY_COMPANY_FORM);
+    setEditingCompanyId(null);
+  }
+
+  function startCreateCompany() {
+    resetCompanyForm();
+    setIsCompanyFormOpen((current) => !current || editingCompanyId !== null);
+  }
+
+  function startEditCompany(company: AdminCompany) {
+    setCompanyForm({
+      name: company.name,
+      code: company.code,
+      roleLabel: company.roleLabel === company.name ? "" : company.roleLabel,
+    });
+    setEditingCompanyId(company.id);
+    setIsCompanyFormOpen(true);
+  }
+
   function selectCompany(companyCode: string) {
     setSelectedCompanyCode(companyCode);
     const firstSimulation = simulations.find(
@@ -215,27 +239,81 @@ function AdminSimulations() {
 
     setIsCreatingCompany(true);
     try {
-      const company = await createCompany({
-        data: {
-          name: companyForm.name.trim(),
-          code: companyForm.code.trim(),
-          roleLabel: companyForm.roleLabel.trim(),
-        },
-      });
+      const isEditingCompany = Boolean(editingCompanyId);
+      const payload = {
+        name: companyForm.name.trim(),
+        code: companyForm.code.trim(),
+        roleLabel: companyForm.roleLabel.trim(),
+      };
 
-      setCompanyForm(EMPTY_COMPANY_FORM);
+      const company = isEditingCompany
+        ? await updateCompany({
+            data: {
+              id: editingCompanyId!,
+              ...payload,
+            },
+          })
+        : await createCompany({ data: payload });
+
+      resetCompanyForm();
       setIsCompanyFormOpen(false);
       setHasInitializedSelection(true);
       setSelectedCompanyCode(company.code);
       startNewSimulation(company.code);
       await loadSimulations();
       toast.success(
-        `${company.name} 기업을 추가했습니다. /biz에서 ${company.code} 코드로 접속할 수 있습니다.`,
+        isEditingCompany
+          ? `${company.name} 기업 정보를 수정했습니다.`
+          : `${company.name} 기업을 추가했습니다. /biz에서 ${company.code} 코드로 접속할 수 있습니다.`,
       );
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "기업을 추가하지 못했습니다.");
+      toast.error(err instanceof Error ? err.message : "기업 정보를 저장하지 못했습니다.");
     } finally {
       setIsCreatingCompany(false);
+    }
+  }
+
+  async function removeCompany(company: AdminCompany & { simulationCount: number }) {
+    if (actioningCompanyId) return;
+    const confirmed = window.confirm(
+      `${company.name} 기업을 삭제할까요? 연결된 직무 시뮬레이션과 제출/관심 지원자 데이터도 함께 삭제될 수 있습니다.`,
+    );
+    if (!confirmed) return;
+
+    setActioningCompanyId(company.id);
+    try {
+      await deleteCompany({ data: { id: company.id } });
+      const nextCompanies = companiesWithCounts.filter((item) => item.id !== company.id);
+      setCompanies((current) => current.filter((item) => item.id !== company.id));
+      setSimulations((current) => current.filter((item) => item.companyId !== company.id));
+
+      if (editingCompanyId === company.id) {
+        resetCompanyForm();
+        setIsCompanyFormOpen(false);
+      }
+
+      if (selectedCompanyCode === company.code) {
+        const nextCompany = nextCompanies[0];
+        if (nextCompany) {
+          setSelectedCompanyCode(nextCompany.code);
+          const nextSimulation = simulations.find(
+            (simulation) =>
+              simulation.companyCode === nextCompany.code && simulation.companyId !== company.id,
+          );
+          if (nextSimulation) selectSimulation(nextSimulation);
+          else startNewSimulation(nextCompany.code);
+        } else {
+          setSelectedCompanyCode("");
+          setSelectedSimulationId(null);
+          setForm(EMPTY_FORM);
+        }
+      }
+
+      toast.success(`${company.name} 기업을 삭제했습니다.`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "기업을 삭제하지 못했습니다.");
+    } finally {
+      setActioningCompanyId(null);
     }
   }
 
@@ -382,7 +460,7 @@ function AdminSimulations() {
           <div className="border-b border-neutral-200 p-3">
             <button
               type="button"
-              onClick={() => setIsCompanyFormOpen((current) => !current)}
+              onClick={startCreateCompany}
               className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-md bg-neutral-900 px-3 text-xs font-medium text-white hover:bg-neutral-800"
             >
               <Plus className="h-3.5 w-3.5" />
@@ -394,6 +472,22 @@ function AdminSimulations() {
                 onSubmit={submitCompany}
                 className="mt-3 space-y-3 rounded-md bg-neutral-50 p-3"
               >
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-xs font-semibold text-neutral-700">
+                    {editingCompanyId ? "기업 정보 수정" : "새 기업 등록"}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      resetCompanyForm();
+                      setIsCompanyFormOpen(false);
+                    }}
+                    className="grid h-7 w-7 place-items-center rounded-md text-neutral-400 hover:bg-white hover:text-neutral-900"
+                    aria-label="기업 폼 닫기"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
                 <InputField
                   label="기업 이름"
                   value={companyForm.name}
@@ -423,7 +517,7 @@ function AdminSimulations() {
                   }
                   className="h-9 w-full rounded-md bg-neutral-900 px-3 text-xs font-medium text-white hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  {isCreatingCompany ? "추가 중..." : "기업 저장"}
+                  {isCreatingCompany ? "저장 중..." : editingCompanyId ? "수정 저장" : "기업 저장"}
                 </button>
               </form>
             )}
@@ -431,22 +525,46 @@ function AdminSimulations() {
 
           <div className="min-h-0 flex-1 space-y-2 overflow-y-auto p-3">
             {companiesWithCounts.map((company) => (
-              <button
+              <div
                 key={company.code}
-                type="button"
-                onClick={() => selectCompany(company.code)}
-                className={`w-full rounded-md border p-4 text-left transition-colors ${
+                className={`grid grid-cols-[1fr_auto] gap-2 rounded-md border p-4 text-left transition-colors ${
                   company.code === selectedCompanyCode
                     ? "border-neutral-900 bg-neutral-50"
                     : "border-neutral-200 hover:bg-neutral-50"
                 }`}
               >
-                <div className="text-sm font-semibold text-neutral-900">{company.name}</div>
-                <div className="mt-1 text-xs text-neutral-500">{company.code}</div>
-                <div className="mt-3 text-xs text-neutral-400">
-                  시뮬레이션 {company.simulationCount}개
+                <button
+                  type="button"
+                  onClick={() => selectCompany(company.code)}
+                  className="min-w-0 text-left"
+                >
+                  <div className="text-sm font-semibold text-neutral-900">{company.name}</div>
+                  <div className="mt-1 truncate text-xs text-neutral-500">{company.code}</div>
+                  <div className="mt-3 text-xs text-neutral-400">
+                    시뮬레이션 {company.simulationCount}개
+                  </div>
+                </button>
+                <div className="flex shrink-0 flex-col gap-1">
+                  <button
+                    type="button"
+                    onClick={() => startEditCompany(company)}
+                    disabled={actioningCompanyId === company.id}
+                    aria-label={`${company.name} 기업 수정`}
+                    className="grid h-8 w-8 place-items-center rounded-md text-neutral-400 transition-colors hover:bg-white hover:text-neutral-900 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => removeCompany(company)}
+                    disabled={actioningCompanyId === company.id}
+                    aria-label={`${company.name} 기업 삭제`}
+                    className="grid h-8 w-8 place-items-center rounded-md text-neutral-400 transition-colors hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
                 </div>
-              </button>
+              </div>
             ))}
 
             {companiesWithCounts.length === 0 && (

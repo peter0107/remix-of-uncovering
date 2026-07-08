@@ -39,6 +39,14 @@ const createCompanyInputSchema = z.object({
   roleLabel: z.string().optional().default(""),
 });
 
+const updateCompanyInputSchema = createCompanyInputSchema.extend({
+  id: z.string().uuid(),
+});
+
+const companyIdInputSchema = z.object({
+  id: z.string().uuid(),
+});
+
 const createCompanySimulationInputSchema = z.object({
   companyCode: z.string().min(1),
   title: z.string().min(1),
@@ -243,6 +251,68 @@ export const createCompany = createServerFn({ method: "POST" })
     }
 
     return mapAdminCompany(row as Record<string, unknown>);
+  });
+
+export const updateCompany = createServerFn({ method: "POST" })
+  .inputValidator(updateCompanyInputSchema)
+  .handler(async ({ data }) => {
+    await assertAdmin();
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const code = data.code.trim().toUpperCase();
+    const name = data.name.trim();
+    const roleLabel = data.roleLabel.trim() || name;
+
+    const { data: existing, error: existingError } = await supabaseAdmin
+      .from("companies")
+      .select("id")
+      .or(`code.eq.${code},unique_code.eq.${code}`)
+      .neq("id", data.id)
+      .maybeSingle();
+
+    if (existingError) {
+      console.error("Failed to check company code:", existingError);
+      throw new Error("Failed to check company code");
+    }
+
+    if (existing) {
+      throw new Error("이미 사용 중인 기업 코드입니다.");
+    }
+
+    const { data: row, error } = await supabaseAdmin
+      .from("companies")
+      .update({
+        name,
+        code,
+        unique_code: code,
+        role_label: roleLabel,
+      })
+      .eq("id", data.id)
+      .select("id, code, unique_code, name, role_label, created_at")
+      .single();
+
+    if (error) {
+      console.error("Failed to update company:", error);
+      throw new Error("Failed to update company");
+    }
+
+    return mapAdminCompany(row as Record<string, unknown>);
+  });
+
+export const deleteCompany = createServerFn({ method: "POST" })
+  .inputValidator(companyIdInputSchema)
+  .handler(async ({ data }) => {
+    await assertAdmin();
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { error } = await supabaseAdmin.from("companies").delete().eq("id", data.id);
+
+    if (error) {
+      console.error("Failed to delete company:", error);
+      throw new Error("Failed to delete company");
+    }
+
+    return { ok: true };
   });
 
 export const createCompanySimulation = createServerFn({ method: "POST" })
