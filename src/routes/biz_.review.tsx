@@ -450,7 +450,7 @@ function BizReview() {
                     {!readIds.has(applicant.id) && (
                       <span
                         aria-label="새 제출"
-                        className="h-2 w-2 shrink-0 rounded-full bg-red-500"
+                        className="h-1.5 w-1.5 shrink-0 rounded-full bg-red-500"
                       />
                     )}
                     <span>{applicant.name}</span>
