@@ -857,7 +857,7 @@ function AdminSimulations() {
                     <img
                       src={company.logoUrl}
                       alt={`${company.name} 로고`}
-                      className="h-full w-full object-contain p-1.5"
+                      className="h-full w-full object-cover"
                     />
                   ) : (
                     company.name.trim().slice(0, 1) || "B"

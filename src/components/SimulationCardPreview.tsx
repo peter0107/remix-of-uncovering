@@ -104,7 +104,7 @@ export function SimulationCardPreview({
     <img
       src={companyLogoUrl.trim()}
       alt={`${resolvedCompanyName} 로고`}
-      className="h-full w-full object-contain p-1.5"
+      className="h-full w-full object-cover"
     />
   ) : (
     <span className={cn("grid h-full w-full place-items-center", logoTone)}>{logoText}</span>
