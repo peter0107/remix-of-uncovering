@@ -934,7 +934,7 @@ function AdminSimulations() {
         </button>
       </div>
 
-      <div className="mt-6 grid gap-6 xl:grid-cols-[280px_320px_1fr]">
+      <div className="mt-6 grid gap-6 xl:grid-cols-[280px_320px_minmax(0,1fr)]">
         <section className="flex min-h-0 flex-col rounded-md border border-neutral-200">
           <div className="flex items-center justify-between border-b border-neutral-200 p-4">
             <div>

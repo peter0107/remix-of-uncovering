@@ -1,5 +1,6 @@
 import {
   Bold,
+  ChevronDown,
   Code2,
   Columns3,
   Heading2,
@@ -417,6 +418,26 @@ export function RichTextEditor({
     return `<table><tbody>${Array.from({ length: rows }, () => `<tr>${cells}</tr>`).join("")}</tbody></table><p><br></p>`;
   };
 
+  const insertTable = (rows: number, columns: number) => {
+    restoreSelection();
+    const editor = editorRef.current;
+    const markup = buildTable(rows, columns);
+    const insertedWithHistory = document.execCommand("insertHTML", false, markup);
+
+    if (!insertedWithHistory && editor) {
+      const selection = window.getSelection();
+      const range = selection?.rangeCount ? selection.getRangeAt(0) : null;
+      if (range && editor.contains(range.commonAncestorContainer)) {
+        range.deleteContents();
+        range.insertNode(range.createContextualFragment(markup));
+      } else {
+        editor.insertAdjacentHTML("beforeend", markup);
+      }
+    }
+
+    commitChange();
+  };
+
   const focusTableCell = (tableIndex: number, rowIndex: number, columnIndex: number) => {
     const editor = editorRef.current;
     if (!editor) return;
@@ -545,7 +566,7 @@ export function RichTextEditor({
   return (
     <div className="min-w-0 max-w-full">
       <p className="mb-2 text-xs font-medium text-neutral-700">{label}</p>
-      <div className="overflow-hidden rounded-md border border-neutral-300 bg-white focus-within:border-neutral-900 focus-within:ring-1 focus-within:ring-neutral-900">
+      <div className="rounded-md border border-neutral-300 bg-white focus-within:border-neutral-900 focus-within:ring-1 focus-within:ring-neutral-900">
         <div className="max-w-full overflow-x-auto border-b border-neutral-200 bg-neutral-50">
           <div className="flex min-w-max items-center gap-0.5 px-2 py-1">
             <ToolbarButton label="굵게" onClick={() => command("bold")}>
@@ -584,16 +605,23 @@ export function RichTextEditor({
             <ToolbarButton label="코드 블록" active={isCodeBlock} onClick={toggleCodeBlock}>
               <span className="font-mono text-xs">&lt;/&gt;</span>
             </ToolbarButton>
-            <div className="relative">
-              <ToolbarButton
-                label="표 삽입"
-                active={activePalette === "table"}
+            <div className="relative flex items-center">
+              <ToolbarButton label="기본 3 x 3 표 삽입" onClick={() => insertTable(3, 3)}>
+                <Table2 className="h-4 w-4" />
+              </ToolbarButton>
+              <button
+                type="button"
+                title="표 크기 선택"
+                aria-label="표 크기 선택"
+                aria-expanded={activePalette === "table"}
+                onMouseDown={(event) => event.preventDefault()}
                 onClick={() =>
                   setActivePalette((current) => (current === "table" ? null : "table"))
                 }
+                className="-ml-1 grid h-8 w-4 place-items-center rounded-r-md text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-neutral-900"
               >
-                <Table2 className="h-4 w-4" />
-              </ToolbarButton>
+                <ChevronDown className="h-3 w-3" />
+              </button>
               {activePalette === "table" && (
                 <div className="absolute left-0 top-10 z-20 w-48 rounded-md border border-neutral-200 bg-white p-2 shadow-lg">
                   <p className="mb-2 text-xs text-neutral-500">
@@ -612,7 +640,7 @@ export function RichTextEditor({
                           onMouseDown={(event) => event.preventDefault()}
                           onMouseEnter={() => setTableGridSize({ rows: row, columns: column })}
                           onClick={() => {
-                            command("insertHTML", buildTable(row, column));
+                            insertTable(row, column);
                             setActivePalette(null);
                           }}
                           className={`h-5 rounded-sm border ${
