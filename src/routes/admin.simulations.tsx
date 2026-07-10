@@ -50,6 +50,7 @@ import {
   type AdminCompanySimulation,
   type AdminSimulationPrompt,
   type AdminSimulationStep,
+  type SimulationFormat,
 } from "@/lib/simulations.functions";
 import { DOMAIN_CATEGORIES, type DomainCategory } from "@/lib/domain-categories";
 
@@ -61,6 +62,8 @@ type SimulationForm = {
   cardImageUrl: string;
   domain: string;
   estimatedMinutes: string;
+  simulationFormat: SimulationFormat;
+  singleAnswerQuestion: string;
   taskPrompt: string;
   steps: AdminSimulationStep[];
 };
@@ -189,8 +192,10 @@ function createEmptyForm(companyCode = ""): SimulationForm {
     cardImageUrl: "",
     domain: DOMAIN_CATEGORIES[0],
     estimatedMinutes: "60",
+    simulationFormat: "single",
+    singleAnswerQuestion: "",
     taskPrompt: "",
-    steps: [createStep()],
+    steps: [],
   };
 }
 
@@ -205,6 +210,8 @@ function formFromSimulation(simulation: AdminCompanySimulation): SimulationForm 
       ? simulation.domain
       : DOMAIN_CATEGORIES[0],
     estimatedMinutes: simulation.estimatedMinutes ? String(simulation.estimatedMinutes) : "",
+    simulationFormat: simulation.simulationFormat,
+    singleAnswerQuestion: simulation.singleAnswerQuestion,
     taskPrompt: simulation.taskPrompt,
     steps: normaliseSteps(simulation.steps),
   };
@@ -218,6 +225,8 @@ const EMPTY_FORM: SimulationForm = {
   cardImageUrl: "",
   domain: DOMAIN_CATEGORIES[0],
   estimatedMinutes: "60",
+  simulationFormat: "single",
+  singleAnswerQuestion: "",
   taskPrompt: "",
   steps: [],
 };
@@ -796,8 +805,15 @@ function AdminSimulations() {
     if (isSaving) return;
 
     const steps = prepareSteps(form.steps);
-    if (!form.taskPrompt.trim() && !hasValidSteps(steps)) {
-      toast.error("과제 본문 또는 단계별 구성에서 최소 한 단계와 질문을 작성해주세요.");
+    if (
+      form.simulationFormat === "single" &&
+      (!form.taskPrompt.trim() || !form.singleAnswerQuestion.trim())
+    ) {
+      toast.error("단일형은 과제 본문과 답변 질문을 모두 작성해주세요.");
+      return;
+    }
+    if (form.simulationFormat === "selection" && !hasValidSteps(steps)) {
+      toast.error("선택형은 최소 한 단계와 답변 질문을 작성해주세요.");
       return;
     }
 
@@ -815,6 +831,8 @@ function AdminSimulations() {
         cardImageUrl: form.cardImageUrl.trim(),
         domain: form.domain as DomainCategory,
         estimatedMinutes: Number.isFinite(estimatedMinutes) ? estimatedMinutes : null,
+        simulationFormat: form.simulationFormat,
+        singleAnswerQuestion: form.singleAnswerQuestion.trim(),
         taskPrompt: form.taskPrompt.trim(),
         steps,
       };
@@ -1222,15 +1240,52 @@ function AdminSimulations() {
               rows={3}
             />
 
-            <RichTextEditor
-              label="기존 단일형 과제 본문"
-              value={form.taskPrompt}
-              onChange={(value) => updateForm("taskPrompt", value)}
-              placeholder="단계별 구성을 사용하지 않는 시뮬레이션의 과제 본문을 작성하세요."
-              minHeight="20rem"
-            />
+            <div>
+              <p className="text-xs font-medium text-neutral-600">시뮬레이션 형식</p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {(
+                  [
+                    ["single", "단일형"],
+                    ["selection", "선택형"],
+                  ] as const
+                ).map(([format, label]) => (
+                  <button
+                    key={format}
+                    type="button"
+                    aria-pressed={form.simulationFormat === format}
+                    onClick={() => updateForm("simulationFormat", format)}
+                    className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
+                      form.simulationFormat === format
+                        ? "bg-neutral-900 text-white"
+                        : "bg-neutral-100 text-neutral-500 hover:bg-neutral-200 hover:text-neutral-900"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
 
-            <StepEditor steps={form.steps} onChange={updateSteps} />
+            {form.simulationFormat === "single" ? (
+              <>
+                <RichTextEditor
+                  label="과제 본문"
+                  value={form.taskPrompt}
+                  onChange={(value) => updateForm("taskPrompt", value)}
+                  placeholder="유저에게 보여줄 과제 내용과 자료를 작성하세요."
+                  minHeight="20rem"
+                />
+                <InputField
+                  label="답변 질문"
+                  value={form.singleAnswerQuestion}
+                  onChange={(value) => updateForm("singleAnswerQuestion", value)}
+                  placeholder="예: 이 상황에서 제안할 실행 전략을 작성해주세요."
+                  required
+                />
+              </>
+            ) : (
+              <StepEditor steps={form.steps} onChange={updateSteps} />
+            )}
 
             <div className="flex justify-end gap-2">
               <button
@@ -1257,7 +1312,9 @@ function AdminSimulations() {
                   !form.roleLabel.trim() ||
                   !form.title.trim() ||
                   !form.domain.trim() ||
-                  (!form.taskPrompt.trim() && !hasValidSteps(form.steps))
+                  (form.simulationFormat === "single"
+                    ? !form.taskPrompt.trim() || !form.singleAnswerQuestion.trim()
+                    : !hasValidSteps(form.steps))
                 }
                 className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-neutral-900 px-4 text-sm font-medium text-white hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-50"
               >

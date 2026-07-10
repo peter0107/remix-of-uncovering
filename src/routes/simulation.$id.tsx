@@ -47,6 +47,8 @@ export const Route = createFileRoute("/simulation/$id")({
 type SimulationDetail = {
   id: string;
   title: string;
+  simulation_format: "single" | "selection";
+  single_answer_question: string | null;
   task_prompt: string | null;
   steps: unknown;
   estimated_minutes: number | null;
@@ -153,8 +155,9 @@ function SimulationDetailPage() {
   });
 
   const model: WizardModel | null = useMemo(
-    () => buildWizardModel(sim?.task_prompt, sim?.steps),
-    [sim?.task_prompt, sim?.steps],
+    () =>
+      sim?.simulation_format === "selection" ? buildWizardModel(sim.task_prompt, sim.steps) : null,
+    [sim?.simulation_format, sim?.task_prompt, sim?.steps],
   );
   const draftKey = `sim-draft-${id}`;
 
@@ -163,7 +166,9 @@ function SimulationDetailPage() {
 
     supabase
       .from("job_simulations")
-      .select("id, title, task_prompt, steps, estimated_minutes, companies(name)")
+      .select(
+        "id, title, simulation_format, single_answer_question, task_prompt, steps, estimated_minutes, companies(name)",
+      )
       .eq("id", id)
       .eq("is_public", true)
       .is("deleted_at", null)
@@ -173,6 +178,8 @@ function SimulationDetailPage() {
           const row = data as unknown as {
             id: string;
             title: string;
+            simulation_format: "single" | "selection" | null;
+            single_answer_question: string | null;
             task_prompt: string | null;
             steps: unknown;
             estimated_minutes: number | null;
@@ -181,6 +188,8 @@ function SimulationDetailPage() {
           setSim({
             id: row.id,
             title: row.title,
+            simulation_format: row.simulation_format === "selection" ? "selection" : "single",
+            single_answer_question: row.single_answer_question,
             task_prompt: row.task_prompt,
             steps: row.steps,
             estimated_minutes: row.estimated_minutes,
@@ -734,7 +743,7 @@ function SimulationDetailPage() {
         <div className="flex flex-col lg:sticky lg:top-20 lg:h-[calc(100vh-6rem)]">
           <div className="flex min-h-0 flex-1 flex-col">
             <label htmlFor="response" className="text-sm font-medium text-zinc-700">
-              답안 작성
+              {sim.single_answer_question?.trim() || "답안 작성"}
             </label>
             <Textarea
               id="response"
