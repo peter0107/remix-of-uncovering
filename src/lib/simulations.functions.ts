@@ -29,9 +29,29 @@ export type AdminCompanySimulation = {
   cardImageUrl: string;
   description: string;
   taskPrompt: string;
+  steps: AdminSimulationStep[];
   isPublic: boolean;
   deletedAt: string | null;
   createdAt: string;
+};
+
+export type AdminSimulationPrompt = {
+  id: string;
+  label: string;
+  body: string;
+};
+
+export type AdminSimulationStep = {
+  id: string;
+  title: string;
+  durationMin?: number;
+  difficulty?: number;
+  tags?: string[];
+  situation?: string;
+  materials?: string;
+  hint?: string;
+  completionMessage?: string;
+  prompts: AdminSimulationPrompt[];
 };
 
 const domainCategorySchema = z.enum(DOMAIN_CATEGORIES);
@@ -60,7 +80,29 @@ const createCompanySimulationInputSchema = z.object({
   jobFamily: z.string().optional().default(""),
   domain: domainCategorySchema,
   estimatedMinutes: z.number().int().positive().nullable().optional().default(null),
-  taskPrompt: z.string().min(1),
+  taskPrompt: z.string().optional().default(""),
+  steps: z
+    .array(
+      z.object({
+        id: z.string().min(1),
+        title: z.string().min(1),
+        durationMin: z.number().int().positive().optional(),
+        difficulty: z.number().int().min(1).max(5).optional(),
+        tags: z.array(z.string().min(1)).optional(),
+        situation: z.string().optional(),
+        materials: z.string().optional(),
+        hint: z.string().optional(),
+        completionMessage: z.string().optional(),
+        prompts: z.array(
+          z.object({
+            id: z.string().min(1),
+            label: z.string().min(1),
+            body: z.string().optional().default(""),
+          }),
+        ),
+      }),
+    )
+    .default([]),
 });
 
 const updateCompanySimulationInputSchema = createCompanySimulationInputSchema.extend({
@@ -156,6 +198,7 @@ function mapAdminSimulation(row: Record<string, unknown>): AdminCompanySimulatio
     cardImageUrl: String(row.card_image_url ?? ""),
     description: String(row.description ?? ""),
     taskPrompt: String(row.task_prompt ?? ""),
+    steps: Array.isArray(row.steps) ? (row.steps as AdminSimulationStep[]) : [],
     isPublic: row.is_public !== false,
     deletedAt: row.deleted_at ? String(row.deleted_at) : null,
     createdAt: formatDateTime(String(row.created_at)),
@@ -203,7 +246,7 @@ export const getAdminCompanySimulations = createServerFn({ method: "GET" }).hand
     const { data, error } = await supabaseAdmin
       .from("job_simulations")
       .select(
-        "id, company_id, title, role_label, job_family, domain, estimated_minutes, card_image_url, description, task_prompt, is_public, deleted_at, created_at, companies(code, unique_code, name, logo_url)",
+        "id, company_id, title, role_label, job_family, domain, estimated_minutes, card_image_url, description, task_prompt, steps, is_public, deleted_at, created_at, companies(code, unique_code, name, logo_url)",
       )
       .is("deleted_at", null)
       .order("created_at", { ascending: false });
@@ -356,6 +399,7 @@ export const createCompanySimulation = createServerFn({ method: "POST" })
         domain: data.domain,
         estimated_minutes: data.estimatedMinutes,
         task_prompt: data.taskPrompt,
+        steps: data.steps,
         is_public: true,
       })
       .select("id")
@@ -398,6 +442,7 @@ export const updateCompanySimulation = createServerFn({ method: "POST" })
         domain: data.domain,
         estimated_minutes: data.estimatedMinutes,
         task_prompt: data.taskPrompt,
+        steps: data.steps,
       })
       .eq("id", data.id);
 

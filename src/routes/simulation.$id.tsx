@@ -516,17 +516,12 @@ function SimulationDetailPage() {
             {chatMessages.map((m, i) => (
               <div
                 key={i}
-                className={cn(
-                  "flex",
-                  m.role === "user" ? "justify-end" : "justify-start",
-                )}
+                className={cn("flex", m.role === "user" ? "justify-end" : "justify-start")}
               >
                 <div
                   className={cn(
                     "max-w-[80%] whitespace-pre-wrap rounded-2xl px-3 py-2 text-sm leading-relaxed",
-                    m.role === "user"
-                      ? "bg-zinc-900 text-white"
-                      : "bg-zinc-100 text-zinc-800",
+                    m.role === "user" ? "bg-zinc-900 text-white" : "bg-zinc-100 text-zinc-800",
                   )}
                 >
                   {m.content}
@@ -576,8 +571,6 @@ function SimulationDetailPage() {
     </>
   );
 
-
-
   // ---------- 스텝 위저드 ----------
   if (model) {
     const step = model.steps[stepIdx];
@@ -596,9 +589,6 @@ function SimulationDetailPage() {
           <div className="lg:sticky lg:top-20 lg:max-h-[calc(100vh-6rem)] lg:self-start lg:overflow-y-auto">
             <div className="flex flex-col gap-5">
               {step.situation && <MaterialSection label="상황 안내" markdown={step.situation} />}
-              {step.prevSummary && (
-                <MaterialSection label="이전 단계 요약" markdown={step.prevSummary} />
-              )}
               {step.materials && <MaterialSection label="제공 자료" markdown={step.materials} />}
               {/* 자동 분할(폴백): 전 단계 공통 배경 */}
               {model.sharedBackground && (

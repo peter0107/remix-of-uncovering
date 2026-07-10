@@ -1,5 +1,16 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { Building2, ListChecks, Pencil, Plus, RefreshCw, Save, Trash2, X } from "lucide-react";
+import {
+  Building2,
+  ChevronDown,
+  ChevronUp,
+  ListChecks,
+  Pencil,
+  Plus,
+  RefreshCw,
+  Save,
+  Trash2,
+  X,
+} from "lucide-react";
 import {
   useCallback,
   type ChangeEvent,
@@ -36,6 +47,8 @@ import {
   updateCompanySimulation,
   type AdminCompany,
   type AdminCompanySimulation,
+  type AdminSimulationPrompt,
+  type AdminSimulationStep,
 } from "@/lib/simulations.functions";
 import { DOMAIN_CATEGORIES, type DomainCategory } from "@/lib/domain-categories";
 
@@ -48,6 +61,7 @@ type SimulationForm = {
   domain: string;
   estimatedMinutes: string;
   taskPrompt: string;
+  steps: AdminSimulationStep[];
 };
 
 type CompanyForm = {
@@ -88,6 +102,83 @@ const EMPTY_COMPANY_FORM: CompanyForm = {
   roleLabel: "",
 };
 
+function createPrompt(): AdminSimulationPrompt {
+  const id = `prompt-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  return { id, label: "", body: "" };
+}
+
+function createStep(): AdminSimulationStep {
+  const id = `step-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  return {
+    id,
+    title: "",
+    durationMin: 15,
+    difficulty: 1,
+    tags: [],
+    situation: "",
+    materials: "",
+    hint: "",
+    completionMessage: "",
+    prompts: [createPrompt()],
+  };
+}
+
+function normaliseSteps(raw: AdminSimulationStep[]): AdminSimulationStep[] {
+  return raw
+    .filter((step) => step && typeof step.title === "string" && Array.isArray(step.prompts))
+    .map((step, index) => ({
+      id: step.id || `step-${index + 1}`,
+      title: step.title,
+      durationMin: step.durationMin,
+      difficulty: step.difficulty,
+      tags: Array.isArray(step.tags) ? step.tags.filter(Boolean) : [],
+      situation: step.situation ?? "",
+      materials: step.materials ?? "",
+      hint: step.hint ?? "",
+      completionMessage: step.completionMessage ?? "",
+      prompts: step.prompts
+        .filter((prompt) => prompt && typeof prompt.id === "string")
+        .map((prompt, promptIndex) => ({
+          id: prompt.id || `prompt-${index + 1}-${promptIndex + 1}`,
+          label: prompt.label ?? "",
+          body: prompt.body ?? "",
+        })),
+    }));
+}
+
+function hasValidSteps(steps: AdminSimulationStep[]) {
+  return (
+    steps.length > 0 &&
+    steps.every(
+      (step) =>
+        step.title.trim() &&
+        step.prompts.length > 0 &&
+        step.prompts.every((prompt) => prompt.label.trim()),
+    )
+  );
+}
+
+function prepareSteps(steps: AdminSimulationStep[]): AdminSimulationStep[] {
+  return steps.map((step) => ({
+    id: step.id,
+    title: step.title.trim(),
+    ...(step.durationMin ? { durationMin: step.durationMin } : {}),
+    ...(step.difficulty ? { difficulty: step.difficulty } : {}),
+    ...(step.tags?.map((tag) => tag.trim()).filter(Boolean).length
+      ? { tags: step.tags.map((tag) => tag.trim()).filter(Boolean) }
+      : {}),
+    ...(step.situation?.trim() ? { situation: step.situation.trim() } : {}),
+    ...(step.materials?.trim() ? { materials: step.materials.trim() } : {}),
+    ...(step.hint?.trim() ? { hint: step.hint.trim() } : {}),
+    ...(step.completionMessage?.trim() ? { completionMessage: step.completionMessage.trim() } : {}),
+    prompts: step.prompts.map((prompt) => ({
+      id: prompt.id,
+      label: prompt.label.trim(),
+      body: prompt.body.trim(),
+    })),
+  }));
+}
+
 function createEmptyForm(companyCode = ""): SimulationForm {
   return {
     companyCode,
@@ -98,6 +189,7 @@ function createEmptyForm(companyCode = ""): SimulationForm {
     domain: DOMAIN_CATEGORIES[0],
     estimatedMinutes: "60",
     taskPrompt: "",
+    steps: [createStep()],
   };
 }
 
@@ -113,6 +205,7 @@ function formFromSimulation(simulation: AdminCompanySimulation): SimulationForm 
       : DOMAIN_CATEGORIES[0],
     estimatedMinutes: simulation.estimatedMinutes ? String(simulation.estimatedMinutes) : "",
     taskPrompt: simulation.taskPrompt,
+    steps: normaliseSteps(simulation.steps),
   };
 }
 
@@ -125,6 +218,7 @@ const EMPTY_FORM: SimulationForm = {
   domain: DOMAIN_CATEGORIES[0],
   estimatedMinutes: "60",
   taskPrompt: "",
+  steps: [],
 };
 
 function getUploadKey(target: AssetUploadTarget) {
@@ -402,6 +496,10 @@ function AdminSimulations() {
 
   function updateForm<K extends keyof SimulationForm>(key: K, value: SimulationForm[K]) {
     setForm((current) => ({ ...current, [key]: value }));
+  }
+
+  function updateSteps(updater: (steps: AdminSimulationStep[]) => AdminSimulationStep[]) {
+    setForm((current) => ({ ...current, steps: updater(current.steps) }));
   }
 
   function updateCompanyForm<K extends keyof CompanyForm>(key: K, value: CompanyForm[K]) {
@@ -696,6 +794,12 @@ function AdminSimulations() {
     event.preventDefault();
     if (isSaving) return;
 
+    const steps = prepareSteps(form.steps);
+    if (!form.taskPrompt.trim() && !hasValidSteps(steps)) {
+      toast.error("과제 본문 또는 단계별 구성에서 최소 한 단계와 질문을 작성해주세요.");
+      return;
+    }
+
     setIsSaving(true);
     try {
       const estimatedMinutes = form.estimatedMinutes.trim()
@@ -711,6 +815,7 @@ function AdminSimulations() {
         domain: form.domain as DomainCategory,
         estimatedMinutes: Number.isFinite(estimatedMinutes) ? estimatedMinutes : null,
         taskPrompt: form.taskPrompt.trim(),
+        steps,
       };
 
       if (selectedSimulationId) {
@@ -1127,12 +1232,13 @@ function AdminSimulations() {
             </div>
 
             <TextareaField
-              label="과제 본문"
+              label="기존 단일형 과제 본문"
               value={form.taskPrompt}
               onChange={(value) => updateForm("taskPrompt", value)}
               rows={16}
-              required
             />
+
+            <StepEditor steps={form.steps} onChange={updateSteps} />
 
             <div className="flex justify-end gap-2">
               <button
@@ -1159,7 +1265,7 @@ function AdminSimulations() {
                   !form.roleLabel.trim() ||
                   !form.title.trim() ||
                   !form.domain.trim() ||
-                  !form.taskPrompt.trim()
+                  (!form.taskPrompt.trim() && !hasValidSteps(form.steps))
                 }
                 className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-neutral-900 px-4 text-sm font-medium text-white hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-50"
               >
@@ -1262,6 +1368,285 @@ function AdminSimulations() {
         </DialogContent>
       </Dialog>
     </AdminShell>
+  );
+}
+
+function StepEditor({
+  steps,
+  onChange,
+}: {
+  steps: AdminSimulationStep[];
+  onChange: (updater: (steps: AdminSimulationStep[]) => AdminSimulationStep[]) => void;
+}) {
+  const updateStep = (stepIndex: number, patch: Partial<AdminSimulationStep>) => {
+    onChange((current) =>
+      current.map((step, index) => (index === stepIndex ? { ...step, ...patch } : step)),
+    );
+  };
+
+  const updatePrompt = (
+    stepIndex: number,
+    promptIndex: number,
+    patch: Partial<AdminSimulationPrompt>,
+  ) => {
+    onChange((current) =>
+      current.map((step, index) => {
+        if (index !== stepIndex) return step;
+        return {
+          ...step,
+          prompts: step.prompts.map((prompt, promptIndexValue) =>
+            promptIndexValue === promptIndex ? { ...prompt, ...patch } : prompt,
+          ),
+        };
+      }),
+    );
+  };
+
+  const move = <T,>(items: T[], index: number, direction: -1 | 1) => {
+    const nextIndex = index + direction;
+    if (nextIndex < 0 || nextIndex >= items.length) return items;
+    const next = [...items];
+    [next[index], next[nextIndex]] = [next[nextIndex], next[index]];
+    return next;
+  };
+
+  return (
+    <section className="rounded-md border border-neutral-200">
+      <div className="flex items-center justify-between gap-4 border-b border-neutral-200 p-4">
+        <div>
+          <h3 className="text-sm font-semibold text-neutral-900">단계별 시뮬레이션 구성</h3>
+          <p className="mt-1 text-xs text-neutral-500">
+            저장하면 유저의 단계별 시뮬레이션 화면에 바로 반영됩니다.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => onChange((current) => [...current, createStep()])}
+          className="inline-flex h-8 shrink-0 items-center gap-1 rounded-md border border-neutral-300 px-3 text-xs font-medium hover:bg-neutral-50"
+        >
+          <Plus className="h-3.5 w-3.5" /> 단계 추가
+        </button>
+      </div>
+
+      <div className="space-y-4 p-4">
+        {steps.map((step, stepIndex) => (
+          <div key={step.id} className="rounded-md border border-neutral-200 bg-neutral-50 p-4">
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <p className="text-sm font-semibold text-neutral-700">{stepIndex + 1}단계</p>
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  aria-label={`${stepIndex + 1}단계 위로 이동`}
+                  disabled={stepIndex === 0}
+                  onClick={() => onChange((current) => move(current, stepIndex, -1))}
+                  className="grid h-7 w-7 place-items-center rounded-md text-neutral-500 hover:bg-white disabled:opacity-30"
+                >
+                  <ChevronUp className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  aria-label={`${stepIndex + 1}단계 아래로 이동`}
+                  disabled={stepIndex === steps.length - 1}
+                  onClick={() => onChange((current) => move(current, stepIndex, 1))}
+                  className="grid h-7 w-7 place-items-center rounded-md text-neutral-500 hover:bg-white disabled:opacity-30"
+                >
+                  <ChevronDown className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  aria-label={`${stepIndex + 1}단계 삭제`}
+                  onClick={() =>
+                    onChange((current) => current.filter((_, index) => index !== stepIndex))
+                  }
+                  className="grid h-7 w-7 place-items-center rounded-md text-neutral-400 hover:bg-red-50 hover:text-red-600"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-[1fr_120px_120px]">
+              <InputField
+                label="단계 제목"
+                value={step.title}
+                onChange={(value) => updateStep(stepIndex, { title: value })}
+                placeholder="예: 문제 정의와 현황 파악"
+                required
+              />
+              <InputField
+                label="소요 시간(분)"
+                type="number"
+                value={step.durationMin ? String(step.durationMin) : ""}
+                onChange={(value) =>
+                  updateStep(stepIndex, {
+                    durationMin: value.trim() ? Number(value) : undefined,
+                  })
+                }
+              />
+              <SelectField
+                label="난이도"
+                value={String(step.difficulty ?? 1)}
+                onChange={(value) => updateStep(stepIndex, { difficulty: Number(value) })}
+                options={["1", "2", "3", "4", "5"]}
+              />
+            </div>
+
+            <InputField
+              label="태그"
+              value={(step.tags ?? []).join(", ")}
+              onChange={(value) =>
+                updateStep(stepIndex, {
+                  tags: value
+                    .split(",")
+                    .map((tag) => tag.trim())
+                    .filter(Boolean),
+                })
+              }
+              placeholder="쉼표로 구분해 입력 (예: 데이터 분석, 문제 정의)"
+            />
+
+            <div className="mt-4 grid gap-4">
+              <TextareaField
+                label="상황 안내"
+                value={step.situation ?? ""}
+                onChange={(value) => updateStep(stepIndex, { situation: value })}
+                rows={5}
+              />
+              <TextareaField
+                label="제공 자료"
+                value={step.materials ?? ""}
+                onChange={(value) => updateStep(stepIndex, { materials: value })}
+                rows={7}
+              />
+              <TextareaField
+                label="힌트"
+                value={step.hint ?? ""}
+                onChange={(value) => updateStep(stepIndex, { hint: value })}
+                rows={4}
+              />
+              <TextareaField
+                label="단계 완료 메시지"
+                value={step.completionMessage ?? ""}
+                onChange={(value) => updateStep(stepIndex, { completionMessage: value })}
+                rows={3}
+              />
+            </div>
+
+            <div className="mt-5 border-t border-neutral-200 pt-4">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-xs font-semibold text-neutral-700">답변 질문</p>
+                <button
+                  type="button"
+                  onClick={() =>
+                    onChange((current) =>
+                      current.map((item, index) =>
+                        index === stepIndex
+                          ? { ...item, prompts: [...item.prompts, createPrompt()] }
+                          : item,
+                      ),
+                    )
+                  }
+                  className="inline-flex h-8 items-center gap-1 rounded-md border border-neutral-300 px-3 text-xs font-medium hover:bg-white"
+                >
+                  <Plus className="h-3.5 w-3.5" /> 질문 추가
+                </button>
+              </div>
+
+              <div className="mt-3 space-y-3">
+                {step.prompts.map((prompt, promptIndex) => (
+                  <div
+                    key={prompt.id}
+                    className="rounded-md border border-neutral-200 bg-white p-3"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-xs font-medium text-neutral-500">질문 {promptIndex + 1}</p>
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          aria-label={`질문 ${promptIndex + 1} 위로 이동`}
+                          disabled={promptIndex === 0}
+                          onClick={() =>
+                            onChange((current) =>
+                              current.map((item, index) =>
+                                index === stepIndex
+                                  ? { ...item, prompts: move(item.prompts, promptIndex, -1) }
+                                  : item,
+                              ),
+                            )
+                          }
+                          className="grid h-7 w-7 place-items-center rounded-md text-neutral-500 hover:bg-neutral-50 disabled:opacity-30"
+                        >
+                          <ChevronUp className="h-4 w-4" />
+                        </button>
+                        <button
+                          type="button"
+                          aria-label={`질문 ${promptIndex + 1} 아래로 이동`}
+                          disabled={promptIndex === step.prompts.length - 1}
+                          onClick={() =>
+                            onChange((current) =>
+                              current.map((item, index) =>
+                                index === stepIndex
+                                  ? { ...item, prompts: move(item.prompts, promptIndex, 1) }
+                                  : item,
+                              ),
+                            )
+                          }
+                          className="grid h-7 w-7 place-items-center rounded-md text-neutral-500 hover:bg-neutral-50 disabled:opacity-30"
+                        >
+                          <ChevronDown className="h-4 w-4" />
+                        </button>
+                        <button
+                          type="button"
+                          aria-label={`질문 ${promptIndex + 1} 삭제`}
+                          onClick={() =>
+                            onChange((current) =>
+                              current.map((item, index) =>
+                                index === stepIndex
+                                  ? {
+                                      ...item,
+                                      prompts: item.prompts.filter(
+                                        (_, indexValue) => indexValue !== promptIndex,
+                                      ),
+                                    }
+                                  : item,
+                              ),
+                            )
+                          }
+                          className="grid h-7 w-7 place-items-center rounded-md text-neutral-400 hover:bg-red-50 hover:text-red-600"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                    <div className="mt-3 space-y-3">
+                      <InputField
+                        label="질문 제목"
+                        value={prompt.label}
+                        onChange={(value) => updatePrompt(stepIndex, promptIndex, { label: value })}
+                        placeholder="예: 핵심 문제를 정의해주세요"
+                        required
+                      />
+                      <TextareaField
+                        label="질문 설명"
+                        value={prompt.body}
+                        onChange={(value) => updatePrompt(stepIndex, promptIndex, { body: value })}
+                        rows={5}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        ))}
+
+        {steps.length === 0 && (
+          <div className="rounded-md border border-dashed border-neutral-200 px-4 py-8 text-center text-sm text-neutral-500">
+            아직 단계가 없습니다. 단계 추가로 유저 화면의 흐름을 구성해주세요.
+          </div>
+        )}
+      </div>
+    </section>
   );
 }
 
