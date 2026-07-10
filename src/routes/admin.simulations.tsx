@@ -1173,7 +1173,7 @@ function AdminSimulations() {
           </div>
         </section>
 
-        <section className="min-w-0 rounded-md border border-neutral-200">
+        <section className="min-w-0 max-w-full rounded-md border border-neutral-200">
           <div className="border-b border-neutral-200 p-4">
             <h2 className="text-sm font-semibold text-neutral-900">
               {isEditing ? "시뮬레이션 수정" : "시뮬레이션 추가"}
@@ -1183,7 +1183,7 @@ function AdminSimulations() {
             </p>
           </div>
 
-          <form onSubmit={submitSimulation} className="grid gap-5 p-5">
+          <form onSubmit={submitSimulation} className="grid min-w-0 max-w-full gap-5 p-5">
             <InputField
               label="시뮬레이션 제목"
               value={form.title}
@@ -1192,7 +1192,7 @@ function AdminSimulations() {
               required
             />
 
-            <div className="grid gap-4 md:grid-cols-3">
+            <div className="grid min-w-0 gap-4 md:grid-cols-3">
               <InputField
                 label="직무명"
                 value={form.roleLabel}
@@ -1739,7 +1739,7 @@ function InputField({
   disabled?: boolean;
 }) {
   return (
-    <label className="block">
+    <label className="block min-w-0">
       <span className="text-xs font-medium text-neutral-600">{label}</span>
       <input
         type={type}
@@ -1748,7 +1748,7 @@ function InputField({
         placeholder={placeholder}
         required={required}
         disabled={disabled}
-        className="mt-2 h-10 w-full rounded-md border border-neutral-300 px-3 text-sm outline-none focus:border-neutral-900 disabled:cursor-not-allowed disabled:bg-neutral-50 disabled:text-neutral-500"
+        className="mt-2 h-10 min-w-0 w-full rounded-md border border-neutral-300 px-3 text-sm outline-none focus:border-neutral-900 disabled:cursor-not-allowed disabled:bg-neutral-50 disabled:text-neutral-500"
       />
     </label>
   );
@@ -1768,13 +1768,13 @@ function SelectField({
   required?: boolean;
 }) {
   return (
-    <label className="block">
+    <label className="block min-w-0">
       <span className="text-xs font-medium text-neutral-600">{label}</span>
       <select
         value={value}
         onChange={(event) => onChange(event.target.value)}
         required={required}
-        className="mt-2 h-10 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm outline-none focus:border-neutral-900"
+        className="mt-2 h-10 min-w-0 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm outline-none focus:border-neutral-900"
       >
         {options.map((option) => (
           <option key={option} value={option}>
@@ -1800,14 +1800,14 @@ function TextareaField({
   required?: boolean;
 }) {
   return (
-    <label className="block">
+    <label className="block min-w-0">
       <span className="text-xs font-medium text-neutral-600">{label}</span>
       <textarea
         value={value}
         onChange={(event) => onChange(event.target.value)}
         rows={rows}
         required={required}
-        className="mt-2 w-full resize-y rounded-md border border-neutral-300 p-3 text-sm leading-relaxed outline-none focus:border-neutral-900"
+        className="mt-2 min-w-0 w-full resize-y rounded-md border border-neutral-300 p-3 text-sm leading-relaxed outline-none focus:border-neutral-900"
       />
     </label>
   );

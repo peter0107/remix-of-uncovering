@@ -567,116 +567,124 @@ export function RichTextEditor({
     <div className="min-w-0 max-w-full">
       <p className="mb-2 text-xs font-medium text-neutral-700">{label}</p>
       <div className="rounded-md border border-neutral-300 bg-white focus-within:border-neutral-900 focus-within:ring-1 focus-within:ring-neutral-900">
-        <div className="max-w-full overflow-x-auto border-b border-neutral-200 bg-neutral-50">
-          <div className="flex min-w-max items-center gap-0.5 px-2 py-1">
-            <ToolbarButton label="굵게" onClick={() => command("bold")}>
-              <Bold className="h-4 w-4" />
-            </ToolbarButton>
-            <ToolbarButton label="기울임" onClick={() => command("italic")}>
-              <Italic className="h-4 w-4" />
-            </ToolbarButton>
-            <ToolbarButton label="제목" onClick={() => command("formatBlock", "h3")}>
-              <Heading2 className="h-4 w-4" />
-            </ToolbarButton>
-            <ToolbarButton label="글머리 목록" onClick={() => command("insertUnorderedList")}>
-              <List className="h-4 w-4" />
-            </ToolbarButton>
-            <ToolbarButton label="번호 목록" onClick={() => command("insertOrderedList")}>
-              <ListOrdered className="h-4 w-4" />
-            </ToolbarButton>
-            <ToolbarButton label="인용" onClick={() => command("formatBlock", "blockquote")}>
-              <Quote className="h-4 w-4" />
-            </ToolbarButton>
-            <span className="mx-1 h-4 w-px bg-neutral-200" />
-            <ToolbarButton label="밑줄" active={isUnderlined} onClick={() => command("underline")}>
-              <Underline className="h-4 w-4" />
-            </ToolbarButton>
-            <ToolbarButton
-              label="취소선"
-              active={isStruckThrough}
-              onClick={() => command("strikeThrough")}
-            >
-              <Strikethrough className="h-4 w-4" />
-            </ToolbarButton>
-            <span className="mx-1 h-4 w-px bg-neutral-200" />
-            <ToolbarButton label="인라인 코드" active={isInlineCode} onClick={toggleInlineCode}>
-              <Code2 className="h-4 w-4" />
-            </ToolbarButton>
-            <ToolbarButton label="코드 블록" active={isCodeBlock} onClick={toggleCodeBlock}>
-              <span className="font-mono text-xs">&lt;/&gt;</span>
-            </ToolbarButton>
-            <div className="relative flex items-center">
-              <ToolbarButton label="기본 3 x 3 표 삽입" onClick={() => insertTable(3, 3)}>
-                <Table2 className="h-4 w-4" />
+        <div className="border-b border-neutral-200 bg-neutral-50">
+          <div className="grid gap-1 px-2 py-1">
+            <div className="flex flex-wrap items-center gap-0.5">
+              <ToolbarButton label="굵게" onClick={() => command("bold")}>
+                <Bold className="h-4 w-4" />
               </ToolbarButton>
-              <button
-                type="button"
-                title="표 크기 선택"
-                aria-label="표 크기 선택"
-                aria-expanded={activePalette === "table"}
-                onMouseDown={(event) => event.preventDefault()}
-                onClick={() =>
-                  setActivePalette((current) => (current === "table" ? null : "table"))
-                }
-                className="-ml-1 grid h-8 w-4 place-items-center rounded-r-md text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-neutral-900"
+              <ToolbarButton label="기울임" onClick={() => command("italic")}>
+                <Italic className="h-4 w-4" />
+              </ToolbarButton>
+              <ToolbarButton label="제목" onClick={() => command("formatBlock", "h3")}>
+                <Heading2 className="h-4 w-4" />
+              </ToolbarButton>
+              <ToolbarButton label="글머리 목록" onClick={() => command("insertUnorderedList")}>
+                <List className="h-4 w-4" />
+              </ToolbarButton>
+              <ToolbarButton label="번호 목록" onClick={() => command("insertOrderedList")}>
+                <ListOrdered className="h-4 w-4" />
+              </ToolbarButton>
+              <ToolbarButton label="인용" onClick={() => command("formatBlock", "blockquote")}>
+                <Quote className="h-4 w-4" />
+              </ToolbarButton>
+              <span className="mx-1 h-4 w-px bg-neutral-200" />
+              <ToolbarButton
+                label="밑줄"
+                active={isUnderlined}
+                onClick={() => command("underline")}
               >
-                <ChevronDown className="h-3 w-3" />
-              </button>
-              {activePalette === "table" && (
-                <div className="absolute left-0 top-10 z-20 w-48 rounded-md border border-neutral-200 bg-white p-2 shadow-lg">
-                  <p className="mb-2 text-xs text-neutral-500">
-                    {tableGridSize.rows} x {tableGridSize.columns} 표
-                  </p>
-                  <div className="grid grid-cols-5 gap-1">
-                    {Array.from({ length: 25 }, (_, index) => {
-                      const row = Math.floor(index / 5) + 1;
-                      const column = (index % 5) + 1;
-                      const selected = row <= tableGridSize.rows && column <= tableGridSize.columns;
-                      return (
-                        <button
-                          key={`${row}-${column}`}
-                          type="button"
-                          aria-label={`${row}행 ${column}열 표 삽입`}
-                          onMouseDown={(event) => event.preventDefault()}
-                          onMouseEnter={() => setTableGridSize({ rows: row, columns: column })}
-                          onClick={() => {
-                            insertTable(row, column);
-                            setActivePalette(null);
-                          }}
-                          className={`h-5 rounded-sm border ${
-                            selected
-                              ? "border-neutral-900 bg-neutral-800"
-                              : "border-neutral-200 bg-white"
-                          }`}
-                        />
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
+                <Underline className="h-4 w-4" />
+              </ToolbarButton>
+              <ToolbarButton
+                label="취소선"
+                active={isStruckThrough}
+                onClick={() => command("strikeThrough")}
+              >
+                <Strikethrough className="h-4 w-4" />
+              </ToolbarButton>
             </div>
-            <ToolbarButton label="행 추가" disabled={!activeTable} onClick={addTableRow}>
-              <Rows3 className="h-4 w-4" />
-            </ToolbarButton>
-            <ToolbarButton label="행 삭제" disabled={!activeTable} onClick={deleteTableRow}>
-              <span className="text-sm leading-none">−</span>
-            </ToolbarButton>
-            <ToolbarButton label="열 추가" disabled={!activeTable} onClick={addTableColumn}>
-              <Columns3 className="h-4 w-4" />
-            </ToolbarButton>
-            <ToolbarButton label="열 삭제" disabled={!activeTable} onClick={deleteTableColumn}>
-              <span className="text-sm leading-none">−</span>
-            </ToolbarButton>
-            <ToolbarButton label="표 삭제" disabled={!activeTable} onClick={deleteTable}>
-              <Trash2 className="h-4 w-4" />
-            </ToolbarButton>
-            <span className="mx-1 h-4 w-px bg-neutral-200" />
-            <ToolbarButton label="실행 취소" onClick={() => command("undo")}>
-              <Undo2 className="h-4 w-4" />
-            </ToolbarButton>
-            <ToolbarButton label="다시 실행" onClick={() => command("redo")}>
-              <Redo2 className="h-4 w-4" />
-            </ToolbarButton>
+            <div className="flex flex-wrap items-center gap-0.5 border-t border-neutral-200 pt-1">
+              <ToolbarButton label="인라인 코드" active={isInlineCode} onClick={toggleInlineCode}>
+                <Code2 className="h-4 w-4" />
+              </ToolbarButton>
+              <ToolbarButton label="코드 블록" active={isCodeBlock} onClick={toggleCodeBlock}>
+                <span className="font-mono text-xs">&lt;/&gt;</span>
+              </ToolbarButton>
+              <div className="relative flex items-center">
+                <ToolbarButton label="기본 3 x 3 표 삽입" onClick={() => insertTable(3, 3)}>
+                  <Table2 className="h-4 w-4" />
+                </ToolbarButton>
+                <button
+                  type="button"
+                  title="표 크기 선택"
+                  aria-label="표 크기 선택"
+                  aria-expanded={activePalette === "table"}
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={() =>
+                    setActivePalette((current) => (current === "table" ? null : "table"))
+                  }
+                  className="-ml-1 grid h-8 w-4 place-items-center rounded-r-md text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-neutral-900"
+                >
+                  <ChevronDown className="h-3 w-3" />
+                </button>
+                {activePalette === "table" && (
+                  <div className="absolute left-0 top-10 z-20 w-48 rounded-md border border-neutral-200 bg-white p-2 shadow-lg">
+                    <p className="mb-2 text-xs text-neutral-500">
+                      {tableGridSize.rows} x {tableGridSize.columns} 표
+                    </p>
+                    <div className="grid grid-cols-5 gap-1">
+                      {Array.from({ length: 25 }, (_, index) => {
+                        const row = Math.floor(index / 5) + 1;
+                        const column = (index % 5) + 1;
+                        const selected =
+                          row <= tableGridSize.rows && column <= tableGridSize.columns;
+                        return (
+                          <button
+                            key={`${row}-${column}`}
+                            type="button"
+                            aria-label={`${row}행 ${column}열 표 삽입`}
+                            onMouseDown={(event) => event.preventDefault()}
+                            onMouseEnter={() => setTableGridSize({ rows: row, columns: column })}
+                            onClick={() => {
+                              insertTable(row, column);
+                              setActivePalette(null);
+                            }}
+                            className={`h-5 rounded-sm border ${
+                              selected
+                                ? "border-neutral-900 bg-neutral-800"
+                                : "border-neutral-200 bg-white"
+                            }`}
+                          />
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+              <ToolbarButton label="행 추가" disabled={!activeTable} onClick={addTableRow}>
+                <Rows3 className="h-4 w-4" />
+              </ToolbarButton>
+              <ToolbarButton label="행 삭제" disabled={!activeTable} onClick={deleteTableRow}>
+                <span className="text-sm leading-none">−</span>
+              </ToolbarButton>
+              <ToolbarButton label="열 추가" disabled={!activeTable} onClick={addTableColumn}>
+                <Columns3 className="h-4 w-4" />
+              </ToolbarButton>
+              <ToolbarButton label="열 삭제" disabled={!activeTable} onClick={deleteTableColumn}>
+                <span className="text-sm leading-none">−</span>
+              </ToolbarButton>
+              <ToolbarButton label="표 삭제" disabled={!activeTable} onClick={deleteTable}>
+                <Trash2 className="h-4 w-4" />
+              </ToolbarButton>
+              <span className="mx-1 h-4 w-px bg-neutral-200" />
+              <ToolbarButton label="실행 취소" onClick={() => command("undo")}>
+                <Undo2 className="h-4 w-4" />
+              </ToolbarButton>
+              <ToolbarButton label="다시 실행" onClick={() => command("redo")}>
+                <Redo2 className="h-4 w-4" />
+              </ToolbarButton>
+            </div>
           </div>
         </div>
         <div
