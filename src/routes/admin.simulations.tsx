@@ -13,6 +13,15 @@ import {
 import { toast } from "sonner";
 
 import { SimulationCardPreview } from "@/components/SimulationCardPreview";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Slider } from "@/components/ui/slider";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -51,6 +60,22 @@ type CompanyForm = {
 type AssetUploadTarget =
   | { kind: "logo"; companyId: string }
   | { kind: "cardImage"; simulationId: string };
+
+type AssetEditorState = {
+  target: AssetUploadTarget;
+  previewUrl: string;
+  zoom: number;
+  offsetX: number;
+  offsetY: number;
+};
+
+type AssetEditorPreset = {
+  title: string;
+  description: string;
+  width: number;
+  height: number;
+  previewClassName: string;
+};
 
 const EMPTY_COMPANY_FORM: CompanyForm = {
   name: "",
@@ -102,26 +127,79 @@ function getUploadKey(target: AssetUploadTarget) {
   return target.kind === "logo" ? `logo:${target.companyId}` : `cardImage:${target.simulationId}`;
 }
 
-function getFileExtension(file: File) {
-  const safeNameExtension = file.name
-    .split(".")
-    .pop()
-    ?.toLowerCase()
-    .replace(/[^a-z0-9]/g, "");
-
-  if (safeNameExtension && ["jpg", "jpeg", "png", "webp", "gif"].includes(safeNameExtension)) {
-    return safeNameExtension;
-  }
-
-  const mimeExtension = file.type.split("/").pop()?.toLowerCase();
-  if (mimeExtension === "jpeg") return "jpg";
-  return mimeExtension || "jpg";
-}
-
 function getDomainCategory(value: string): DomainCategory {
   return DOMAIN_CATEGORIES.includes(value as DomainCategory)
     ? (value as DomainCategory)
     : DOMAIN_CATEGORIES[0];
+}
+
+function getAssetEditorPreset(kind: AssetUploadTarget["kind"]): AssetEditorPreset {
+  if (kind === "logo") {
+    return {
+      title: "기업 로고 편집",
+      description: "로고가 정사각형 영역 안에 잘 보이도록 조정한 뒤 적용하세요.",
+      width: 640,
+      height: 640,
+      previewClassName: "h-64 w-64 rounded-xl",
+    };
+  }
+
+  return {
+    title: "카드 배경 사진 편집",
+    description: "유저 카드 상단 배경과 같은 비율로 보이도록 조정한 뒤 적용하세요.",
+    width: 1400,
+    height: 400,
+    previewClassName: "w-full max-w-lg rounded-xl",
+  };
+}
+
+function loadAssetImage(src: string) {
+  return new Promise<HTMLImageElement>((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = reject;
+    image.src = src;
+  });
+}
+
+async function createCroppedAssetBlob(
+  src: string,
+  preset: AssetEditorPreset,
+  options: { zoom: number; offsetX: number; offsetY: number },
+) {
+  const image = await loadAssetImage(src);
+  const canvas = document.createElement("canvas");
+  canvas.width = preset.width;
+  canvas.height = preset.height;
+
+  const context = canvas.getContext("2d");
+  if (!context) throw new Error("Canvas is not available");
+
+  const baseScale = Math.max(
+    preset.width / image.naturalWidth,
+    preset.height / image.naturalHeight,
+  );
+  const drawWidth = image.naturalWidth * baseScale * options.zoom;
+  const drawHeight = image.naturalHeight * baseScale * options.zoom;
+  const overflowX = Math.max(0, drawWidth - preset.width);
+  const overflowY = Math.max(0, drawHeight - preset.height);
+  const drawX = (preset.width - drawWidth) / 2 - (overflowX * options.offsetX) / 100;
+  const drawY = (preset.height - drawHeight) / 2 - (overflowY * options.offsetY) / 100;
+
+  context.fillStyle = "#ffffff";
+  context.fillRect(0, 0, preset.width, preset.height);
+  context.drawImage(image, drawX, drawY, drawWidth, drawHeight);
+
+  return new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob(
+      (blob) => {
+        if (blob) resolve(blob);
+        else reject(new Error("Failed to create edited image"));
+      },
+      "image/jpeg",
+      0.92,
+    );
+  });
 }
 
 export const Route = createFileRoute("/admin/simulations")({
@@ -152,10 +230,15 @@ function AdminSimulations() {
   const [actioningCompanyId, setActioningCompanyId] = useState<string | null>(null);
   const [actioningSimulationId, setActioningSimulationId] = useState<string | null>(null);
   const [assetUploadTarget, setAssetUploadTarget] = useState<AssetUploadTarget | null>(null);
+  const [assetEditor, setAssetEditor] = useState<AssetEditorState | null>(null);
   const [uploadingAssetKey, setUploadingAssetKey] = useState<string | null>(null);
   const loadedUserIdRef = useRef<string | null>(null);
   const assetInputRef = useRef<HTMLInputElement | null>(null);
   const userId = user?.id ?? null;
+  const assetEditorPreset = assetEditor ? getAssetEditorPreset(assetEditor.target.kind) : null;
+  const isApplyingAssetEdit = assetEditor
+    ? uploadingAssetKey === getUploadKey(assetEditor.target)
+    : false;
 
   const companiesWithCounts = useMemo(() => {
     const counts = new Map<string, number>();
@@ -243,6 +326,13 @@ function AdminSimulations() {
     startNewSimulation,
   ]);
 
+  useEffect(() => {
+    const previewUrl = assetEditor?.previewUrl;
+    return () => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+    };
+  }, [assetEditor?.previewUrl]);
+
   function updateForm<K extends keyof SimulationForm>(key: K, value: SimulationForm[K]) {
     setForm((current) => ({ ...current, [key]: value }));
   }
@@ -303,17 +393,16 @@ function AdminSimulations() {
     }
   }
 
-  async function uploadAssetFile(file: File, target: AssetUploadTarget) {
+  async function uploadAssetBlob(blob: Blob, target: AssetUploadTarget) {
     if (!userId) throw new Error("로그인이 필요합니다.");
 
     const targetId = target.kind === "logo" ? target.companyId : target.simulationId;
-    const extension = getFileExtension(file);
-    const objectPath = `${userId}/${target.kind}/${targetId}-${Date.now()}.${extension}`;
+    const objectPath = `${userId}/${target.kind}/${targetId}-${Date.now()}.jpg`;
 
     const { error } = await supabase.storage
       .from("simulation-card-assets")
-      .upload(objectPath, file, {
-        contentType: file.type || "image/jpeg",
+      .upload(objectPath, blob, {
+        contentType: "image/jpeg",
         upsert: true,
       });
 
@@ -325,83 +414,115 @@ function AdminSimulations() {
     return data.publicUrl;
   }
 
-  async function handleAssetFileChange(event: ChangeEvent<HTMLInputElement>) {
+  async function saveAssetPublicUrl(publicUrl: string, target: AssetUploadTarget) {
+    if (target.kind === "logo") {
+      const company = companies.find((item) => item.id === target.companyId);
+      if (!company) throw new Error("기업 정보를 찾지 못했습니다.");
+
+      await updateCompany({
+        data: {
+          id: company.id,
+          name: company.name,
+          code: company.code,
+          logoUrl: publicUrl,
+          roleLabel: company.roleLabel,
+        },
+      });
+
+      setCompanies((current) =>
+        current.map((item) => (item.id === company.id ? { ...item, logoUrl: publicUrl } : item)),
+      );
+      setSimulations((current) =>
+        current.map((item) =>
+          item.companyId === company.id ? { ...item, companyLogoUrl: publicUrl } : item,
+        ),
+      );
+      if (editingCompanyId === company.id) {
+        setCompanyForm((current) => ({ ...current, logoUrl: publicUrl }));
+      }
+      toast.success("기업 로고를 변경했습니다.");
+      return;
+    }
+
+    const simulation = simulations.find((item) => item.id === target.simulationId);
+    if (!simulation) throw new Error("시뮬레이션 정보를 찾지 못했습니다.");
+
+    await updateCompanySimulation({
+      data: {
+        id: simulation.id,
+        companyCode: simulation.companyCode,
+        roleLabel: simulation.roleLabel,
+        title: simulation.title,
+        description: simulation.description,
+        cardImageUrl: publicUrl,
+        domain: getDomainCategory(simulation.domain),
+        estimatedMinutes: simulation.estimatedMinutes,
+        taskPrompt: simulation.taskPrompt,
+      },
+    });
+
+    setSimulations((current) =>
+      current.map((item) =>
+        item.id === simulation.id ? { ...item, cardImageUrl: publicUrl } : item,
+      ),
+    );
+    if (selectedSimulationId === simulation.id) {
+      setForm((current) => ({ ...current, cardImageUrl: publicUrl }));
+    }
+    toast.success("카드 이미지를 변경했습니다.");
+  }
+
+  function handleAssetFileChange(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     const target = assetUploadTarget;
+    event.target.value = "";
+    setAssetUploadTarget(null);
+
     if (!file || !target) return;
 
     if (file.type && !file.type.startsWith("image/")) {
       toast.error("이미지 파일만 업로드할 수 있습니다.");
-      event.target.value = "";
       return;
     }
 
+    setAssetEditor({
+      target,
+      previewUrl: URL.createObjectURL(file),
+      zoom: 1,
+      offsetX: 0,
+      offsetY: 0,
+    });
+  }
+
+  function updateAssetEditor(value: Partial<Omit<AssetEditorState, "target" | "previewUrl">>) {
+    setAssetEditor((current) => (current ? { ...current, ...value } : current));
+  }
+
+  function closeAssetEditor() {
+    if (isApplyingAssetEdit) return;
+    setAssetEditor(null);
+  }
+
+  async function applyAssetEdit() {
+    if (!assetEditor || !assetEditorPreset) return;
+
+    const target = assetEditor.target;
     const uploadKey = getUploadKey(target);
     setUploadingAssetKey(uploadKey);
 
     try {
-      const publicUrl = await uploadAssetFile(file, target);
-
-      if (target.kind === "logo") {
-        const company = companies.find((item) => item.id === target.companyId);
-        if (!company) throw new Error("기업 정보를 찾지 못했습니다.");
-
-        await updateCompany({
-          data: {
-            id: company.id,
-            name: company.name,
-            code: company.code,
-            logoUrl: publicUrl,
-            roleLabel: company.roleLabel,
-          },
-        });
-
-        setCompanies((current) =>
-          current.map((item) => (item.id === company.id ? { ...item, logoUrl: publicUrl } : item)),
-        );
-        setSimulations((current) =>
-          current.map((item) =>
-            item.companyId === company.id ? { ...item, companyLogoUrl: publicUrl } : item,
-          ),
-        );
-        if (editingCompanyId === company.id) {
-          setCompanyForm((current) => ({ ...current, logoUrl: publicUrl }));
-        }
-        toast.success("기업 로고를 변경했습니다.");
-      } else {
-        const simulation = simulations.find((item) => item.id === target.simulationId);
-        if (!simulation) throw new Error("시뮬레이션 정보를 찾지 못했습니다.");
-
-        await updateCompanySimulation({
-          data: {
-            id: simulation.id,
-            companyCode: simulation.companyCode,
-            roleLabel: simulation.roleLabel,
-            title: simulation.title,
-            description: simulation.description,
-            cardImageUrl: publicUrl,
-            domain: getDomainCategory(simulation.domain),
-            estimatedMinutes: simulation.estimatedMinutes,
-            taskPrompt: simulation.taskPrompt,
-          },
-        });
-
-        setSimulations((current) =>
-          current.map((item) =>
-            item.id === simulation.id ? { ...item, cardImageUrl: publicUrl } : item,
-          ),
-        );
-        if (selectedSimulationId === simulation.id) {
-          setForm((current) => ({ ...current, cardImageUrl: publicUrl }));
-        }
-        toast.success("카드 이미지를 변경했습니다.");
-      }
+      const blob = await createCroppedAssetBlob(assetEditor.previewUrl, assetEditorPreset, {
+        zoom: assetEditor.zoom,
+        offsetX: assetEditor.offsetX,
+        offsetY: assetEditor.offsetY,
+      });
+      const publicUrl = await uploadAssetBlob(blob, target);
+      await saveAssetPublicUrl(publicUrl, target);
+      setAssetEditor(null);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "이미지를 업로드하지 못했습니다.");
+      toast.error(err instanceof Error ? err.message : "사진 편집 또는 업로드에 실패했습니다.");
     } finally {
       setUploadingAssetKey(null);
-      setAssetUploadTarget(null);
-      event.target.value = "";
     }
   }
 
@@ -968,6 +1089,93 @@ function AdminSimulations() {
           </form>
         </section>
       </div>
+
+      <Dialog open={Boolean(assetEditor)} onOpenChange={(open) => !open && closeAssetEditor()}>
+        <DialogContent className="max-w-xl">
+          <DialogHeader>
+            <DialogTitle>{assetEditorPreset?.title ?? "사진 편집"}</DialogTitle>
+            <DialogDescription>
+              {assetEditorPreset?.description ?? "사진이 카드에 맞게 보이도록 조정하세요."}
+            </DialogDescription>
+          </DialogHeader>
+
+          {assetEditor && assetEditorPreset && (
+            <div className="space-y-6">
+              <div
+                className={`mx-auto flex items-center justify-center overflow-hidden bg-neutral-100 ring-1 ring-neutral-200 ${assetEditorPreset.previewClassName}`}
+                style={{ aspectRatio: `${assetEditorPreset.width} / ${assetEditorPreset.height}` }}
+              >
+                <img
+                  src={assetEditor.previewUrl}
+                  alt="편집 미리보기"
+                  className="h-full w-full object-cover"
+                  style={{
+                    transform: `translate(${-assetEditor.offsetX / 3}%, ${-assetEditor.offsetY / 3}%) scale(${assetEditor.zoom})`,
+                    transformOrigin: "center",
+                  }}
+                />
+              </div>
+
+              <div className="space-y-5">
+                <label className="block">
+                  <div className="mb-2 flex items-center justify-between text-xs font-medium text-neutral-600">
+                    <span>확대</span>
+                    <span>{assetEditor.zoom.toFixed(2)}x</span>
+                  </div>
+                  <Slider
+                    value={[assetEditor.zoom]}
+                    min={1}
+                    max={3}
+                    step={0.05}
+                    onValueChange={([value]) => updateAssetEditor({ zoom: value ?? 1 })}
+                  />
+                </label>
+
+                <label className="block">
+                  <div className="mb-2 text-xs font-medium text-neutral-600">가로 위치</div>
+                  <Slider
+                    value={[assetEditor.offsetX]}
+                    min={-100}
+                    max={100}
+                    step={1}
+                    onValueChange={([value]) => updateAssetEditor({ offsetX: value ?? 0 })}
+                  />
+                </label>
+
+                <label className="block">
+                  <div className="mb-2 text-xs font-medium text-neutral-600">세로 위치</div>
+                  <Slider
+                    value={[assetEditor.offsetY]}
+                    min={-100}
+                    max={100}
+                    step={1}
+                    onValueChange={([value]) => updateAssetEditor({ offsetY: value ?? 0 })}
+                  />
+                </label>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            <button
+              type="button"
+              onClick={closeAssetEditor}
+              disabled={isApplyingAssetEdit}
+              className="h-10 rounded-md border border-neutral-300 px-4 text-sm font-medium hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              취소
+            </button>
+            <button
+              type="button"
+              onClick={applyAssetEdit}
+              disabled={isApplyingAssetEdit}
+              className="h-10 rounded-md bg-neutral-900 px-4 text-sm font-medium text-white hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {isApplyingAssetEdit ? "적용 중..." : "적용"}
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AdminShell>
   );
 }
