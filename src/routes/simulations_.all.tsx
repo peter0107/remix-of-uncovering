@@ -32,7 +32,7 @@ function AllSimulationsPage() {
   }, []);
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-12">
+    <div className="mx-auto max-w-5xl px-4 py-12">
       {/* 뒤로 */}
       <Link
         to="/simulations"
@@ -71,7 +71,7 @@ function AllSimulationsPage() {
             <CardSkeleton />
           </>
         ) : sims.length > 0 ? (
-          sims.map((sim, i) => <SimCard key={sim.id} sim={sim} index={i} />)
+          sims.map((sim) => <SimCard key={sim.id} sim={sim} />)
         ) : (
           <div className="col-span-full flex flex-col items-center py-20 text-center">
             <Sparkles className="h-10 w-10 text-zinc-300" />

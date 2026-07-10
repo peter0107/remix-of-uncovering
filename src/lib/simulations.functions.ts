@@ -10,6 +10,7 @@ export type AdminCompany = {
   code: string;
   uniqueCode: string;
   name: string;
+  logoUrl: string;
   roleLabel: string;
   createdAt: string;
 };
@@ -19,11 +20,13 @@ export type AdminCompanySimulation = {
   companyId: string;
   companyCode: string;
   companyName: string;
+  companyLogoUrl: string;
   title: string;
   roleLabel: string;
   jobFamily: string;
   domain: string;
   estimatedMinutes: number | null;
+  cardImageUrl: string;
   description: string;
   taskPrompt: string;
   isPublic: boolean;
@@ -36,6 +39,7 @@ const domainCategorySchema = z.enum(DOMAIN_CATEGORIES);
 const createCompanyInputSchema = z.object({
   name: z.string().min(1),
   code: z.string().min(4),
+  logoUrl: z.string().optional().default(""),
   roleLabel: z.string().optional().default(""),
 });
 
@@ -52,6 +56,7 @@ const createCompanySimulationInputSchema = z.object({
   title: z.string().min(1),
   roleLabel: z.string().min(1),
   description: z.string().optional().default(""),
+  cardImageUrl: z.string().optional().default(""),
   jobFamily: z.string().optional().default(""),
   domain: domainCategorySchema,
   estimatedMinutes: z.number().int().positive().nullable().optional().default(null),
@@ -142,11 +147,13 @@ function mapAdminSimulation(row: Record<string, unknown>): AdminCompanySimulatio
     companyId: String(row.company_id),
     companyCode: String(company.code ?? company.unique_code ?? ""),
     companyName: String(company.name ?? ""),
+    companyLogoUrl: String(company.logo_url ?? ""),
     title: String(row.title),
     roleLabel: String(row.role_label ?? row.job_family ?? row.title),
     jobFamily: String(row.job_family ?? ""),
     domain: String(row.domain ?? ""),
     estimatedMinutes: typeof row.estimated_minutes === "number" ? row.estimated_minutes : null,
+    cardImageUrl: String(row.card_image_url ?? ""),
     description: String(row.description ?? ""),
     taskPrompt: String(row.task_prompt ?? ""),
     isPublic: row.is_public !== false,
@@ -163,6 +170,7 @@ function mapAdminCompany(row: Record<string, unknown>): AdminCompany {
     code,
     uniqueCode: String(row.unique_code ?? code),
     name,
+    logoUrl: String(row.logo_url ?? ""),
     roleLabel: String(row.role_label ?? name),
     createdAt: formatDateTime(String(row.created_at)),
   };
@@ -175,7 +183,7 @@ export const getAdminCompanies = createServerFn({ method: "GET" }).handler(
 
     const { data, error } = await supabaseAdmin
       .from("companies")
-      .select("id, code, unique_code, name, role_label, created_at")
+      .select("id, code, unique_code, name, logo_url, role_label, created_at")
       .order("name", { ascending: true });
 
     if (error) {
@@ -195,7 +203,7 @@ export const getAdminCompanySimulations = createServerFn({ method: "GET" }).hand
     const { data, error } = await supabaseAdmin
       .from("job_simulations")
       .select(
-        "id, company_id, title, role_label, job_family, domain, estimated_minutes, description, task_prompt, is_public, deleted_at, created_at, companies(code, unique_code, name)",
+        "id, company_id, title, role_label, job_family, domain, estimated_minutes, card_image_url, description, task_prompt, is_public, deleted_at, created_at, companies(code, unique_code, name, logo_url)",
       )
       .is("deleted_at", null)
       .order("created_at", { ascending: false });
@@ -217,6 +225,7 @@ export const createCompany = createServerFn({ method: "POST" })
 
     const code = data.code.trim().toUpperCase();
     const name = data.name.trim();
+    const logoUrl = data.logoUrl.trim();
     const roleLabel = data.roleLabel.trim() || name;
 
     const { data: existing, error: existingError } = await supabaseAdmin
@@ -240,9 +249,10 @@ export const createCompany = createServerFn({ method: "POST" })
         name,
         code,
         unique_code: code,
+        logo_url: logoUrl || null,
         role_label: roleLabel,
       })
-      .select("id, code, unique_code, name, role_label, created_at")
+      .select("id, code, unique_code, name, logo_url, role_label, created_at")
       .single();
 
     if (error) {
@@ -261,6 +271,7 @@ export const updateCompany = createServerFn({ method: "POST" })
 
     const code = data.code.trim().toUpperCase();
     const name = data.name.trim();
+    const logoUrl = data.logoUrl.trim();
     const roleLabel = data.roleLabel.trim() || name;
 
     const { data: existing, error: existingError } = await supabaseAdmin
@@ -285,10 +296,11 @@ export const updateCompany = createServerFn({ method: "POST" })
         name,
         code,
         unique_code: code,
+        logo_url: logoUrl || null,
         role_label: roleLabel,
       })
       .eq("id", data.id)
-      .select("id, code, unique_code, name, role_label, created_at")
+      .select("id, code, unique_code, name, logo_url, role_label, created_at")
       .single();
 
     if (error) {
@@ -339,6 +351,7 @@ export const createCompanySimulation = createServerFn({ method: "POST" })
         title: data.title,
         role_label: data.roleLabel,
         description: data.description,
+        card_image_url: data.cardImageUrl.trim() || null,
         job_family: jobFamily,
         domain: data.domain,
         estimated_minutes: data.estimatedMinutes,
@@ -380,6 +393,7 @@ export const updateCompanySimulation = createServerFn({ method: "POST" })
         title: data.title,
         role_label: data.roleLabel,
         description: data.description,
+        card_image_url: data.cardImageUrl.trim() || null,
         job_family: jobFamily,
         domain: data.domain,
         estimated_minutes: data.estimatedMinutes,

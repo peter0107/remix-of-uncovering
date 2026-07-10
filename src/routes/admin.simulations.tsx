@@ -11,6 +11,7 @@ import {
 } from "react";
 import { toast } from "sonner";
 
+import { SimulationCardPreview } from "@/components/SimulationCardPreview";
 import { useAuth } from "@/hooks/use-auth";
 import {
   createCompany,
@@ -32,6 +33,7 @@ type SimulationForm = {
   roleLabel: string;
   title: string;
   description: string;
+  cardImageUrl: string;
   domain: string;
   estimatedMinutes: string;
   taskPrompt: string;
@@ -40,12 +42,14 @@ type SimulationForm = {
 type CompanyForm = {
   name: string;
   code: string;
+  logoUrl: string;
   roleLabel: string;
 };
 
 const EMPTY_COMPANY_FORM: CompanyForm = {
   name: "",
   code: "",
+  logoUrl: "",
   roleLabel: "",
 };
 
@@ -55,6 +59,7 @@ function createEmptyForm(companyCode = ""): SimulationForm {
     roleLabel: "",
     title: "",
     description: "",
+    cardImageUrl: "",
     domain: DOMAIN_CATEGORIES[0],
     estimatedMinutes: "60",
     taskPrompt: "",
@@ -67,6 +72,7 @@ function formFromSimulation(simulation: AdminCompanySimulation): SimulationForm 
     roleLabel: simulation.roleLabel,
     title: simulation.title,
     description: simulation.description,
+    cardImageUrl: simulation.cardImageUrl,
     domain: DOMAIN_CATEGORIES.includes(simulation.domain as (typeof DOMAIN_CATEGORIES)[number])
       ? simulation.domain
       : DOMAIN_CATEGORIES[0],
@@ -80,6 +86,7 @@ const EMPTY_FORM: SimulationForm = {
   roleLabel: "",
   title: "",
   description: "",
+  cardImageUrl: "",
   domain: DOMAIN_CATEGORIES[0],
   estimatedMinutes: "60",
   taskPrompt: "",
@@ -223,6 +230,7 @@ function AdminSimulations() {
     setCompanyForm({
       name: company.name,
       code: company.code,
+      logoUrl: company.logoUrl,
       roleLabel: company.roleLabel === company.name ? "" : company.roleLabel,
     });
     setEditingCompanyId(company.id);
@@ -257,6 +265,7 @@ function AdminSimulations() {
       const payload = {
         name: companyForm.name.trim(),
         code: companyForm.code.trim(),
+        logoUrl: companyForm.logoUrl.trim(),
         roleLabel: companyForm.roleLabel.trim(),
       };
 
@@ -346,6 +355,7 @@ function AdminSimulations() {
         roleLabel: form.roleLabel.trim(),
         title: form.title.trim(),
         description: form.description.trim(),
+        cardImageUrl: form.cardImageUrl.trim(),
         domain: form.domain as DomainCategory,
         estimatedMinutes: Number.isFinite(estimatedMinutes) ? estimatedMinutes : null,
         taskPrompt: form.taskPrompt.trim(),
@@ -459,7 +469,7 @@ function AdminSimulations() {
         </button>
       </div>
 
-      <div className="mt-6 grid gap-6 xl:grid-cols-[280px_360px_1fr]">
+      <div className="mt-6 grid gap-6 xl:grid-cols-[280px_430px_1fr]">
         <section className="flex min-h-0 flex-col rounded-md border border-neutral-200">
           <div className="flex items-center justify-between border-b border-neutral-200 p-4">
             <div>
@@ -604,58 +614,61 @@ function AdminSimulations() {
                 tabIndex={0}
                 onClick={() => selectSimulation(simulation)}
                 onKeyDown={(event) => activateCard(event, () => selectSimulation(simulation))}
-                className={`w-full cursor-pointer rounded-md border p-4 text-left transition-colors ${
+                className={`w-full cursor-pointer rounded-2xl text-left transition-colors ${
                   simulation.id === selectedSimulationId
-                    ? "border-neutral-900 bg-neutral-50"
-                    : "border-neutral-200 hover:bg-neutral-50"
+                    ? "ring-2 ring-neutral-900"
+                    : "ring-1 ring-transparent hover:ring-neutral-200"
                 }`}
               >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0 flex-1 text-left">
-                    <h3 className="text-sm font-semibold text-neutral-900">
-                      {simulation.roleLabel}
-                    </h3>
-                    <p className="mt-1 line-clamp-2 text-xs text-neutral-500">{simulation.title}</p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      deleteSimulation(simulation);
-                    }}
-                    disabled={actioningSimulationId === simulation.id}
-                    aria-label={`${simulation.roleLabel} 삭제`}
-                    className="grid h-8 w-8 shrink-0 place-items-center rounded-md text-neutral-400 transition-colors hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </div>
-                <div className="mt-3 flex items-end justify-between gap-3">
-                  <div className="flex flex-wrap gap-2 text-xs text-neutral-500">
-                    <span className="rounded bg-neutral-50 px-2 py-1">{simulation.domain}</span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      toggleSimulationVisibility(simulation);
-                    }}
-                    disabled={actioningSimulationId === simulation.id}
-                    aria-pressed={simulation.isPublic}
-                    className={`inline-flex h-6 shrink-0 items-center gap-1 rounded-full border px-1 pr-1.5 text-[11px] font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
-                      simulation.isPublic
-                        ? "border-neutral-900 bg-neutral-900 text-white"
-                        : "border-neutral-200 bg-white text-neutral-500"
-                    }`}
-                  >
-                    <span
-                      className={`h-3.5 w-3.5 rounded-full transition-colors ${
-                        simulation.isPublic ? "bg-white" : "bg-neutral-300"
+                <SimulationCardPreview
+                  compact
+                  companyName={simulation.companyName}
+                  companyLogoUrl={simulation.companyLogoUrl}
+                  cardImageUrl={simulation.cardImageUrl}
+                  roleLabel={simulation.roleLabel}
+                  title={simulation.title}
+                  description={simulation.description}
+                  domain={simulation.domain}
+                  estimatedMinutes={simulation.estimatedMinutes}
+                  className="h-full shadow-none"
+                  topRight={
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        deleteSimulation(simulation);
+                      }}
+                      disabled={actioningSimulationId === simulation.id}
+                      aria-label={`${simulation.roleLabel} 삭제`}
+                      className="grid h-8 w-8 place-items-center rounded-full bg-white/90 text-neutral-500 shadow-sm transition-colors hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  }
+                  bottomRight={
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        toggleSimulationVisibility(simulation);
+                      }}
+                      disabled={actioningSimulationId === simulation.id}
+                      aria-pressed={simulation.isPublic}
+                      className={`inline-flex h-7 shrink-0 items-center gap-1 rounded-full border px-1.5 pr-2 text-[11px] font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+                        simulation.isPublic
+                          ? "border-neutral-900 bg-neutral-900 text-white"
+                          : "border-neutral-200 bg-white text-neutral-500"
                       }`}
-                    />
-                    {simulation.isPublic ? "공개" : "비공개"}
-                  </button>
-                </div>
+                    >
+                      <span
+                        className={`h-3 w-3 rounded-full transition-colors ${
+                          simulation.isPublic ? "bg-white" : "bg-neutral-300"
+                        }`}
+                      />
+                      {simulation.isPublic ? "공개" : "비공개"}
+                    </button>
+                  }
+                />
               </div>
             ))}
 
@@ -701,6 +714,13 @@ function AdminSimulations() {
               onChange={(value) => updateForm("title", value)}
               placeholder="예: 마케팅 캠페인 A/B 테스트 결과 해석"
               required
+            />
+
+            <InputField
+              label="카드 이미지 URL"
+              value={form.cardImageUrl}
+              onChange={(value) => updateForm("cardImageUrl", value)}
+              placeholder="https://..."
             />
 
             <TextareaField
@@ -834,6 +854,12 @@ function CompanyFormEditor({
         onChange={(value) => onChange("code", value)}
         placeholder="예: BGNR-2024-B"
         required
+      />
+      <InputField
+        label="기업 로고 URL"
+        value={form.logoUrl}
+        onChange={(value) => onChange("logoUrl", value)}
+        placeholder="https://..."
       />
       <InputField
         label="기업 화면 표시명"

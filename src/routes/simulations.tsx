@@ -1,8 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Clock, ArrowRight, Sparkles, LayoutGrid } from "lucide-react";
+import { Sparkles, LayoutGrid } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { SimulationCardPreview } from "@/components/SimulationCardPreview";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
@@ -23,7 +24,9 @@ export type Simulation = {
   job_family: string | null;
   domain: string | null;
   estimated_minutes: number | null;
+  card_image_url: string | null;
   company_name: string;
+  company_logo_url: string | null;
 };
 
 type JobSeeker = {
@@ -41,7 +44,8 @@ type RawRow = {
   job_family: string | null;
   domain: string | null;
   estimated_minutes: number | null;
-  companies: { name: string } | null;
+  card_image_url: string | null;
+  companies: { name: string; logo_url: string | null } | null;
 };
 
 function toSimulation(row: RawRow): Simulation {
@@ -53,7 +57,9 @@ function toSimulation(row: RawRow): Simulation {
     job_family: row.job_family,
     domain: row.domain,
     estimated_minutes: row.estimated_minutes,
+    card_image_url: row.card_image_url,
     company_name: row.companies?.name ?? "",
+    company_logo_url: row.companies?.logo_url ?? null,
   };
 }
 
@@ -64,7 +70,9 @@ async function fetchRecommended(seeker: JobSeeker): Promise<Simulation[]> {
   // job_simulations + companies 조인, 관심 도메인 일치 우선 정렬
   const { data, error } = await supabase
     .from("job_simulations")
-    .select("id, title, role_label, description, job_family, domain, estimated_minutes, companies(name)")
+    .select(
+      "id, title, role_label, description, job_family, domain, estimated_minutes, card_image_url, companies(name, logo_url)",
+    )
     .eq("is_public", true)
     .is("deleted_at", null)
     .limit(20); // 클라이언트에서 필터·정렬 후 3개 추출
@@ -93,7 +101,9 @@ async function fetchRecommended(seeker: JobSeeker): Promise<Simulation[]> {
 export async function fetchAll(): Promise<Simulation[]> {
   const { data, error } = await supabase
     .from("job_simulations")
-    .select("id, title, role_label, description, job_family, domain, estimated_minutes, companies(name)")
+    .select(
+      "id, title, role_label, description, job_family, domain, estimated_minutes, card_image_url, companies(name, logo_url)",
+    )
     .eq("is_public", true)
     .is("deleted_at", null)
     .order("created_at", { ascending: false });
@@ -103,72 +113,29 @@ export async function fetchAll(): Promise<Simulation[]> {
   return (data as unknown as RawRow[]).map(toSimulation);
 }
 
-// ─── 기업 플레이스홀더 (기업 확정 전 임시) ───────────────────
-// TODO: 실제 기업이 확정되면 sim.company_name / 로고 URL 로 교체.
-const COMPANY_PLACEHOLDERS = [
-  { name: "A기업", letter: "A", className: "bg-indigo-100 text-indigo-700" },
-  { name: "B기업", letter: "B", className: "bg-emerald-100 text-emerald-700" },
-  { name: "C기업", letter: "C", className: "bg-amber-100 text-amber-700" },
-  { name: "D기업", letter: "D", className: "bg-rose-100 text-rose-700" },
-  { name: "E기업", letter: "E", className: "bg-sky-100 text-sky-700" },
-];
-
-function placeholderCompany(index: number) {
-  return COMPANY_PLACEHOLDERS[index % COMPANY_PLACEHOLDERS.length];
-}
-
 // ─── 카드 컴포넌트 ────────────────────────────────────────────
 
-export function SimCard({ sim, index, rank }: { sim: Simulation; index: number; rank?: number }) {
-  const company = placeholderCompany(index);
+export function SimCard({ sim, rank }: { sim: Simulation; rank?: number }) {
   const roleLine = sim.role_label || sim.job_family || sim.title;
-  // 직무 + 시뮬 내용을 한 줄로 요약
-  const subline = [roleLine, sim.description].filter(Boolean).join(" · ");
 
   return (
     <Link
       to="/simulation/$id"
       params={{ id: sim.id }}
-      className="group relative flex flex-col rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm transition-all hover:-translate-y-0.5 hover:border-zinc-900 hover:shadow-md"
+      className="block h-full"
     >
-      {/* 순위 */}
-      {rank && (
-        <span className="absolute right-4 top-4 flex h-7 w-7 items-center justify-center rounded-full bg-zinc-900 text-xs font-bold text-white">
-          {rank}
-        </span>
-      )}
-
-      {/* 기업 아이콘 (예시) */}
-      <span
-        className={cn(
-          "flex h-14 w-14 items-center justify-center rounded-2xl text-2xl font-bold",
-          company.className,
-        )}
-      >
-        {company.letter}
-      </span>
-
-      {/* 기업명 — 메인 */}
-      <h3 className="mt-4 text-2xl font-bold leading-snug text-zinc-900">{company.name}</h3>
-
-      {/* 직무 + 시뮬 내용 — 한 줄 서브 */}
-      <p className="mt-1.5 line-clamp-1 text-sm leading-relaxed text-zinc-500">{subline}</p>
-
-      {/* 소요시간 */}
-      {sim.estimated_minutes && (
-        <div className="mt-3 flex items-center gap-1 text-sm text-zinc-500">
-          <Clock className="h-4 w-4" />
-          <span>약 {sim.estimated_minutes}분 소요</span>
-        </div>
-      )}
-
-      {/* 호버 시 나타나는 CTA */}
-      <div className="mt-5 flex flex-1 items-end justify-end">
-        <span className="flex items-center gap-1 text-sm font-semibold text-zinc-400 transition-colors group-hover:text-zinc-900">
-          시작하기
-          <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
-        </span>
-      </div>
+      <SimulationCardPreview
+        companyName={sim.company_name}
+        companyLogoUrl={sim.company_logo_url}
+        cardImageUrl={sim.card_image_url}
+        roleLabel={roleLine}
+        title={sim.title}
+        description={sim.description}
+        domain={sim.domain}
+        estimatedMinutes={sim.estimated_minutes}
+        rank={rank}
+        className="h-full"
+      />
     </Link>
   );
 }
@@ -177,12 +144,16 @@ export function SimCard({ sim, index, rank }: { sim: Simulation; index: number; 
 
 export function CardSkeleton() {
   return (
-    <div className="rounded-2xl border border-zinc-100 bg-white p-6">
-      <Skeleton className="h-14 w-14 rounded-2xl" />
-      <Skeleton className="mt-4 h-6 w-24" />
-      <Skeleton className="mt-2 h-4 w-5/6" />
-      <div className="mt-5 flex justify-end">
-        <Skeleton className="h-8 w-24 rounded-xl" />
+    <div className="overflow-hidden rounded-2xl border border-zinc-100 bg-white">
+      <Skeleton className="h-32 w-full" />
+      <div className="p-5">
+        <Skeleton className="h-6 w-36" />
+        <Skeleton className="mt-3 h-4 w-5/6" />
+        <Skeleton className="mt-2 h-4 w-2/3" />
+        <div className="mt-6 flex items-center justify-between">
+          <Skeleton className="h-5 w-24" />
+          <Skeleton className="h-5 w-20" />
+        </div>
       </div>
     </div>
   );
@@ -267,7 +238,7 @@ function SimulationsPage() {
   const isGuest = !authLoading && !user;
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-12">
+    <div className="mx-auto max-w-5xl px-4 py-12">
       {/* 헤더 */}
       <div className="mb-2 flex items-center gap-2">
         <Sparkles className="h-5 w-5 text-zinc-500" />
@@ -315,7 +286,7 @@ function SimulationsPage() {
       <div
         className={cn(
           "mt-8 grid gap-4",
-          !isGuest && sims.length === 3 ? "md:grid-cols-3" : "md:grid-cols-2",
+          sims.length === 1 ? "md:max-w-xl" : "md:grid-cols-2",
         )}
       >
         {loading ? (
@@ -326,7 +297,7 @@ function SimulationsPage() {
           </>
         ) : sims.length > 0 ? (
           sims.map((sim, i) => (
-            <SimCard key={sim.id} sim={sim} index={i} rank={isGuest ? undefined : i + 1} />
+            <SimCard key={sim.id} sim={sim} rank={isGuest ? undefined : i + 1} />
           ))
         ) : (
           <div className="col-span-full">
