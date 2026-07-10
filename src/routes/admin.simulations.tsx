@@ -1,16 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import {
-  Building2,
-  Clock,
-  ImageIcon,
-  ListChecks,
-  Pencil,
-  Plus,
-  RefreshCw,
-  Save,
-  Trash2,
-  X,
-} from "lucide-react";
+import { Building2, ListChecks, Pencil, Plus, RefreshCw, Save, Trash2, X } from "lucide-react";
 import {
   useCallback,
   type ChangeEvent,
@@ -23,6 +12,7 @@ import {
 } from "react";
 import { toast } from "sonner";
 
+import { SimulationCardPreview } from "@/components/SimulationCardPreview";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -132,16 +122,6 @@ function getDomainCategory(value: string): DomainCategory {
   return DOMAIN_CATEGORIES.includes(value as DomainCategory)
     ? (value as DomainCategory)
     : DOMAIN_CATEGORIES[0];
-}
-
-function getCompanyInitial(companyName: string) {
-  const trimmed = companyName.trim();
-  if (!trimmed) return "B";
-
-  const latin = trimmed.match(/[A-Za-z0-9]/g);
-  if (latin?.length) return latin.slice(0, 2).join("").toUpperCase();
-
-  return trimmed.slice(0, 1);
 }
 
 export const Route = createFileRoute("/admin/simulations")({
@@ -646,7 +626,7 @@ function AdminSimulations() {
         </button>
       </div>
 
-      <div className="mt-6 grid gap-6 xl:grid-cols-[280px_430px_1fr]">
+      <div className="mt-6 grid gap-6 xl:grid-cols-[280px_320px_1fr]">
         <section className="flex min-h-0 flex-col rounded-md border border-neutral-200">
           <div className="flex items-center justify-between border-b border-neutral-200 p-4">
             <div>
@@ -805,7 +785,7 @@ function AdminSimulations() {
             </button>
           </div>
 
-          <div className="min-h-0 flex-1 space-y-2 overflow-y-auto p-3">
+          <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-3">
             {companySimulations.map((simulation) => (
               <div
                 key={simulation.id}
@@ -813,23 +793,66 @@ function AdminSimulations() {
                 tabIndex={0}
                 onClick={() => selectSimulation(simulation)}
                 onKeyDown={(event) => activateCard(event, () => selectSimulation(simulation))}
-                className={`w-full cursor-pointer rounded-md text-left transition-colors ${
+                className={`w-full cursor-pointer rounded-xl text-left transition-colors ${
                   simulation.id === selectedSimulationId
                     ? "ring-2 ring-neutral-900"
                     : "ring-1 ring-transparent hover:ring-neutral-200"
                 }`}
               >
-                <AdminSimulationListCard
-                  simulation={simulation}
-                  isActioning={actioningSimulationId === simulation.id}
-                  onUploadLogo={() =>
+                <SimulationCardPreview
+                  compact
+                  companyName={simulation.companyName}
+                  companyLogoUrl={simulation.companyLogoUrl}
+                  cardImageUrl={simulation.cardImageUrl}
+                  roleLabel={simulation.roleLabel}
+                  title={simulation.title}
+                  description={simulation.description}
+                  domain={simulation.domain}
+                  estimatedMinutes={simulation.estimatedMinutes}
+                  className="h-full shadow-none"
+                  onLogoClick={() =>
                     openAssetFilePicker({ kind: "logo", companyId: simulation.companyId })
                   }
-                  onUploadImage={() =>
+                  onImageClick={() =>
                     openAssetFilePicker({ kind: "cardImage", simulationId: simulation.id })
                   }
-                  onDelete={() => deleteSimulation(simulation)}
-                  onToggleVisibility={() => toggleSimulationVisibility(simulation)}
+                  topRight={
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        deleteSimulation(simulation);
+                      }}
+                      disabled={actioningSimulationId === simulation.id}
+                      aria-label={`${simulation.roleLabel} 삭제`}
+                      className="grid h-8 w-8 place-items-center rounded-full bg-white/90 text-neutral-500 shadow-sm transition-colors hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  }
+                  bottomRight={
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        toggleSimulationVisibility(simulation);
+                      }}
+                      disabled={actioningSimulationId === simulation.id}
+                      aria-pressed={simulation.isPublic}
+                      className={`inline-flex h-7 shrink-0 items-center gap-1 rounded-full border px-1.5 pr-2 text-[11px] font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+                        simulation.isPublic
+                          ? "border-neutral-900 bg-neutral-900 text-white"
+                          : "border-neutral-200 bg-white text-neutral-500"
+                      }`}
+                    >
+                      <span
+                        className={`h-3 w-3 rounded-full transition-colors ${
+                          simulation.isPublic ? "bg-white" : "bg-neutral-300"
+                        }`}
+                      />
+                      {simulation.isPublic ? "공개" : "비공개"}
+                    </button>
+                  }
                 />
               </div>
             ))}
@@ -962,130 +985,6 @@ function AdminShell({ children }: { children: React.ReactNode }) {
         </Link>
       </header>
       <main className="mx-auto max-w-7xl px-6 py-8">{children}</main>
-    </div>
-  );
-}
-
-function AdminSimulationListCard({
-  simulation,
-  isActioning,
-  onUploadLogo,
-  onUploadImage,
-  onDelete,
-  onToggleVisibility,
-}: {
-  simulation: AdminCompanySimulation;
-  isActioning: boolean;
-  onUploadLogo: () => void;
-  onUploadImage: () => void;
-  onDelete: () => void;
-  onToggleVisibility: () => void;
-}) {
-  const logoUrl = simulation.companyLogoUrl.trim();
-  const cardImageUrl = simulation.cardImageUrl.trim();
-  const summary = simulation.description.trim() || simulation.title.trim();
-
-  return (
-    <div className="rounded-md border border-neutral-200 bg-white p-3 transition-colors hover:bg-neutral-50">
-      <div className="flex items-start gap-3">
-        <div className="relative h-16 w-20 shrink-0 overflow-hidden rounded-md bg-neutral-100">
-          <button
-            type="button"
-            onClick={(event) => {
-              event.stopPropagation();
-              onUploadImage();
-            }}
-            className="absolute inset-0 block h-full w-full overflow-hidden text-neutral-400 transition-opacity hover:opacity-85"
-            aria-label={`${simulation.roleLabel} 카드 이미지 변경`}
-          >
-            {cardImageUrl ? (
-              <img
-                src={cardImageUrl}
-                alt={`${simulation.roleLabel} 카드 이미지`}
-                className="h-full w-full object-cover"
-              />
-            ) : (
-              <span className="flex h-full w-full flex-col items-center justify-center gap-1 text-[10px]">
-                <ImageIcon className="h-4 w-4" />
-                사진
-              </span>
-            )}
-          </button>
-          <button
-            type="button"
-            onClick={(event) => {
-              event.stopPropagation();
-              onUploadLogo();
-            }}
-            className="absolute bottom-1.5 left-1.5 z-10 grid h-8 w-8 place-items-center overflow-hidden rounded-md bg-white text-xs font-bold text-blue-600 shadow-sm ring-1 ring-neutral-200 transition-transform hover:scale-105"
-            aria-label={`${simulation.companyName} 로고 변경`}
-          >
-            {logoUrl ? (
-              <img
-                src={logoUrl}
-                alt={`${simulation.companyName} 로고`}
-                className="h-full w-full object-contain p-1"
-              />
-            ) : (
-              getCompanyInitial(simulation.companyName)
-            )}
-          </button>
-        </div>
-
-        <div className="min-w-0 flex-1">
-          <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0">
-              <h3 className="truncate text-sm font-semibold text-neutral-900">
-                {simulation.roleLabel}
-              </h3>
-              <p className="mt-1 line-clamp-1 text-xs text-neutral-500">{simulation.title}</p>
-            </div>
-            <button
-              type="button"
-              onClick={(event) => {
-                event.stopPropagation();
-                onDelete();
-              }}
-              disabled={isActioning}
-              aria-label={`${simulation.roleLabel} 삭제`}
-              className="grid h-7 w-7 shrink-0 place-items-center rounded-md text-neutral-400 transition-colors hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-            </button>
-          </div>
-
-          <p className="mt-2 line-clamp-1 text-xs text-neutral-400">{summary}</p>
-
-          <div className="mt-2 flex items-center justify-between gap-2">
-            <span className="inline-flex min-w-0 items-center gap-1 text-[11px] text-neutral-500">
-              <Clock className="h-3.5 w-3.5 shrink-0" />
-              <span>약 {simulation.estimatedMinutes ?? 75}분</span>
-            </span>
-
-            <button
-              type="button"
-              onClick={(event) => {
-                event.stopPropagation();
-                onToggleVisibility();
-              }}
-              disabled={isActioning}
-              aria-pressed={simulation.isPublic}
-              className={`inline-flex h-6 shrink-0 items-center gap-1 rounded-full border px-1.5 pr-2 text-[11px] font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
-                simulation.isPublic
-                  ? "border-neutral-900 bg-neutral-900 text-white"
-                  : "border-neutral-200 bg-white text-neutral-500"
-              }`}
-            >
-              <span
-                className={`h-2.5 w-2.5 rounded-full transition-colors ${
-                  simulation.isPublic ? "bg-white" : "bg-neutral-300"
-                }`}
-              />
-              {simulation.isPublic ? "공개" : "비공개"}
-            </button>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }

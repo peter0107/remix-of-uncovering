@@ -112,20 +112,20 @@ export function SimulationCardPreview({
   const logoClassName = cn(
     "grid shrink-0 place-items-center overflow-hidden rounded-lg bg-white font-bold text-neutral-900 shadow-sm",
     compact ? "h-9 w-9 text-sm" : "h-10 w-10 text-base",
-    onLogoClick && "cursor-pointer ring-1 ring-white/30 transition-transform hover:scale-105",
+    onLogoClick &&
+      "cursor-pointer ring-1 ring-white/30 transition-all hover:scale-105 hover:ring-2 hover:ring-white",
   );
 
   return (
     <article
       className={cn(
-        "group overflow-hidden rounded-xl border border-zinc-200 bg-white text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-zinc-900 hover:shadow-md",
+        "group flex aspect-[4/3] flex-col overflow-hidden rounded-xl border border-zinc-200 bg-white text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-zinc-900 hover:shadow-md",
         className,
       )}
     >
       <div
         className={cn(
-          "relative h-24 overflow-hidden",
-          compact && "h-20",
+          "group/image relative shrink-0 basis-[38%] overflow-hidden",
           onImageClick && "cursor-pointer",
         )}
         onClick={(event) => {
@@ -140,6 +140,9 @@ export function SimulationCardPreview({
             backgroundImage: `linear-gradient(90deg, rgba(0,0,0,0.68), rgba(0,0,0,0.28)), url("${imageUrl}")`,
           }}
         />
+        {onImageClick && (
+          <div className="pointer-events-none absolute inset-0 bg-white/0 ring-0 ring-inset ring-white/0 transition-all group-hover/image:bg-white/10 group-hover/image:ring-2 group-hover/image:ring-white/60" />
+        )}
         <div className="relative flex h-full items-end gap-2.5 p-3">
           {onLogoClick ? (
             <button
@@ -166,7 +169,7 @@ export function SimulationCardPreview({
         {topRight && <div className="absolute right-3 top-3 z-10">{topRight}</div>}
       </div>
 
-      <div className={cn("flex min-h-[118px] flex-col p-4", compact && "min-h-[108px] p-3")}>
+      <div className={cn("flex min-h-0 flex-1 flex-col p-4", compact && "p-3")}>
         <h3
           className={cn(
             "line-clamp-1 font-bold tracking-tight text-zinc-900",

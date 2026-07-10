@@ -139,13 +139,13 @@ export function SimCard({ sim }: { sim: Simulation }) {
 
 export function CardSkeleton() {
   return (
-    <div className="overflow-hidden rounded-xl border border-zinc-100 bg-white">
-      <Skeleton className="h-24 w-full" />
-      <div className="p-4">
+    <div className="flex aspect-[4/3] flex-col overflow-hidden rounded-xl border border-zinc-100 bg-white">
+      <Skeleton className="basis-[38%] shrink-0 w-full" />
+      <div className="flex min-h-0 flex-1 flex-col p-4">
         <Skeleton className="h-5 w-32" />
         <Skeleton className="mt-3 h-3.5 w-5/6" />
         <Skeleton className="mt-2 h-4 w-2/3" />
-        <div className="mt-5 flex items-center justify-between">
+        <div className="mt-auto flex items-center justify-between pt-4">
           <Skeleton className="h-4 w-24" />
           <Skeleton className="h-4 w-16" />
         </div>
