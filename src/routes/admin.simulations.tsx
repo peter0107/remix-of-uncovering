@@ -64,6 +64,8 @@ type AssetUploadTarget =
 type AssetEditorState = {
   target: AssetUploadTarget;
   previewUrl: string;
+  imageWidth: number;
+  imageHeight: number;
   zoom: number;
   offsetX: number;
   offsetY: number;
@@ -74,6 +76,8 @@ type AssetEditorPreset = {
   description: string;
   width: number;
   height: number;
+  previewWidth: number;
+  previewHeight: number;
   previewClassName: string;
 };
 
@@ -140,6 +144,8 @@ function getAssetEditorPreset(kind: AssetUploadTarget["kind"]): AssetEditorPrese
       description: "로고가 정사각형 영역 안에 잘 보이도록 조정한 뒤 적용하세요.",
       width: 640,
       height: 640,
+      previewWidth: 256,
+      previewHeight: 256,
       previewClassName: "h-64 w-64 rounded-xl",
     };
   }
@@ -149,6 +155,8 @@ function getAssetEditorPreset(kind: AssetUploadTarget["kind"]): AssetEditorPrese
     description: "유저 카드 상단 배경과 같은 비율로 보이도록 조정한 뒤 적용하세요.",
     width: 1400,
     height: 400,
+    previewWidth: 512,
+    previewHeight: 146,
     previewClassName: "w-full max-w-lg rounded-xl",
   };
 }
@@ -200,6 +208,26 @@ async function createCroppedAssetBlob(
       0.92,
     );
   });
+}
+
+function getAssetEditorImageStyle(editor: AssetEditorState, preset: AssetEditorPreset) {
+  const baseScale = Math.max(
+    preset.previewWidth / editor.imageWidth,
+    preset.previewHeight / editor.imageHeight,
+  );
+  const imageWidth = editor.imageWidth * baseScale * editor.zoom;
+  const imageHeight = editor.imageHeight * baseScale * editor.zoom;
+  const overflowX = Math.max(0, imageWidth - preset.previewWidth);
+  const overflowY = Math.max(0, imageHeight - preset.previewHeight);
+  const imageX = (preset.previewWidth - imageWidth) / 2 - (overflowX * editor.offsetX) / 100;
+  const imageY = (preset.previewHeight - imageHeight) / 2 - (overflowY * editor.offsetY) / 100;
+
+  return {
+    left: `${(imageX / preset.previewWidth) * 100}%`,
+    top: `${(imageY / preset.previewHeight) * 100}%`,
+    width: `${(imageWidth / preset.previewWidth) * 100}%`,
+    height: `${(imageHeight / preset.previewHeight) * 100}%`,
+  };
 }
 
 export const Route = createFileRoute("/admin/simulations")({
@@ -472,7 +500,7 @@ function AdminSimulations() {
     toast.success("카드 이미지를 변경했습니다.");
   }
 
-  function handleAssetFileChange(event: ChangeEvent<HTMLInputElement>) {
+  async function handleAssetFileChange(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     const target = assetUploadTarget;
     event.target.value = "";
@@ -485,16 +513,30 @@ function AdminSimulations() {
       return;
     }
 
+    const previewUrl = URL.createObjectURL(file);
+    let image: HTMLImageElement;
+    try {
+      image = await loadAssetImage(previewUrl);
+    } catch {
+      URL.revokeObjectURL(previewUrl);
+      toast.error("이미지를 불러오지 못했습니다.");
+      return;
+    }
+
     setAssetEditor({
       target,
-      previewUrl: URL.createObjectURL(file),
+      previewUrl,
+      imageWidth: image.naturalWidth,
+      imageHeight: image.naturalHeight,
       zoom: 1,
       offsetX: 0,
       offsetY: 0,
     });
   }
 
-  function updateAssetEditor(value: Partial<Omit<AssetEditorState, "target" | "previewUrl">>) {
+  function updateAssetEditor(
+    value: Partial<Omit<AssetEditorState, "target" | "previewUrl" | "imageWidth" | "imageHeight">>,
+  ) {
     setAssetEditor((current) => (current ? { ...current, ...value } : current));
   }
 
@@ -1102,16 +1144,20 @@ function AdminSimulations() {
           {assetEditor && assetEditorPreset && (
             <div className="space-y-6">
               <div
-                className={`mx-auto flex items-center justify-center overflow-hidden bg-neutral-100 ring-1 ring-neutral-200 ${assetEditorPreset.previewClassName}`}
-                style={{ aspectRatio: `${assetEditorPreset.width} / ${assetEditorPreset.height}` }}
+                className={`relative mx-auto overflow-hidden bg-neutral-100 ring-1 ring-neutral-200 ${assetEditorPreset.previewClassName}`}
+                style={{
+                  aspectRatio: `${assetEditorPreset.width} / ${assetEditorPreset.height}`,
+                  maxWidth: "100%",
+                  width: assetEditorPreset.previewWidth,
+                }}
               >
                 <img
                   src={assetEditor.previewUrl}
                   alt="편집 미리보기"
-                  className="h-full w-full object-cover"
+                  draggable={false}
+                  className="absolute max-w-none select-none"
                   style={{
-                    transform: `translate(${-assetEditor.offsetX / 3}%, ${-assetEditor.offsetY / 3}%) scale(${assetEditor.zoom})`,
-                    transformOrigin: "center",
+                    ...getAssetEditorImageStyle(assetEditor, assetEditorPreset),
                   }}
                 />
               </div>
