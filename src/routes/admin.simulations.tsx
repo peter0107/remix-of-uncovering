@@ -1183,23 +1183,6 @@ function AdminSimulations() {
           </div>
 
           <form onSubmit={submitSimulation} className="grid gap-5 p-5">
-            <div className="grid gap-4 md:grid-cols-2">
-              <InputField
-                label="기업 코드"
-                value={form.companyCode}
-                onChange={(value) => updateForm("companyCode", value)}
-                disabled
-                required
-              />
-              <InputField
-                label="직무명"
-                value={form.roleLabel}
-                onChange={(value) => updateForm("roleLabel", value)}
-                placeholder="예: 마케팅 매니저"
-                required
-              />
-            </div>
-
             <InputField
               label="시뮬레이션 제목"
               value={form.title}
@@ -1208,14 +1191,14 @@ function AdminSimulations() {
               required
             />
 
-            <TextareaField
-              label="간단 설명"
-              value={form.description}
-              onChange={(value) => updateForm("description", value)}
-              rows={3}
-            />
-
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid gap-4 md:grid-cols-3">
+              <InputField
+                label="직무명"
+                value={form.roleLabel}
+                onChange={(value) => updateForm("roleLabel", value)}
+                placeholder="예: 마케팅 매니저"
+                required
+              />
               <SelectField
                 label="도메인"
                 value={form.domain}
@@ -1230,6 +1213,13 @@ function AdminSimulations() {
                 onChange={(value) => updateForm("estimatedMinutes", value)}
               />
             </div>
+
+            <TextareaField
+              label="간단 설명"
+              value={form.description}
+              onChange={(value) => updateForm("description", value)}
+              rows={3}
+            />
 
             <TextareaField
               label="기존 단일형 과제 본문"
