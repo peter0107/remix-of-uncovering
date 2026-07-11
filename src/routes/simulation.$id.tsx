@@ -55,6 +55,38 @@ type SimulationDetail = {
   company_name: string;
 };
 
+const MAX_ANSWER_LENGTH = 1000;
+
+function AnswerTextarea({
+  id,
+  value,
+  onChange,
+  className = "",
+  containerClassName = "",
+}: {
+  id?: string;
+  value: string;
+  onChange: (value: string) => void;
+  className?: string;
+  containerClassName?: string;
+}) {
+  return (
+    <div className={`relative min-h-0 ${containerClassName}`}>
+      <Textarea
+        id={id}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        maxLength={MAX_ANSWER_LENGTH}
+        placeholder="여기에 답안을 작성해주세요"
+        className={`min-h-40 resize-none pb-8 ${className}`}
+      />
+      <span className="pointer-events-none absolute bottom-2 right-3 bg-background/90 px-1 text-[11px] tabular-nums text-zinc-400">
+        {value.length.toLocaleString()} / {MAX_ANSWER_LENGTH.toLocaleString()}자
+      </span>
+    </div>
+  );
+}
+
 /** 왼쪽 자료 섹션 (라벨 + 마크다운 카드) */
 function MaterialSection({ label, markdown }: { label: string; markdown: string }) {
   return (
@@ -641,11 +673,10 @@ function SimulationDetailPage() {
                       <RichTextContent value={p.bodyMarkdown} />
                     </div>
                   )}
-                  <Textarea
+                  <AnswerTextarea
                     value={answers[p.id] ?? ""}
-                    onChange={(e) => setAnswer(p.id, e.target.value)}
-                    placeholder="여기에 답안을 작성해주세요"
-                    className="mt-3 min-h-40 resize-none"
+                    onChange={(value) => setAnswer(p.id, value)}
+                    containerClassName="mt-3"
                   />
                 </div>
               ))}
@@ -745,12 +776,12 @@ function SimulationDetailPage() {
             <label htmlFor="response" className="text-sm font-medium text-zinc-700">
               {sim.single_answer_question?.trim() || "답안 작성"}
             </label>
-            <Textarea
+            <AnswerTextarea
               id="response"
               value={responseText}
-              onChange={(e) => setResponseText(e.target.value)}
-              placeholder="여기에 답안을 작성해주세요"
-              className="mt-2 min-h-40 flex-1 resize-none"
+              onChange={setResponseText}
+              className="h-full flex-1"
+              containerClassName="mt-2 flex min-h-40 flex-1 flex-col"
             />
           </div>
 
