@@ -3,7 +3,7 @@ import { RotateCcw, Save, Sparkles } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
-import { DEFAULT_COMPANY_APPLICANT_REVIEW_PROMPT } from "@/lib/ai-prompt.defaults";
+import { DEFAULT_COMPANY_SIMULATION_AI_REVIEW_PROMPT } from "@/lib/ai-prompt.defaults";
 import { useAuth } from "@/hooks/use-auth";
 import { getAdminAiPromptSetting, saveAdminAiPromptSetting } from "@/lib/simulations.functions";
 
@@ -11,7 +11,7 @@ export const Route = createFileRoute("/admin/ai-prompts")({
   head: () => ({
     meta: [
       { title: "Beginner - AI 프롬프트 설정" },
-      { name: "description", content: "Claude 지원자 평가 프롬프트를 관리합니다." },
+      { name: "description", content: "Claude 시뮬레이션 AI 평가 프롬프트를 관리합니다." },
     ],
   }),
   component: AdminAiPrompts,
@@ -78,7 +78,7 @@ function AdminAiPrompts() {
         <p className="text-xs font-medium text-neutral-500">Beginner Admin</p>
         <h1 className="mt-1 text-2xl font-semibold tracking-tight">AI 프롬프트 설정</h1>
         <p className="mt-2 text-sm text-neutral-500">
-          기업 페이지의 지원자 AI 평가에 사용할 Claude 지침을 관리합니다.
+          기업 페이지의 시뮬레이션 결과물과 AI 활용 평가에 사용할 Claude 지침을 관리합니다.
         </p>
       </div>
 
@@ -94,9 +94,9 @@ function AdminAiPrompts() {
                 <Sparkles className="h-5 w-5" />
               </div>
               <div>
-                <h2 className="text-base font-semibold">지원자 평가 프롬프트</h2>
+                <h2 className="text-base font-semibold">시뮬레이션 AI 평가 프롬프트</h2>
                 <p className="mt-1 text-sm text-neutral-500">
-                  채용 공고와 지원자 자료는 평가 실행 시 자동으로 뒤에 전달됩니다.
+                  시뮬레이션 결과물과 AI 어시스트 대화 로그는 평가 실행 시 자동으로 뒤에 전달됩니다.
                 </p>
               </div>
             </div>
@@ -118,7 +118,7 @@ function AdminAiPrompts() {
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => setPrompt(DEFAULT_COMPANY_APPLICANT_REVIEW_PROMPT)}
+                  onClick={() => setPrompt(DEFAULT_COMPANY_SIMULATION_AI_REVIEW_PROMPT)}
                   className="inline-flex h-9 items-center gap-2 rounded-md border border-neutral-300 px-3 text-xs font-medium hover:bg-neutral-50"
                 >
                   <RotateCcw className="h-3.5 w-3.5" /> 기본값으로 되돌리기

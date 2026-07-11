@@ -4,8 +4,8 @@ import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
 
 import {
-  COMPANY_APPLICANT_REVIEW_PROMPT_KEY,
-  DEFAULT_COMPANY_APPLICANT_REVIEW_PROMPT,
+  COMPANY_SIMULATION_AI_REVIEW_PROMPT_KEY,
+  DEFAULT_COMPANY_SIMULATION_AI_REVIEW_PROMPT,
 } from "@/lib/ai-prompt.defaults";
 import { DOMAIN_CATEGORIES } from "@/lib/domain-categories";
 
@@ -81,7 +81,7 @@ export type AdminSubmissionAnswer = {
 };
 
 export type AdminAiPromptSetting = {
-  key: typeof COMPANY_APPLICANT_REVIEW_PROMPT_KEY;
+  key: typeof COMPANY_SIMULATION_AI_REVIEW_PROMPT_KEY;
   label: string;
   prompt: string;
   updatedAt: string | null;
@@ -398,7 +398,7 @@ export const getAdminAiPromptSetting = createServerFn({ method: "GET" }).handler
     const { data, error } = await supabaseAdmin
       .from("ai_prompt_settings")
       .select("prompt, updated_at")
-      .eq("key", COMPANY_APPLICANT_REVIEW_PROMPT_KEY)
+      .eq("key", COMPANY_SIMULATION_AI_REVIEW_PROMPT_KEY)
       .maybeSingle();
 
     if (error) {
@@ -409,9 +409,9 @@ export const getAdminAiPromptSetting = createServerFn({ method: "GET" }).handler
     }
 
     return {
-      key: COMPANY_APPLICANT_REVIEW_PROMPT_KEY,
-      label: "지원자 평가 프롬프트",
-      prompt: data?.prompt ?? DEFAULT_COMPANY_APPLICANT_REVIEW_PROMPT,
+      key: COMPANY_SIMULATION_AI_REVIEW_PROMPT_KEY,
+      label: "시뮬레이션 AI 평가 프롬프트",
+      prompt: data?.prompt ?? DEFAULT_COMPANY_SIMULATION_AI_REVIEW_PROMPT,
       updatedAt: data?.updated_at ? formatDateTime(data.updated_at) : null,
     };
   },
@@ -424,7 +424,7 @@ export const saveAdminAiPromptSetting = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin.from("ai_prompt_settings").upsert(
       {
-        key: COMPANY_APPLICANT_REVIEW_PROMPT_KEY,
+        key: COMPANY_SIMULATION_AI_REVIEW_PROMPT_KEY,
         prompt: data.prompt,
         updated_at: new Date().toISOString(),
       },

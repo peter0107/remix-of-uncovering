@@ -2,8 +2,8 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 import {
-  COMPANY_APPLICANT_REVIEW_PROMPT_KEY,
-  DEFAULT_COMPANY_APPLICANT_REVIEW_PROMPT,
+  COMPANY_SIMULATION_AI_REVIEW_PROMPT_KEY,
+  DEFAULT_COMPANY_SIMULATION_AI_REVIEW_PROMPT,
 } from "@/lib/ai-prompt.defaults";
 
 export type Status = "submitted" | "in_review" | "completed";
@@ -21,16 +21,7 @@ export type ApplicantReviewState = {
   decisionStatus: ApplicantDecisionStatus;
 };
 
-export type CompanyJobPosting = {
-  id: string;
-  roleLabel: string;
-  sourceUrl: string;
-  title: string;
-  content: string;
-  updatedAt: string;
-};
-
-export type JobPostingCandidate = {
+type JobPostingCandidate = {
   title: string;
   sourceUrl: string;
   content: string;
@@ -38,21 +29,20 @@ export type JobPostingCandidate = {
 
 export type ApplicantAiReview = {
   applicantId: string;
-  jobPostingId: string;
   simulation: {
     score: number;
     summary: string;
     strengths: string[];
     concerns: string[];
   };
-  resumeFit: {
+  aiUtilization: {
     score: number;
     summary: string;
-    matched: string[];
-    gaps: string[];
+    strengths: string[];
+    improvements: string[];
   };
   interviewQuestions: Array<{
-    category: "이력서·포트폴리오" | "시뮬레이션";
+    category: "시뮬레이션 결과물" | "AI 활용";
     question: string;
     intent: string;
   }>;
@@ -147,7 +137,6 @@ export type CompanyApplicants = {
   readApplicantIds: string[];
   mailSentApplicantIds: string[];
   reviewStates: ApplicantReviewState[];
-  jobPostings: CompanyJobPosting[];
   aiReviews: ApplicantAiReview[];
 };
 
@@ -196,15 +185,15 @@ const aiReviewAnalysisSchema = z.object({
     strengths: z.array(z.string()),
     concerns: z.array(z.string()),
   }),
-  resumeFit: z.object({
+  aiUtilization: z.object({
     score: z.number().min(0).max(100),
     summary: z.string(),
-    matched: z.array(z.string()),
-    gaps: z.array(z.string()),
+    strengths: z.array(z.string()),
+    improvements: z.array(z.string()),
   }),
   interviewQuestions: z.array(
     z.object({
-      category: z.enum(["이력서·포트폴리오", "시뮬레이션"]),
+      category: z.enum(["시뮬레이션 결과물", "AI 활용"]),
       question: z.string(),
       intent: z.string(),
     }),
@@ -275,35 +264,24 @@ const companyApplicantsSchema = z.object({
       decisionStatus: decisionStatusEnum,
     }),
   ),
-  jobPostings: z.array(
-    z.object({
-      id: z.string().uuid(),
-      roleLabel: z.string(),
-      sourceUrl: z.string(),
-      title: z.string(),
-      content: z.string(),
-      updatedAt: z.string(),
-    }),
-  ),
   aiReviews: z.array(
     z.object({
       applicantId: z.string().uuid(),
-      jobPostingId: z.string().uuid(),
       simulation: z.object({
         score: z.number().min(0).max(100),
         summary: z.string(),
         strengths: z.array(z.string()),
         concerns: z.array(z.string()),
       }),
-      resumeFit: z.object({
+      aiUtilization: z.object({
         score: z.number().min(0).max(100),
         summary: z.string(),
-        matched: z.array(z.string()),
-        gaps: z.array(z.string()),
+        strengths: z.array(z.string()),
+        improvements: z.array(z.string()),
       }),
       interviewQuestions: z.array(
         z.object({
-          category: z.enum(["이력서·포트폴리오", "시뮬레이션"]),
+          category: z.enum(["시뮬레이션 결과물", "AI 활용"]),
           question: z.string(),
           intent: z.string(),
         }),
@@ -336,21 +314,7 @@ const applicantDecisionInputSchema = applicantStateInputSchema.extend({
   decisionStatus: decisionStatusEnum,
 });
 
-const jobPostingInputSchema = z.object({
-  code: z.string().min(1),
-  roleLabel: z.string().min(1),
-  sourceUrl: z.string().url(),
-  title: z.string().max(300).optional().default(""),
-  content: z.string().min(1).max(60000),
-});
-
-const jobPostingExtractInputSchema = z.object({
-  sourceUrl: z.string().url(),
-});
-
-const aiEvaluationInputSchema = applicantStateInputSchema.extend({
-  jobPostingId: z.string().uuid(),
-});
+const aiEvaluationInputSchema = applicantStateInputSchema;
 
 const EMPLOYMENT_TYPES = ["인턴", "신입", "계약직", "경력직"] as const;
 
@@ -486,6 +450,23 @@ function mapApplicant(row: Record<string, unknown>): Applicant {
   };
 }
 
+function parseAiChatLog(value: unknown): AiChatMessage[] {
+  if (!Array.isArray(value)) return [];
+
+  const parsed: AiChatMessage[] = [];
+  for (const item of value) {
+    if (typeof item !== "object" || item === null) continue;
+    const row = item as Record<string, unknown>;
+    if (row.role !== "user" && row.role !== "assistant") continue;
+    parsed.push({
+      role: row.role,
+      content: String(row.content ?? ""),
+      at: String(row.at ?? ""),
+    });
+  }
+  return parsed;
+}
+
 function mapSimulation(row: Record<string, unknown>): CompanySimulation {
   const roleLabel = String(row.role_label ?? row.job_family ?? row.title);
   return {
@@ -499,22 +480,10 @@ function mapSimulation(row: Record<string, unknown>): CompanySimulation {
   };
 }
 
-function mapJobPosting(row: Record<string, unknown>): CompanyJobPosting {
-  return {
-    id: String(row.id),
-    roleLabel: String(row.role_label ?? ""),
-    sourceUrl: String(row.source_url ?? ""),
-    title: String(row.title ?? ""),
-    content: String(row.content ?? ""),
-    updatedAt: String(row.updated_at ?? row.created_at ?? ""),
-  };
-}
-
 function mapAiReview(row: Record<string, unknown>): ApplicantAiReview {
   const analysis = aiReviewAnalysisSchema.parse(row.analysis ?? {});
   return {
     applicantId: String(row.applicant_id),
-    jobPostingId: String(row.job_posting_id),
     ...analysis,
     updatedAt: String(row.updated_at ?? row.created_at ?? ""),
   };
@@ -849,29 +818,23 @@ function getClaudeOutput(payload: Record<string, unknown>) {
     .trim();
 }
 
-async function generateApplicantAiReview(applicant: Applicant, jobPosting: CompanyJobPosting) {
+async function generateApplicantAiReview(applicant: Applicant) {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
     throw new Error("ANTHROPIC_API_KEY 환경변수를 Lovable에 설정해주세요.");
   }
 
-  const applicantProfile = {
-    name: applicant.name,
+  const evaluationMaterial = {
     role: applicant.role,
-    headline: applicant.headline,
-    experiences: applicant.experiences,
-    skills: applicant.skills,
-    tools: applicant.tools,
-    activities: applicant.portfolio,
-    education: applicant.educations,
     simulationAnswers: applicant.simulation,
+    aiAssistantChatLog: applicant.aiChatLog,
   };
 
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data: promptSetting, error: promptError } = await supabaseAdmin
     .from("ai_prompt_settings")
     .select("prompt")
-    .eq("key", COMPANY_APPLICANT_REVIEW_PROMPT_KEY)
+    .eq("key", COMPANY_SIMULATION_AI_REVIEW_PROMPT_KEY)
     .maybeSingle();
 
   if (promptError) {
@@ -879,8 +842,8 @@ async function generateApplicantAiReview(applicant: Applicant, jobPosting: Compa
   }
 
   const promptInstructions =
-    promptSetting?.prompt?.trim() || DEFAULT_COMPANY_APPLICANT_REVIEW_PROMPT;
-  const prompt = `${promptInstructions}\n\n채용 공고:\n제목: ${jobPosting.title}\n직무: ${jobPosting.roleLabel}\n내용:\n${jobPosting.content.slice(0, 14000)}\n\n지원자 자료:\n${JSON.stringify(applicantProfile).slice(0, 24000)}`;
+    promptSetting?.prompt?.trim() || DEFAULT_COMPANY_SIMULATION_AI_REVIEW_PROMPT;
+  const prompt = `${promptInstructions}\n\n평가 자료:\n${JSON.stringify(evaluationMaterial).slice(0, 30000)}`;
 
   const response = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
@@ -977,20 +940,7 @@ export const getApplicantsByCompanyCode = createServerFn({ method: "GET" })
       } else {
         const chatMap = new Map<string, AiChatMessage[]>();
         for (const row of (chatRows ?? []) as { id: string; ai_chat_log: unknown }[]) {
-          const raw = Array.isArray(row.ai_chat_log) ? row.ai_chat_log : [];
-          const parsed: AiChatMessage[] = [];
-          for (const m of raw) {
-            if (typeof m !== "object" || m === null) continue;
-            const rec = m as Record<string, unknown>;
-            const role = rec.role === "user" || rec.role === "assistant" ? rec.role : null;
-            if (!role) continue;
-            parsed.push({
-              role,
-              content: String(rec.content ?? ""),
-              at: String(rec.at ?? ""),
-            });
-          }
-          chatMap.set(String(row.id), parsed);
+          chatMap.set(String(row.id), parseAiChatLog(row.ai_chat_log));
         }
         for (const a of applicants) {
           a.aiChatLog = chatMap.get(a.id) ?? [];
@@ -1033,20 +983,9 @@ export const getApplicantsByCompanyCode = createServerFn({ method: "GET" })
       throw new Error("Failed to load company simulations");
     }
 
-    const { data: jobPostingRows, error: jobPostingError } = await supabase
-      .from("company_job_postings")
-      .select("id, role_label, source_url, title, content, created_at, updated_at")
-      .eq("company_id", company.id)
-      .order("updated_at", { ascending: false });
-
-    if (jobPostingError) {
-      console.error("Failed to load job postings:", jobPostingError);
-      throw new Error("Failed to load job postings");
-    }
-
     const { data: aiReviewRows, error: aiReviewError } = await supabase
-      .from("company_applicant_ai_reviews")
-      .select("applicant_id, job_posting_id, analysis, created_at, updated_at")
+      .from("company_simulation_ai_reviews")
+      .select("applicant_id, analysis, created_at, updated_at")
       .eq("company_id", company.id)
       .order("updated_at", { ascending: false });
 
@@ -1078,7 +1017,6 @@ export const getApplicantsByCompanyCode = createServerFn({ method: "GET" })
         reviewStage: reviewStageEnum.parse(row.review_stage ?? "document_review"),
         decisionStatus: decisionStatusEnum.parse(row.decision_status ?? "undecided"),
       })),
-      jobPostings: ((jobPostingRows ?? []) as Record<string, unknown>[]).map(mapJobPosting),
       aiReviews: ((aiReviewRows ?? []) as Record<string, unknown>[]).map(mapAiReview),
     });
   });
@@ -1335,92 +1273,12 @@ export const setApplicantDecisionByCompanyCode = createServerFn({ method: "POST"
     return { applicantId: data.applicantId, reviewStage, decisionStatus: data.decisionStatus };
   });
 
-export const listJobPostingCandidatesFromUrl = createServerFn({ method: "POST" })
-  .inputValidator(jobPostingExtractInputSchema)
-  .handler(async ({ data }): Promise<JobPostingCandidate[]> => {
-    const url = getJobKoreaUrl(data.sourceUrl);
-    const html = await fetchJobKoreaHtml(url);
-    const candidates = extractJobPostingCandidates(html, url);
-    if (candidates.length === 0) {
-      throw new Error("선택할 수 있는 공고를 찾지 못했습니다. 공고 내용을 직접 입력해주세요.");
-    }
-    return candidates;
-  });
-
-export const extractJobPostingFromUrl = createServerFn({ method: "POST" })
-  .inputValidator(jobPostingExtractInputSchema)
-  .handler(
-    async ({
-      data,
-    }): Promise<{
-      sourceUrl: string;
-      title: string;
-      content: string;
-      ocrImageCount: number;
-    }> => {
-      const url = getJobKoreaUrl(data.sourceUrl);
-      const html = await fetchJobKoreaHtml(url);
-      const htmlText = extractJobPostingText(html);
-      const ocr = await extractJobPostingImageOcr(html, url);
-      const content = combineJobPostingContent(htmlText, ocr.text);
-      if (content.length < 120) {
-        throw new Error("공고 본문을 충분히 읽지 못했습니다. 공고 내용을 직접 입력해주세요.");
-      }
-
-      return {
-        sourceUrl: url.toString(),
-        title: extractJobPostingTitle(html),
-        content,
-        ocrImageCount: ocr.imageCount,
-      };
-    },
-  );
-
-export const saveCompanyJobPostingByCode = createServerFn({ method: "POST" })
-  .inputValidator(jobPostingInputSchema)
-  .handler(async ({ data }): Promise<CompanyJobPosting> => {
-    const { supabaseAdmin: supabase } = await import("@/integrations/supabase/client.server");
-    const company = await getCompanyByCode(supabase, data.code);
-    const now = new Date().toISOString();
-    const { data: row, error } = await supabase
-      .from("company_job_postings")
-      .upsert(
-        {
-          company_id: company.id,
-          role_label: data.roleLabel.trim(),
-          source_url: data.sourceUrl.trim(),
-          title: data.title.trim() || data.roleLabel.trim(),
-          content: data.content.trim(),
-          updated_at: now,
-        },
-        { onConflict: "company_id,role_label" },
-      )
-      .select("id, role_label, source_url, title, content, created_at, updated_at")
-      .single();
-
-    if (error || !row) {
-      console.error("Failed to save job posting:", error);
-      throw new Error("채용 공고를 저장하지 못했습니다.");
-    }
-
-    return mapJobPosting(row as Record<string, unknown>);
-  });
-
 export const evaluateApplicantWithAiByCompanyCode = createServerFn({ method: "POST" })
   .inputValidator(aiEvaluationInputSchema)
   .handler(async ({ data }): Promise<ApplicantAiReview> => {
     const { supabaseAdmin: supabase } = await import("@/integrations/supabase/client.server");
     const company = await getCompanyByCode(supabase, data.code);
     await assertCompanyApplicant(supabase, String(company.id), data.applicantId);
-
-    const { data: postingRow, error: postingError } = await supabase
-      .from("company_job_postings")
-      .select("id, role_label, source_url, title, content, created_at, updated_at")
-      .eq("id", data.jobPostingId)
-      .eq("company_id", company.id)
-      .single();
-
-    if (postingError || !postingRow) throw new Error("연결된 채용 공고를 찾을 수 없습니다.");
 
     const { data: applicantRows, error: applicantsError } = await supabase.rpc(
       "get_applicants_by_company_code",
@@ -1434,22 +1292,28 @@ export const evaluateApplicantWithAiByCompanyCode = createServerFn({ method: "PO
     if (!applicantRow) throw new Error("지원자 정보를 찾을 수 없습니다.");
 
     const applicant = mapApplicant(applicantRow);
-    const jobPosting = mapJobPosting(postingRow as Record<string, unknown>);
-    const analysis = await generateApplicantAiReview(applicant, jobPosting);
+    const { data: submission, error: submissionError } = await supabase
+      .from("submissions")
+      .select("ai_chat_log")
+      .eq("id", data.applicantId)
+      .single();
+    if (submissionError) throw new Error("AI 활용 기록을 불러오지 못했습니다.");
+
+    applicant.aiChatLog = parseAiChatLog(submission?.ai_chat_log);
+    const analysis = await generateApplicantAiReview(applicant);
     const now = new Date().toISOString();
     const { data: row, error } = await supabase
-      .from("company_applicant_ai_reviews")
+      .from("company_simulation_ai_reviews")
       .upsert(
         {
           company_id: company.id,
           applicant_id: data.applicantId,
-          job_posting_id: data.jobPostingId,
           analysis,
           updated_at: now,
         },
-        { onConflict: "company_id,applicant_id,job_posting_id" },
+        { onConflict: "company_id,applicant_id" },
       )
-      .select("applicant_id, job_posting_id, analysis, created_at, updated_at")
+      .select("applicant_id, analysis, created_at, updated_at")
       .single();
 
     if (error || !row) {

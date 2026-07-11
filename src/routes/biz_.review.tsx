@@ -1,17 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Bookmark, FileText, Filter, Search, Sparkles, X } from "lucide-react";
+import { Bookmark, Filter, Search, Sparkles, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { z } from "zod";
 
 import {
   advanceApplicantReviewStageByCompanyCode,
   evaluateApplicantWithAiByCompanyCode,
-  extractJobPostingFromUrl,
   getApplicantsByCompanyCode,
-  listJobPostingCandidatesFromUrl,
   markApplicantInterviewProposedByCompanyCode,
   markApplicantReadByCompanyCode,
-  saveCompanyJobPostingByCode,
   setApplicantDecisionByCompanyCode,
   setSavedApplicantByCompanyCode,
   type Applicant,
@@ -20,8 +17,6 @@ import {
   type ApplicantReviewStage,
   type ApplicantReviewState,
   type CompanyApplicants,
-  type CompanyJobPosting,
-  type JobPostingCandidate,
 } from "@/lib/applicants.functions";
 import { WORK_REGIONS } from "@/lib/profile-fields";
 import { toast } from "sonner";
@@ -109,9 +104,7 @@ function BizReview() {
   const [readIds, setReadIds] = useState<Set<string>>(() => new Set());
   const [readingIds, setReadingIds] = useState<Set<string>>(() => new Set());
   const [reviewStates, setReviewStates] = useState<ApplicantReviewState[]>([]);
-  const [jobPostings, setJobPostings] = useState<CompanyJobPosting[]>([]);
   const [aiReviews, setAiReviews] = useState<ApplicantAiReview[]>([]);
-  const [isJobPostingOpen, setIsJobPostingOpen] = useState(false);
   const [advancingIds, setAdvancingIds] = useState<Set<string>>(() => new Set());
   const [decisionIds, setDecisionIds] = useState<Set<string>>(() => new Set());
   const [evaluatingIds, setEvaluatingIds] = useState<Set<string>>(() => new Set());
@@ -140,7 +133,6 @@ function BizReview() {
         setSavedIds(new Set(result.savedApplicantIds));
         setReadIds(new Set(result.readApplicantIds));
         setReviewStates(result.reviewStates);
-        setJobPostings(result.jobPostings);
         setAiReviews(result.aiReviews);
         setSelectedId(result.applicants[0]?.id ?? null);
       } catch {
@@ -237,21 +229,10 @@ function BizReview() {
     [reviewStates],
   );
 
-  const selectedJobPosting = useMemo(() => {
-    if (!selectedApplicant) return null;
-    return jobPostings.find((posting) => posting.roleLabel === selectedApplicant.role) ?? null;
-  }, [jobPostings, selectedApplicant]);
-
   const selectedAiReview = useMemo(() => {
-    if (!selectedApplicant || !selectedJobPosting) return null;
-    return (
-      aiReviews.find(
-        (review) =>
-          review.applicantId === selectedApplicant.id &&
-          review.jobPostingId === selectedJobPosting.id,
-      ) ?? null
-    );
-  }, [aiReviews, selectedApplicant, selectedJobPosting]);
+    if (!selectedApplicant) return null;
+    return aiReviews.find((review) => review.applicantId === selectedApplicant.id) ?? null;
+  }, [aiReviews, selectedApplicant]);
 
   function updateReviewState(nextState: ApplicantReviewState) {
     setReviewStates((current) => [
@@ -395,20 +376,17 @@ function BizReview() {
   }
 
   async function evaluateApplicant(id: string) {
-    if (!selectedJobPosting || evaluatingIds.has(id)) return;
+    if (evaluatingIds.has(id)) return;
     setEvaluatingIds((current) => new Set(current).add(id));
     try {
       const review = await evaluateApplicantWithAiByCompanyCode({
-        data: { code, applicantId: id, jobPostingId: selectedJobPosting.id },
+        data: { code, applicantId: id },
       });
       setAiReviews((current) => [
-        ...current.filter(
-          (item) =>
-            item.applicantId !== review.applicantId || item.jobPostingId !== review.jobPostingId,
-        ),
+        ...current.filter((item) => item.applicantId !== review.applicantId),
         review,
       ]);
-      toast.success("AI 평가와 면접 질문 추천을 생성했습니다.");
+      toast.success("시뮬레이션 AI 평가와 면접 질문 추천을 생성했습니다.");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "AI 평가 생성에 실패했습니다.");
     } finally {
@@ -551,20 +529,6 @@ function BizReview() {
             </select>
           </div>
 
-          <button
-            type="button"
-            onClick={() => setIsJobPostingOpen(true)}
-            className="mt-2 inline-flex h-9 w-full items-center justify-center gap-2 rounded-md border border-neutral-300 bg-white px-3 text-xs font-medium text-neutral-700 hover:bg-neutral-50"
-          >
-            <FileText className="h-3.5 w-3.5" />
-            {selectedJobPosting ? "채용 공고 수정" : "채용 공고 연결"}
-          </button>
-          {selectedJobPosting && (
-            <p className="mt-2 truncate text-xs text-neutral-500" title={selectedJobPosting.title}>
-              {selectedJobPosting.title}
-            </p>
-          )}
-
           <div className="mt-6 space-y-2">
             {visibleApplicants.map((applicant) => {
               const reviewState = reviewStateByApplicantId.get(applicant.id) ?? {
@@ -657,7 +621,6 @@ function BizReview() {
         {selectedApplicant ? (
           <ApplicantDetail
             applicant={selectedApplicant}
-            jobPosting={selectedJobPosting}
             aiReview={selectedAiReview}
             isEvaluating={evaluatingIds.has(selectedApplicant.id)}
             onEvaluate={() => void evaluateApplicant(selectedApplicant.id)}
@@ -683,27 +646,6 @@ function BizReview() {
             setIsFilterOpen(false);
           }}
           onClose={() => setIsFilterOpen(false)}
-        />
-      )}
-
-      {isJobPostingOpen && (
-        <JobPostingDialog
-          companyCode={code}
-          roleOptions={roleOptions}
-          initialRole={
-            selectedApplicant?.role ?? (roleFilter !== "all" ? roleFilter : (roleOptions[0] ?? ""))
-          }
-          initialPosting={selectedJobPosting}
-          onSaved={(posting) => {
-            setJobPostings((current) => [
-              ...current.filter(
-                (item) => item.id !== posting.id && item.roleLabel !== posting.roleLabel,
-              ),
-              posting,
-            ]);
-            setIsJobPostingOpen(false);
-          }}
-          onClose={() => setIsJobPostingOpen(false)}
         />
       )}
     </div>
@@ -1216,20 +1158,24 @@ function BizShell({ children }: { children: React.ReactNode }) {
 
 function ApplicantDetail({
   applicant,
-  jobPosting,
   aiReview,
   isEvaluating,
   onEvaluate,
   onInterviewProposed,
 }: {
   applicant: Applicant;
-  jobPosting: CompanyJobPosting | null;
   aiReview: ApplicantAiReview | null;
   isEvaluating: boolean;
   onEvaluate: () => void;
   onInterviewProposed: () => Promise<void>;
 }) {
   const [isMailOpen, setIsMailOpen] = useState(false);
+  const [isAiReviewOpen, setIsAiReviewOpen] = useState(false);
+
+  function openAiReview() {
+    setIsAiReviewOpen(true);
+    onEvaluate();
+  }
 
   return (
     <section className="rounded-md border border-neutral-200">
@@ -1245,9 +1191,8 @@ function ApplicantDetail({
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
-              onClick={onEvaluate}
-              disabled={!jobPosting || isEvaluating}
-              title={!jobPosting ? "채용 공고를 먼저 연결해주세요" : undefined}
+              onClick={openAiReview}
+              disabled={isEvaluating}
               className="inline-flex h-10 items-center gap-2 rounded-md border border-neutral-300 bg-white px-4 text-sm font-medium text-neutral-800 hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-40"
             >
               <Sparkles className="h-4 w-4" />
@@ -1410,49 +1355,6 @@ function ApplicantDetail({
                 ))}
               </div>
             </InfoBlock>
-
-            <AiReviewPanel jobPosting={jobPosting} review={aiReview} />
-
-            <InfoBlock
-              title={`AI 어시스트 활용 내역 (${applicant.aiChatLog.filter((m) => m.role === "user").length}건)`}
-            >
-              {applicant.aiChatLog.length === 0 ? (
-                <p className="text-sm text-neutral-500">
-                  응시 중 AI 어시스트를 사용하지 않았습니다.
-                </p>
-              ) : (
-                <ul className="space-y-3">
-                  {applicant.aiChatLog.map((m, i) => (
-                    <li
-                      key={i}
-                      className="rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2"
-                    >
-                      <div className="flex items-center gap-2 text-[11px] font-medium uppercase tracking-wide text-neutral-500">
-                        <span
-                          className={m.role === "user" ? "text-neutral-900" : "text-indigo-600"}
-                        >
-                          {m.role === "user" ? "응시자 질문" : "AI 응답"}
-                        </span>
-                        {m.at && (
-                          <span className="font-normal normal-case tracking-normal text-neutral-400">
-                            {new Date(m.at).toLocaleString("ko-KR", {
-                              timeZone: "Asia/Seoul",
-                              month: "2-digit",
-                              day: "2-digit",
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
-                          </span>
-                        )}
-                      </div>
-                      <p className="mt-1 whitespace-pre-line text-sm leading-relaxed text-neutral-800">
-                        {m.content}
-                      </p>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </InfoBlock>
           </div>
         </section>
       </div>
@@ -1462,6 +1364,15 @@ function ApplicantDetail({
           applicant={applicant}
           onInterviewProposed={onInterviewProposed}
           onClose={() => setIsMailOpen(false)}
+        />
+      )}
+
+      {isAiReviewOpen && (
+        <AiReviewDialog
+          review={aiReview}
+          isEvaluating={isEvaluating}
+          onRefresh={onEvaluate}
+          onClose={() => setIsAiReviewOpen(false)}
         />
       )}
     </section>
@@ -1510,71 +1421,110 @@ function ChipList({ items }: { items: string[] }) {
   );
 }
 
-function AiReviewPanel({
-  jobPosting,
+function AiReviewDialog({
   review,
+  isEvaluating,
+  onRefresh,
+  onClose,
 }: {
-  jobPosting: CompanyJobPosting | null;
   review: ApplicantAiReview | null;
+  isEvaluating: boolean;
+  onRefresh: () => void;
+  onClose: () => void;
 }) {
-  if (!jobPosting) {
-    return (
-      <InfoBlock title="AI 평가">
-        <p className="text-sm leading-6 text-neutral-500">
-          채용 공고를 연결하면 시뮬레이션, 이력서, 활동 내용을 공고 기준으로 평가할 수 있습니다.
-        </p>
-      </InfoBlock>
-    );
-  }
-
-  if (!review) {
-    return (
-      <InfoBlock title="AI 평가">
-        <p className="text-sm leading-6 text-neutral-500">
-          연결된 공고: {jobPosting.title}. AI 평가 버튼을 누르면 적합도와 면접 질문을 생성합니다.
-        </p>
-      </InfoBlock>
-    );
-  }
-
   return (
-    <InfoBlock title="AI 평가">
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div>
-          <p className="text-xs text-neutral-500">시뮬레이션 평가</p>
-          <p className="mt-1 text-2xl font-semibold tracking-tight text-neutral-900">
-            {review.simulation.score}점
-          </p>
-          <p className="mt-2 text-sm leading-6 text-neutral-700">{review.simulation.summary}</p>
-          <ReviewList label="강점" items={review.simulation.strengths} />
-          <ReviewList label="확인할 점" items={review.simulation.concerns} />
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4">
+      <div className="max-h-[calc(100vh-2rem)] w-full max-w-3xl overflow-y-auto rounded-md bg-white shadow-xl">
+        <div className="flex items-start justify-between border-b border-neutral-200 p-5">
+          <div>
+            <h2 className="text-lg font-semibold tracking-tight text-neutral-900">AI 평가</h2>
+            <p className="mt-1 text-sm text-neutral-500">
+              시뮬레이션 결과물과 AI 활용 기록을 기반으로 생성했습니다.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="AI 평가 닫기"
+            className="grid h-8 w-8 place-items-center rounded-md text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900"
+          >
+            <X className="h-4 w-4" />
+          </button>
         </div>
-        <div className="border-t border-neutral-200 pt-4 sm:border-l sm:border-t-0 sm:pl-4 sm:pt-0">
-          <p className="text-xs text-neutral-500">공고 대비 이력서 적합도</p>
-          <p className="mt-1 text-2xl font-semibold tracking-tight text-neutral-900">
-            {review.resumeFit.score}점
-          </p>
-          <p className="mt-2 text-sm leading-6 text-neutral-700">{review.resumeFit.summary}</p>
-          <ReviewList label="일치 근거" items={review.resumeFit.matched} />
-          <ReviewList label="보완 확인" items={review.resumeFit.gaps} />
-        </div>
-      </div>
 
-      <div className="mt-5 border-t border-neutral-200 pt-4">
-        <p className="text-sm font-semibold text-neutral-900">추천 면접 질문</p>
-        <ol className="mt-3 space-y-3">
-          {review.interviewQuestions.map((question, index) => (
-            <li key={`${question.category}-${question.question}-${index}`}>
-              <p className="text-xs font-medium text-neutral-500">{question.category}</p>
-              <p className="mt-1 text-sm font-medium leading-6 text-neutral-900">
-                {question.question}
-              </p>
-              <p className="mt-1 text-xs leading-5 text-neutral-500">{question.intent}</p>
-            </li>
-          ))}
-        </ol>
+        <div className="p-5">
+          {isEvaluating ? (
+            <div className="py-16 text-center text-sm text-neutral-500">
+              AI 평가를 생성하고 있습니다...
+            </div>
+          ) : review ? (
+            <div className="space-y-6">
+              <div className="grid gap-4 md:grid-cols-2">
+                <section className="rounded-md border border-neutral-200 p-4">
+                  <p className="text-sm font-semibold text-neutral-900">시뮬레이션 결과물 평가</p>
+                  <p className="mt-2 text-2xl font-semibold tracking-tight">
+                    {review.simulation.score}점
+                  </p>
+                  <p className="mt-3 text-sm leading-6 text-neutral-700">
+                    {review.simulation.summary}
+                  </p>
+                  <ReviewList label="강점" items={review.simulation.strengths} />
+                  <ReviewList label="확인할 점" items={review.simulation.concerns} />
+                </section>
+                <section className="rounded-md border border-neutral-200 p-4">
+                  <p className="text-sm font-semibold text-neutral-900">AI 활용 능력 평가</p>
+                  <p className="mt-2 text-2xl font-semibold tracking-tight">
+                    {review.aiUtilization.score}점
+                  </p>
+                  <p className="mt-3 text-sm leading-6 text-neutral-700">
+                    {review.aiUtilization.summary}
+                  </p>
+                  <ReviewList label="강점" items={review.aiUtilization.strengths} />
+                  <ReviewList label="보완할 점" items={review.aiUtilization.improvements} />
+                </section>
+              </div>
+
+              <section className="rounded-md border border-neutral-200 p-4">
+                <p className="text-sm font-semibold text-neutral-900">추천 면접 질문</p>
+                <ol className="mt-4 space-y-4">
+                  {review.interviewQuestions.map((question, index) => (
+                    <li key={`${question.category}-${question.question}-${index}`}>
+                      <p className="text-xs font-medium text-neutral-500">{question.category}</p>
+                      <p className="mt-1 text-sm font-medium leading-6 text-neutral-900">
+                        {question.question}
+                      </p>
+                      <p className="mt-1 text-xs leading-5 text-neutral-500">{question.intent}</p>
+                    </li>
+                  ))}
+                </ol>
+              </section>
+            </div>
+          ) : (
+            <div className="py-16 text-center text-sm text-neutral-500">
+              AI 평가 결과를 불러오지 못했습니다.
+            </div>
+          )}
+        </div>
+
+        <div className="flex justify-end gap-2 border-t border-neutral-200 p-5">
+          <button
+            type="button"
+            onClick={onClose}
+            className="h-9 rounded-md border border-neutral-300 px-3 text-xs font-medium hover:bg-neutral-50"
+          >
+            닫기
+          </button>
+          <button
+            type="button"
+            onClick={onRefresh}
+            disabled={isEvaluating}
+            className="h-9 rounded-md bg-neutral-900 px-3 text-xs font-medium text-white hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {isEvaluating ? "생성 중..." : "평가 갱신"}
+          </button>
+        </div>
       </div>
-    </InfoBlock>
+    </div>
   );
 }
 
@@ -1592,21 +1542,8 @@ function ReviewList({ label, items }: { label: string; items: string[] }) {
   );
 }
 
+/* 채용 공고 연결 UI 중단
 function JobPostingDialog({
-  companyCode,
-  roleOptions,
-  initialRole,
-  initialPosting,
-  onSaved,
-  onClose,
-}: {
-  companyCode: string;
-  roleOptions: string[];
-  initialRole: string;
-  initialPosting: CompanyJobPosting | null;
-  onSaved: (posting: CompanyJobPosting) => void;
-  onClose: () => void;
-}) {
   const [roleLabel, setRoleLabel] = useState(initialPosting?.roleLabel ?? initialRole);
   const [sourceUrl, setSourceUrl] = useState(initialPosting?.sourceUrl ?? "");
   const [title, setTitle] = useState(initialPosting?.title ?? "");
@@ -1807,6 +1744,8 @@ function JobPostingDialog({
     </div>
   );
 }
+
+*/
 
 function InterviewMailDialog({
   applicant,

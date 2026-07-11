@@ -281,6 +281,48 @@ export type Database = {
           },
         ]
       }
+      company_simulation_ai_reviews: {
+        Row: {
+          analysis: Json
+          applicant_id: string
+          company_id: string
+          created_at: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          analysis: Json
+          applicant_id: string
+          company_id: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          analysis?: Json
+          applicant_id?: string
+          company_id?: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_simulation_ai_reviews_applicant_id_fkey"
+            columns: ["applicant_id"]
+            isOneToOne: false
+            referencedRelation: "submissions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_simulation_ai_reviews_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       company_saved_applicants: {
         Row: {
           applicant_id: string | null
