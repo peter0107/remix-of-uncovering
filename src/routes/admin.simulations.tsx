@@ -858,7 +858,9 @@ function AdminSimulations() {
       const result = await createCompanySimulation({ data: payload });
       await loadSimulations();
       setSelectedSimulationId(result.id);
-      toast.success("직무 시뮬레이션을 추가했습니다. 기업 페이지 드롭다운에 반영됩니다.");
+      toast.success(
+        "직무 시뮬레이션을 비공개로 추가했습니다. 공개 버튼으로 유저 화면에 노출할 수 있습니다.",
+      );
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "직무 시뮬레이션을 추가하지 못했습니다.");
     } finally {

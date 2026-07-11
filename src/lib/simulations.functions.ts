@@ -650,7 +650,7 @@ export const createCompanySimulation = createServerFn({ method: "POST" })
         single_answer_question: data.singleAnswerQuestion.trim() || null,
         task_prompt: data.taskPrompt,
         steps: data.steps,
-        is_public: true,
+        is_public: false,
       })
       .select("id")
       .single();
