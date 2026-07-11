@@ -21,6 +21,8 @@ import {
   useState,
   type FormEvent,
   type KeyboardEvent,
+  type MutableRefObject,
+  type PointerEvent as ReactPointerEvent,
 } from "react";
 import { toast } from "sonner";
 
@@ -99,6 +101,16 @@ type AssetEditorPreset = {
   previewWidth: number;
   previewHeight: number;
   previewClassName: string;
+};
+
+type AssetDragState = {
+  pointerId: number;
+  startX: number;
+  startY: number;
+  startOffsetX: number;
+  startOffsetY: number;
+  overflowX: number;
+  overflowY: number;
 };
 
 const EMPTY_COMPANY_FORM: CompanyForm = {
@@ -236,6 +248,10 @@ const EMPTY_FORM: SimulationForm = {
 
 function getUploadKey(target: AssetUploadTarget) {
   return target.kind === "logo" ? `logo:${target.companyId}` : `cardImage:${target.simulationId}`;
+}
+
+function clampAssetOffset(value: number) {
+  return Math.max(-100, Math.min(100, value));
 }
 
 function getDomainCategory(value: string): DomainCategory {
@@ -408,11 +424,64 @@ function AdminSimulations() {
   const [uploadingAssetKey, setUploadingAssetKey] = useState<string | null>(null);
   const loadedUserIdRef = useRef<string | null>(null);
   const assetInputRef = useRef<HTMLInputElement | null>(null);
+  const assetDragRef = useRef<AssetDragState | null>(null);
   const userId = user?.id ?? null;
   const assetEditorPreset = assetEditor ? getAssetEditorPreset(assetEditor.target.kind) : null;
   const isApplyingAssetEdit = assetEditor
     ? uploadingAssetKey === getUploadKey(assetEditor.target)
     : false;
+
+  const beginAssetDrag = (
+    event: ReactPointerEvent<HTMLDivElement>,
+    dragRef: MutableRefObject<AssetDragState | null>,
+    options: {
+      drawWidth: number;
+      drawHeight: number;
+      frameWidth: number;
+      frameHeight: number;
+    },
+  ) => {
+    if (!assetEditor || (event.pointerType === "mouse" && event.button !== 0)) return;
+
+    event.currentTarget.setPointerCapture(event.pointerId);
+    dragRef.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      startOffsetX: assetEditor.offsetX,
+      startOffsetY: assetEditor.offsetY,
+      overflowX: Math.max(0, options.drawWidth - options.frameWidth),
+      overflowY: Math.max(0, options.drawHeight - options.frameHeight),
+    };
+  };
+
+  const moveAssetDrag = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const drag = assetDragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+
+    event.preventDefault();
+    const offsetX =
+      drag.overflowX > 0
+        ? clampAssetOffset(
+            drag.startOffsetX - ((event.clientX - drag.startX) * 100) / drag.overflowX,
+          )
+        : drag.startOffsetX;
+    const offsetY =
+      drag.overflowY > 0
+        ? clampAssetOffset(
+            drag.startOffsetY - ((event.clientY - drag.startY) * 100) / drag.overflowY,
+          )
+        : drag.startOffsetY;
+    updateAssetEditor({ offsetX, offsetY });
+  };
+
+  const endAssetDrag = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (assetDragRef.current?.pointerId !== event.pointerId) return;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+    assetDragRef.current = null;
+  };
 
   const companiesWithCounts = useMemo(() => {
     const counts = new Map<string, number>();
@@ -1365,66 +1434,67 @@ function AdminSimulations() {
             </DialogDescription>
           </DialogHeader>
 
-          {assetEditor && assetEditorPreset && (
-            <div className="space-y-6">
-              <div
-                className={`relative mx-auto overflow-hidden bg-neutral-100 ring-1 ring-neutral-200 ${assetEditorPreset.previewClassName}`}
-                style={{
-                  aspectRatio: `${assetEditorPreset.width} / ${assetEditorPreset.height}`,
-                  maxWidth: "100%",
-                  width: assetEditorPreset.previewWidth,
-                }}
-              >
-                <img
-                  src={assetEditor.previewUrl}
-                  alt="편집 미리보기"
-                  draggable={false}
-                  className="absolute max-w-none select-none"
-                  style={{
-                    ...getAssetEditorImageStyle(assetEditor, assetEditorPreset),
-                  }}
-                />
-              </div>
+          {assetEditor &&
+            assetEditorPreset &&
+            (() => {
+              const previewGeometry = getAssetImageGeometry({
+                imageWidth: assetEditor.imageWidth,
+                imageHeight: assetEditor.imageHeight,
+                frameWidth: assetEditorPreset.previewWidth,
+                frameHeight: assetEditorPreset.previewHeight,
+                zoom: assetEditor.zoom,
+                offsetX: assetEditor.offsetX,
+                offsetY: assetEditor.offsetY,
+              });
 
-              <div className="space-y-5">
-                <label className="block">
-                  <div className="mb-2 flex items-center justify-between text-xs font-medium text-neutral-600">
-                    <span>확대</span>
-                    <span>{assetEditor.zoom.toFixed(2)}x</span>
+              return (
+                <div className="space-y-6">
+                  <div
+                    className={`relative mx-auto touch-none overflow-hidden bg-neutral-100 ring-1 ring-neutral-200 cursor-grab active:cursor-grabbing ${assetEditorPreset.previewClassName}`}
+                    style={{
+                      aspectRatio: `${assetEditorPreset.width} / ${assetEditorPreset.height}`,
+                      maxWidth: "100%",
+                      width: assetEditorPreset.previewWidth,
+                    }}
+                    onPointerDown={(event) =>
+                      beginAssetDrag(event, assetDragRef, {
+                        drawWidth: previewGeometry.scaledWidth,
+                        drawHeight: previewGeometry.scaledHeight,
+                        frameWidth: assetEditorPreset.previewWidth,
+                        frameHeight: assetEditorPreset.previewHeight,
+                      })
+                    }
+                    onPointerMove={moveAssetDrag}
+                    onPointerUp={endAssetDrag}
+                    onPointerCancel={endAssetDrag}
+                  >
+                    <img
+                      src={assetEditor.previewUrl}
+                      alt="편집 미리보기"
+                      draggable={false}
+                      className="pointer-events-none absolute max-w-none select-none"
+                      style={{
+                        ...getAssetEditorImageStyle(assetEditor, assetEditorPreset),
+                      }}
+                    />
                   </div>
-                  <Slider
-                    value={[assetEditor.zoom]}
-                    min={1}
-                    max={3}
-                    step={0.05}
-                    onValueChange={([value]) => updateAssetEditor({ zoom: value ?? 1 })}
-                  />
-                </label>
 
-                <label className="block">
-                  <div className="mb-2 text-xs font-medium text-neutral-600">가로 위치</div>
-                  <Slider
-                    value={[assetEditor.offsetX]}
-                    min={-100}
-                    max={100}
-                    step={1}
-                    onValueChange={([value]) => updateAssetEditor({ offsetX: value ?? 0 })}
-                  />
-                </label>
-
-                <label className="block">
-                  <div className="mb-2 text-xs font-medium text-neutral-600">세로 위치</div>
-                  <Slider
-                    value={[assetEditor.offsetY]}
-                    min={-100}
-                    max={100}
-                    step={1}
-                    onValueChange={([value]) => updateAssetEditor({ offsetY: value ?? 0 })}
-                  />
-                </label>
-              </div>
-            </div>
-          )}
+                  <label className="block">
+                    <div className="mb-2 flex items-center justify-between text-xs font-medium text-neutral-600">
+                      <span>확대</span>
+                      <span>{assetEditor.zoom.toFixed(2)}x</span>
+                    </div>
+                    <Slider
+                      value={[assetEditor.zoom]}
+                      min={1}
+                      max={3}
+                      step={0.05}
+                      onValueChange={([value]) => updateAssetEditor({ zoom: value ?? 1 })}
+                    />
+                  </label>
+                </div>
+              );
+            })()}
 
           <DialogFooter>
             <button

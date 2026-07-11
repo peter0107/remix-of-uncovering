@@ -6,6 +6,8 @@ import {
   useRef,
   useState,
   type ChangeEvent,
+  type MutableRefObject,
+  type PointerEvent as ReactPointerEvent,
   type ReactElement,
   type ReactNode,
 } from "react";
@@ -82,13 +84,26 @@ export const Route = createFileRoute("/my")({
 });
 
 type ExternalLinks = { github?: string; portfolio?: string; linkedin?: string };
-type AvatarEditorState = { previewUrl: string };
+type AvatarEditorState = {
+  previewUrl: string;
+  sourceWidth: number;
+  sourceHeight: number;
+};
 type ResumePhotoEditorState = {
   previewUrl: string;
   sourceWidth: number;
   sourceHeight: number;
 };
 type PendingResumePhoto = { blob: Blob; previewUrl: string };
+type CropDragState = {
+  pointerId: number;
+  startX: number;
+  startY: number;
+  startOffsetX: number;
+  startOffsetY: number;
+  overflowX: number;
+  overflowY: number;
+};
 
 type CompletedSimulation = {
   submissionId: string;
@@ -659,6 +674,10 @@ function formatPhoneNumber(value: string) {
   if (digits.length <= 3) return digits;
   if (digits.length <= 7) return `${digits.slice(0, 3)}-${digits.slice(3)}`;
   return `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7)}`;
+}
+
+function clampCropOffset(value: number) {
+  return Math.max(-100, Math.min(100, value));
 }
 
 function firstRecord(value: Json | null): JsonRecord {
@@ -1367,6 +1386,8 @@ function MyPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const resumeFileInputRef = useRef<HTMLInputElement>(null);
   const resumePhotoInputRef = useRef<HTMLInputElement>(null);
+  const avatarDragRef = useRef<CropDragState | null>(null);
+  const resumePhotoDragRef = useRef<CropDragState | null>(null);
   const cachedProfile = user ? profileCache.get(user.id) : undefined;
 
   const [hasProfile, setHasProfile] = useState<boolean | null>(cachedProfile?.hasProfile ?? null);
@@ -1412,6 +1433,65 @@ function MyPage() {
 
   const userEmail = user?.email ?? "";
   const defaultResumeId = useMemo(() => resumes.find((resume) => resume.is_default)?.id, [resumes]);
+
+  const beginCropDrag = (
+    event: ReactPointerEvent<HTMLDivElement>,
+    dragRef: MutableRefObject<CropDragState | null>,
+    options: {
+      offsetX: number;
+      offsetY: number;
+      drawWidth: number;
+      drawHeight: number;
+      frameWidth: number;
+      frameHeight: number;
+    },
+  ) => {
+    if (event.pointerType === "mouse" && event.button !== 0) return;
+
+    event.currentTarget.setPointerCapture(event.pointerId);
+    dragRef.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      startOffsetX: options.offsetX,
+      startOffsetY: options.offsetY,
+      overflowX: Math.max(0, options.drawWidth - options.frameWidth),
+      overflowY: Math.max(0, options.drawHeight - options.frameHeight),
+    };
+  };
+
+  const moveCropDrag = (
+    event: ReactPointerEvent<HTMLDivElement>,
+    dragRef: MutableRefObject<CropDragState | null>,
+    setOffsetX: (value: number) => void,
+    setOffsetY: (value: number) => void,
+  ) => {
+    const drag = dragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+
+    event.preventDefault();
+    if (drag.overflowX > 0) {
+      setOffsetX(
+        clampCropOffset(drag.startOffsetX - ((event.clientX - drag.startX) * 100) / drag.overflowX),
+      );
+    }
+    if (drag.overflowY > 0) {
+      setOffsetY(
+        clampCropOffset(drag.startOffsetY - ((event.clientY - drag.startY) * 100) / drag.overflowY),
+      );
+    }
+  };
+
+  const endCropDrag = (
+    event: ReactPointerEvent<HTMLDivElement>,
+    dragRef: MutableRefObject<CropDragState | null>,
+  ) => {
+    if (dragRef.current?.pointerId !== event.pointerId) return;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+    dragRef.current = null;
+  };
 
   const setDraftForm = (partial: Partial<ProfileFormData>) =>
     setDraftFormRaw((prev) => ({ ...prev, ...partial }));
@@ -1554,7 +1634,18 @@ function MyPage() {
     setAvatarZoom(1);
     setAvatarOffsetX(0);
     setAvatarOffsetY(0);
-    setAvatarEditor({ previewUrl: URL.createObjectURL(file) });
+    const previewUrl = URL.createObjectURL(file);
+    try {
+      const image = await loadImage(previewUrl);
+      setAvatarEditor({
+        previewUrl,
+        sourceWidth: image.naturalWidth,
+        sourceHeight: image.naturalHeight,
+      });
+    } catch {
+      URL.revokeObjectURL(previewUrl);
+      toast.error("사진을 불러오지 못했어요.");
+    }
   };
 
   const closeAvatarEditor = () => {
@@ -2741,65 +2832,70 @@ function MyPage() {
             <DialogDescription>사진을 원형 영역에 맞게 조정한 뒤 적용하세요.</DialogDescription>
           </DialogHeader>
 
-          {avatarEditor && (
-            <div className="space-y-6 py-2">
-              <div className="mx-auto flex h-64 w-64 items-center justify-center overflow-hidden rounded-full bg-zinc-100 ring-1 ring-zinc-200">
-                <img
-                  src={avatarEditor.previewUrl}
-                  alt="프로필 사진 미리보기"
-                  className="h-full w-full object-cover"
-                  style={{
-                    transform: `translate(${avatarOffsetX / 3}%, ${avatarOffsetY / 3}%) scale(${avatarZoom})`,
-                    transformOrigin: "center",
-                  }}
-                />
-              </div>
+          {avatarEditor &&
+            (() => {
+              const preview = getCropGeometry(
+                avatarEditor.sourceWidth,
+                avatarEditor.sourceHeight,
+                AVATAR_EXPORT_SIZE,
+                AVATAR_EXPORT_SIZE,
+                {
+                  zoom: avatarZoom,
+                  offsetX: avatarOffsetX,
+                  offsetY: avatarOffsetY,
+                },
+              );
 
-              <div className="space-y-5">
-                <div>
-                  <div className="mb-2 flex items-center justify-between text-sm">
-                    <span className="font-medium text-zinc-700">확대</span>
-                    <span className="text-zinc-400">{avatarZoom.toFixed(1)}x</span>
+              return (
+                <div className="space-y-6 py-2">
+                  <div
+                    className="relative mx-auto flex h-64 w-64 touch-none overflow-hidden rounded-full bg-zinc-100 ring-1 ring-zinc-200 cursor-grab active:cursor-grabbing"
+                    onPointerDown={(event) =>
+                      beginCropDrag(event, avatarDragRef, {
+                        offsetX: avatarOffsetX,
+                        offsetY: avatarOffsetY,
+                        drawWidth: preview.drawWidth,
+                        drawHeight: preview.drawHeight,
+                        frameWidth: AVATAR_EXPORT_SIZE,
+                        frameHeight: AVATAR_EXPORT_SIZE,
+                      })
+                    }
+                    onPointerMove={(event) =>
+                      moveCropDrag(event, avatarDragRef, setAvatarOffsetX, setAvatarOffsetY)
+                    }
+                    onPointerUp={(event) => endCropDrag(event, avatarDragRef)}
+                    onPointerCancel={(event) => endCropDrag(event, avatarDragRef)}
+                  >
+                    <img
+                      src={avatarEditor.previewUrl}
+                      alt="프로필 사진 미리보기"
+                      draggable={false}
+                      className="pointer-events-none absolute max-w-none select-none"
+                      style={{
+                        width: `${(preview.drawWidth / AVATAR_EXPORT_SIZE) * 100}%`,
+                        height: `${(preview.drawHeight / AVATAR_EXPORT_SIZE) * 100}%`,
+                        left: `${(preview.drawX / AVATAR_EXPORT_SIZE) * 100}%`,
+                        top: `${(preview.drawY / AVATAR_EXPORT_SIZE) * 100}%`,
+                      }}
+                    />
                   </div>
-                  <Slider
-                    value={[avatarZoom]}
-                    min={1}
-                    max={3}
-                    step={0.05}
-                    onValueChange={([value]) => setAvatarZoom(value ?? 1)}
-                  />
-                </div>
 
-                <div>
-                  <div className="mb-2 flex items-center justify-between text-sm">
-                    <span className="font-medium text-zinc-700">가로 위치</span>
-                    <span className="text-zinc-400">{avatarOffsetX}</span>
+                  <div>
+                    <div className="mb-2 flex items-center justify-between text-sm">
+                      <span className="font-medium text-zinc-700">확대</span>
+                      <span className="text-zinc-400">{avatarZoom.toFixed(1)}x</span>
+                    </div>
+                    <Slider
+                      value={[avatarZoom]}
+                      min={1}
+                      max={3}
+                      step={0.05}
+                      onValueChange={([value]) => setAvatarZoom(value ?? 1)}
+                    />
                   </div>
-                  <Slider
-                    value={[avatarOffsetX]}
-                    min={-100}
-                    max={100}
-                    step={1}
-                    onValueChange={([value]) => setAvatarOffsetX(value ?? 0)}
-                  />
                 </div>
-
-                <div>
-                  <div className="mb-2 flex items-center justify-between text-sm">
-                    <span className="font-medium text-zinc-700">세로 위치</span>
-                    <span className="text-zinc-400">{avatarOffsetY}</span>
-                  </div>
-                  <Slider
-                    value={[avatarOffsetY]}
-                    min={-100}
-                    max={100}
-                    step={1}
-                    onValueChange={([value]) => setAvatarOffsetY(value ?? 0)}
-                  />
-                </div>
-              </div>
-            </div>
-          )}
+              );
+            })()}
 
           <DialogFooter>
             <Button variant="outline" onClick={closeAvatarEditor} disabled={uploadingAvatar}>
@@ -2839,11 +2935,34 @@ function MyPage() {
 
               return (
                 <div className="space-y-6 py-2">
-                  <div className="relative mx-auto aspect-[3/4] h-80 overflow-hidden border border-zinc-200 bg-zinc-100">
+                  <div
+                    className="relative mx-auto aspect-[3/4] h-80 touch-none overflow-hidden border border-zinc-200 bg-zinc-100 cursor-grab active:cursor-grabbing"
+                    onPointerDown={(event) =>
+                      beginCropDrag(event, resumePhotoDragRef, {
+                        offsetX: resumePhotoOffsetX,
+                        offsetY: resumePhotoOffsetY,
+                        drawWidth: preview.drawWidth,
+                        drawHeight: preview.drawHeight,
+                        frameWidth: RESUME_PHOTO_EXPORT_WIDTH,
+                        frameHeight: RESUME_PHOTO_EXPORT_HEIGHT,
+                      })
+                    }
+                    onPointerMove={(event) =>
+                      moveCropDrag(
+                        event,
+                        resumePhotoDragRef,
+                        setResumePhotoOffsetX,
+                        setResumePhotoOffsetY,
+                      )
+                    }
+                    onPointerUp={(event) => endCropDrag(event, resumePhotoDragRef)}
+                    onPointerCancel={(event) => endCropDrag(event, resumePhotoDragRef)}
+                  >
                     <img
                       src={resumePhotoEditor.previewUrl}
                       alt="이력서 사진 편집 미리보기"
-                      className="pointer-events-none absolute max-w-none"
+                      draggable={false}
+                      className="pointer-events-none absolute max-w-none select-none"
                       style={{
                         width: `${(preview.drawWidth / RESUME_PHOTO_EXPORT_WIDTH) * 100}%`,
                         height: `${(preview.drawHeight / RESUME_PHOTO_EXPORT_HEIGHT) * 100}%`,
@@ -2865,34 +2984,6 @@ function MyPage() {
                         max={3}
                         step={0.05}
                         onValueChange={([value]) => setResumePhotoZoom(value ?? 1)}
-                      />
-                    </div>
-
-                    <div>
-                      <div className="mb-2 flex items-center justify-between text-sm">
-                        <span className="font-medium text-zinc-700">가로 위치</span>
-                        <span className="text-zinc-400">{resumePhotoOffsetX}</span>
-                      </div>
-                      <Slider
-                        value={[resumePhotoOffsetX]}
-                        min={-100}
-                        max={100}
-                        step={1}
-                        onValueChange={([value]) => setResumePhotoOffsetX(value ?? 0)}
-                      />
-                    </div>
-
-                    <div>
-                      <div className="mb-2 flex items-center justify-between text-sm">
-                        <span className="font-medium text-zinc-700">세로 위치</span>
-                        <span className="text-zinc-400">{resumePhotoOffsetY}</span>
-                      </div>
-                      <Slider
-                        value={[resumePhotoOffsetY]}
-                        min={-100}
-                        max={100}
-                        step={1}
-                        onValueChange={([value]) => setResumePhotoOffsetY(value ?? 0)}
                       />
                     </div>
                   </div>
