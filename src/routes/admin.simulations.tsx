@@ -1540,20 +1540,6 @@ function StepEditor({
               />
             </div>
 
-            <InputField
-              label="태그"
-              value={(step.tags ?? []).join(", ")}
-              onChange={(value) =>
-                updateStep(stepIndex, {
-                  tags: value
-                    .split(",")
-                    .map((tag) => tag.trim())
-                    .filter(Boolean),
-                })
-              }
-              placeholder="쉼표로 구분해 입력 (예: 데이터 분석, 문제 정의)"
-            />
-
             <div className="mt-4 grid gap-4">
               <RichTextEditor
                 label="상황 안내"

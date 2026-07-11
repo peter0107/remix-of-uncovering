@@ -102,8 +102,7 @@ function MaterialSection({ label, markdown }: { label: string; markdown: string 
 }
 
 function StepMeta({ step }: { step: WizardStep }) {
-  const hasMeta =
-    step.durationMin != null || step.difficulty != null || (step.tags?.length ?? 0) > 0;
+  const hasMeta = step.durationMin != null || step.difficulty != null;
   if (!hasMeta) return null;
   return (
     <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-zinc-400">
@@ -120,11 +119,6 @@ function StepMeta({ step }: { step: WizardStep }) {
           </span>
         </span>
       )}
-      {step.tags?.map((tag) => (
-        <span key={tag} className="rounded-full bg-zinc-100 px-2 py-0.5 text-zinc-500">
-          {tag}
-        </span>
-      ))}
     </div>
   );
 }
