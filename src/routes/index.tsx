@@ -211,21 +211,33 @@ function Index() {
               >
                 기업용
               </Link>
-              <Link
-                to="/login"
-                search={{ redirect: "/" }}
-                onClick={() => setIsMenuOpen(false)}
-                className="rounded-md px-3 py-2.5 text-sm font-semibold text-[#171C26] hover:bg-[#F7F8FA]"
-              >
-                로그인
-              </Link>
-              <Link
-                to="/start"
-                onClick={() => setIsMenuOpen(false)}
-                className="mt-2 rounded-md bg-[#2B5CE7] px-3 py-2.5 text-center text-sm font-bold text-white"
-              >
-                시작하기
-              </Link>
+              {user ? (
+                <Link
+                  to="/my"
+                  onClick={() => setIsMenuOpen(false)}
+                  className="rounded-md px-3 py-2.5 text-sm font-semibold text-[#171C26] hover:bg-[#F7F8FA]"
+                >
+                  프로필
+                </Link>
+              ) : (
+                <>
+                  <Link
+                    to="/login"
+                    search={{ redirect: "/" }}
+                    onClick={() => setIsMenuOpen(false)}
+                    className="rounded-md px-3 py-2.5 text-sm font-semibold text-[#171C26] hover:bg-[#F7F8FA]"
+                  >
+                    로그인
+                  </Link>
+                  <Link
+                    to="/start"
+                    onClick={() => setIsMenuOpen(false)}
+                    className="mt-2 rounded-md bg-[#2B5CE7] px-3 py-2.5 text-center text-sm font-bold text-white"
+                  >
+                    시작하기
+                  </Link>
+                </>
+              )}
             </div>
           </nav>
         )}
