@@ -14,6 +14,24 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_prompt_settings: {
+        Row: {
+          key: string
+          prompt: string
+          updated_at: string
+        }
+        Insert: {
+          key: string
+          prompt: string
+          updated_at?: string
+        }
+        Update: {
+          key?: string
+          prompt?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       applicants: {
         Row: {
           company_id: string
@@ -127,6 +145,65 @@ export type Database = {
         }
         Relationships: []
       }
+      company_applicant_ai_reviews: {
+        Row: {
+          analysis: Json
+          applicant_id: string
+          company_id: string
+          created_at: string
+          id: string
+          job_posting_id: string
+          updated_at: string
+        }
+        Insert: {
+          analysis: Json
+          applicant_id: string
+          company_id: string
+          created_at?: string
+          id?: string
+          job_posting_id: string
+          updated_at?: string
+        }
+        Update: {
+          analysis?: Json
+          applicant_id?: string
+          company_id?: string
+          created_at?: string
+          id?: string
+          job_posting_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_applicant_ai_reviews_applicant_id_fkey"
+            columns: ["applicant_id"]
+            isOneToOne: false
+            referencedRelation: "company_visible_submissions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_applicant_ai_reviews_applicant_id_fkey"
+            columns: ["applicant_id"]
+            isOneToOne: false
+            referencedRelation: "submissions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_applicant_ai_reviews_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_applicant_ai_reviews_job_posting_id_fkey"
+            columns: ["job_posting_id"]
+            isOneToOne: false
+            referencedRelation: "company_job_postings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       company_applicant_review_states: {
         Row: {
           applicant_id: string
@@ -188,58 +265,6 @@ export type Database = {
           },
         ]
       }
-      company_applicant_ai_reviews: {
-        Row: {
-          analysis: Json
-          applicant_id: string
-          company_id: string
-          created_at: string
-          id: string
-          job_posting_id: string
-          updated_at: string
-        }
-        Insert: {
-          analysis: Json
-          applicant_id: string
-          company_id: string
-          created_at?: string
-          id?: string
-          job_posting_id: string
-          updated_at?: string
-        }
-        Update: {
-          analysis?: Json
-          applicant_id?: string
-          company_id?: string
-          created_at?: string
-          id?: string
-          job_posting_id?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "company_applicant_ai_reviews_applicant_id_fkey"
-            columns: ["applicant_id"]
-            isOneToOne: false
-            referencedRelation: "submissions"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "company_applicant_ai_reviews_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "companies"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "company_applicant_ai_reviews_job_posting_id_fkey"
-            columns: ["job_posting_id"]
-            isOneToOne: false
-            referencedRelation: "company_job_postings"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       company_job_postings: {
         Row: {
           company_id: string
@@ -274,48 +299,6 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "company_job_postings_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "companies"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      company_simulation_ai_reviews: {
-        Row: {
-          analysis: Json
-          applicant_id: string
-          company_id: string
-          created_at: string
-          id: string
-          updated_at: string
-        }
-        Insert: {
-          analysis: Json
-          applicant_id: string
-          company_id: string
-          created_at?: string
-          id?: string
-          updated_at?: string
-        }
-        Update: {
-          analysis?: Json
-          applicant_id?: string
-          company_id?: string
-          created_at?: string
-          id?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "company_simulation_ai_reviews_applicant_id_fkey"
-            columns: ["applicant_id"]
-            isOneToOne: false
-            referencedRelation: "submissions"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "company_simulation_ai_reviews_company_id_fkey"
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
@@ -365,6 +348,55 @@ export type Database = {
             columns: ["submission_id"]
             isOneToOne: false
             referencedRelation: "submissions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      company_simulation_ai_reviews: {
+        Row: {
+          analysis: Json
+          applicant_id: string
+          company_id: string
+          created_at: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          analysis: Json
+          applicant_id: string
+          company_id: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          analysis?: Json
+          applicant_id?: string
+          company_id?: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_simulation_ai_reviews_applicant_id_fkey"
+            columns: ["applicant_id"]
+            isOneToOne: false
+            referencedRelation: "company_visible_submissions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_simulation_ai_reviews_applicant_id_fkey"
+            columns: ["applicant_id"]
+            isOneToOne: false
+            referencedRelation: "submissions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_simulation_ai_reviews_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
             referencedColumns: ["id"]
           },
         ]
@@ -431,8 +463,8 @@ export type Database = {
       }
       job_simulations: {
         Row: {
-          company_id: string
           card_image_url: string | null
+          company_id: string
           created_at: string | null
           deleted_at: string | null
           description: string | null
@@ -449,8 +481,8 @@ export type Database = {
           title: string
         }
         Insert: {
-          company_id: string
           card_image_url?: string | null
+          company_id: string
           created_at?: string | null
           deleted_at?: string | null
           description?: string | null
@@ -467,8 +499,8 @@ export type Database = {
           title: string
         }
         Update: {
-          company_id?: string
           card_image_url?: string | null
+          company_id?: string
           created_at?: string | null
           deleted_at?: string | null
           description?: string | null
@@ -633,24 +665,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      ai_prompt_settings: {
-        Row: {
-          key: string
-          prompt: string
-          updated_at: string
-        }
-        Insert: {
-          key: string
-          prompt: string
-          updated_at?: string
-        }
-        Update: {
-          key?: string
-          prompt?: string
-          updated_at?: string
-        }
-        Relationships: []
       }
     }
     Views: {

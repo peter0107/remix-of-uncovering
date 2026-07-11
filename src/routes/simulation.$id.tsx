@@ -43,7 +43,12 @@ import { getAdminSimulationPreview } from "@/lib/simulations.functions";
 
 export const Route = createFileRoute("/simulation/$id")({
   head: () => ({ meta: [{ title: "시뮬레이션 — Beginner" }] }),
-  validateSearch: z.object({ preview: z.literal("1").optional() }),
+  validateSearch: z.object({
+    preview: z
+      .union([z.literal("1"), z.literal(1), z.literal(true)])
+      .optional()
+      .transform((v) => (v == null ? undefined : "1" as const)),
+  }),
   component: SimulationDetailPage,
 });
 
