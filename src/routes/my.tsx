@@ -1589,6 +1589,9 @@ function MyPage() {
 
     setSavingProfileCard(false);
     setDisplayName(nextDisplayName);
+    window.dispatchEvent(
+      new CustomEvent("beginner:display-name-updated", { detail: nextDisplayName }),
+    );
     setLinks(nextLinks);
     setSeeker((prev) => (prev ? { ...prev, display_name: nextDisplayName } : prev));
     setResumeForm((prev) => ({ ...prev, name: nextDisplayName }));
@@ -1875,6 +1878,9 @@ function MyPage() {
         toast.error("이력서는 저장됐지만 프로필 이름 동기화에 실패했어요.");
       } else {
         setDisplayName(nextResumeName);
+        window.dispatchEvent(
+          new CustomEvent("beginner:display-name-updated", { detail: nextResumeName }),
+        );
         setSeeker((prev) => (prev ? { ...prev, display_name: nextResumeName } : prev));
         const currentCache = profileCache.get(user.id);
         if (currentCache) {
