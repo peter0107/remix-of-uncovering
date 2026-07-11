@@ -1,6 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowRight, Check, Clock3, Menu, Search, Sparkles, User, X } from "lucide-react";
+import { ArrowRight, Check, Clock3, Menu, Search, Sparkles, X } from "lucide-react";
 import { useState } from "react";
+
+import { AccountMenu } from "@/components/AccountMenu";
 import { useAuth } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/")({
@@ -156,16 +158,14 @@ function Index() {
               기업용
             </Link>
             {user ? (
-              <Link
-                to="/my"
-                aria-label="프로필"
-                className="grid h-9 w-9 place-items-center rounded-full border border-[#D9DEE8] bg-white text-[#171C26] transition-colors hover:bg-[#F7F8FA]"
-              >
-                <User className="h-4 w-4" />
-              </Link>
+              <AccountMenu />
             ) : (
               <>
-                <Link to="/login" search={{ redirect: "/" }} className="font-semibold text-[#171C26]">
+                <Link
+                  to="/login"
+                  search={{ redirect: "/" }}
+                  className="font-semibold text-[#171C26]"
+                >
                   로그인
                 </Link>
                 <Link
@@ -178,14 +178,17 @@ function Index() {
             )}
           </nav>
 
-          <button
-            type="button"
-            onClick={() => setIsMenuOpen((current) => !current)}
-            aria-label={isMenuOpen ? "메뉴 닫기" : "메뉴 열기"}
-            className="grid h-9 w-9 place-items-center text-[#4B5563] md:hidden"
-          >
-            {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-          </button>
+          <div className="flex items-center gap-1 md:hidden">
+            {user && <AccountMenu />}
+            <button
+              type="button"
+              onClick={() => setIsMenuOpen((current) => !current)}
+              aria-label={isMenuOpen ? "메뉴 닫기" : "메뉴 열기"}
+              className="grid h-9 w-9 place-items-center text-[#4B5563]"
+            >
+              {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </button>
+          </div>
         </div>
         {isMenuOpen && (
           <nav className="border-t border-[#EEF0F4] bg-white px-5 py-4 md:hidden">
@@ -211,15 +214,7 @@ function Index() {
               >
                 기업용
               </Link>
-              {user ? (
-                <Link
-                  to="/my"
-                  onClick={() => setIsMenuOpen(false)}
-                  className="rounded-md px-3 py-2.5 text-sm font-semibold text-[#171C26] hover:bg-[#F7F8FA]"
-                >
-                  프로필
-                </Link>
-              ) : (
+              {!user && (
                 <>
                   <Link
                     to="/login"
