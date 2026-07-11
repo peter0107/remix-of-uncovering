@@ -3,6 +3,7 @@ import {
   Building2,
   ChevronDown,
   ChevronUp,
+  ExternalLink,
   ListChecks,
   Pencil,
   Plus,
@@ -1199,12 +1200,33 @@ function AdminSimulations() {
 
         <section className="min-w-0 max-w-full rounded-md border border-neutral-200">
           <div className="border-b border-neutral-200 p-4">
-            <h2 className="text-sm font-semibold text-neutral-900">
-              {isEditing ? "시뮬레이션 수정" : "시뮬레이션 추가"}
-            </h2>
-            <p className="mt-1 text-xs text-neutral-500">
-              저장하면 유저 추천 화면과 기업 직무 선택 목록에 반영됩니다.
-            </p>
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h2 className="text-sm font-semibold text-neutral-900">
+                  {isEditing ? "시뮬레이션 수정" : "시뮬레이션 추가"}
+                </h2>
+                <p className="mt-1 text-xs text-neutral-500">
+                  저장하면 유저 추천 화면과 기업 직무 선택 목록에 반영됩니다.
+                </p>
+              </div>
+              <button
+                type="button"
+                disabled={!selectedSimulationId}
+                onClick={() => {
+                  if (!selectedSimulationId) return;
+                  window.open(
+                    `/simulation/${selectedSimulationId}?preview=1`,
+                    "_blank",
+                    "noopener,noreferrer",
+                  );
+                }}
+                title={selectedSimulationId ? "유저 화면 미리보기" : "저장 후 미리볼 수 있습니다."}
+                className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-neutral-300 bg-white px-2.5 text-xs font-medium text-neutral-800 hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                <ExternalLink className="h-3.5 w-3.5" />
+                미리보기
+              </button>
+            </div>
           </div>
 
           <form onSubmit={submitSimulation} className="grid min-w-0 max-w-full gap-5 p-5">

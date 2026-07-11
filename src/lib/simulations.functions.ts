@@ -89,6 +89,18 @@ export type AdminAiPromptSetting = {
   updatedAt: string | null;
 };
 
+export type AdminSimulationPreview = Pick<
+  AdminCompanySimulation,
+  | "id"
+  | "title"
+  | "simulationFormat"
+  | "singleAnswerQuestion"
+  | "taskPrompt"
+  | "steps"
+  | "estimatedMinutes"
+  | "companyName"
+>;
+
 const domainCategorySchema = z.enum(DOMAIN_CATEGORIES);
 const simulationFormatSchema = z.enum(["single", "selection"]);
 
@@ -377,6 +389,39 @@ export const getAdminCompanySimulations = createServerFn({ method: "GET" }).hand
     return ((data ?? []) as Record<string, unknown>[]).map(mapAdminSimulation);
   },
 );
+
+export const getAdminSimulationPreview = createServerFn({ method: "GET" })
+  .inputValidator(simulationIdInputSchema)
+  .handler(async ({ data }): Promise<AdminSimulationPreview> => {
+    await assertAdmin();
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { data: row, error } = await supabaseAdmin
+      .from("job_simulations")
+      .select(
+        "id, company_id, title, role_label, job_family, domain, estimated_minutes, card_image_url, description, simulation_format, single_answer_question, task_prompt, steps, is_public, deleted_at, created_at, companies(code, unique_code, name, description, logo_url)",
+      )
+      .eq("id", data.id)
+      .is("deleted_at", null)
+      .maybeSingle();
+
+    if (error || !row) {
+      console.error("Failed to load simulation preview:", error);
+      throw new Error("시뮬레이션 미리보기를 불러오지 못했습니다.");
+    }
+
+    const simulation = mapAdminSimulation(row as Record<string, unknown>);
+    return {
+      id: simulation.id,
+      title: simulation.title,
+      simulationFormat: simulation.simulationFormat,
+      singleAnswerQuestion: simulation.singleAnswerQuestion,
+      taskPrompt: simulation.taskPrompt,
+      steps: simulation.steps,
+      estimatedMinutes: simulation.estimatedMinutes,
+      companyName: simulation.companyName,
+    };
+  });
 
 export const getAdminSubmissionAnswers = createServerFn({ method: "GET" }).handler(
   async (): Promise<AdminSubmissionAnswer[]> => {

@@ -1,5 +1,6 @@
 import { createFileRoute, Link, useNavigate, useBlocker } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
+import { z } from "zod";
 import {
   Building2,
   CheckCircle2,
@@ -38,9 +39,11 @@ import {
   type WizardModel,
   type WizardStep,
 } from "@/lib/simulation-steps";
+import { getAdminSimulationPreview } from "@/lib/simulations.functions";
 
 export const Route = createFileRoute("/simulation/$id")({
   head: () => ({ meta: [{ title: "시뮬레이션 — Beginner" }] }),
+  validateSearch: z.object({ preview: z.literal("1").optional() }),
   component: SimulationDetailPage,
 });
 
@@ -125,8 +128,10 @@ function StepMeta({ step }: { step: WizardStep }) {
 
 function SimulationDetailPage() {
   const { id } = Route.useParams();
+  const { preview } = Route.useSearch();
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const isPreview = preview === "1";
 
   const [sim, setSim] = useState<SimulationDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -171,7 +176,7 @@ function SimulationDetailPage() {
   };
 
   // 시뮬레이션 진행 중(제출 전)일 때만 이탈을 차단
-  const inProgress = Boolean(sim && !submittedAt);
+  const inProgress = Boolean(sim && !submittedAt && !isPreview);
 
   // 인앱 라우터 이동 차단 + 브라우저 새로고침/닫기 경고
   const blocker = useBlocker({
@@ -190,45 +195,67 @@ function SimulationDetailPage() {
   useEffect(() => {
     if (authLoading) return;
 
-    supabase
-      .from("job_simulations")
-      .select(
-        "id, title, simulation_format, single_answer_question, task_prompt, steps, estimated_minutes, companies(name)",
-      )
-      .eq("id", id)
-      .eq("is_public", true)
-      .is("deleted_at", null)
-      .maybeSingle()
-      .then(({ data }) => {
-        if (data) {
-          const row = data as unknown as {
-            id: string;
-            title: string;
-            simulation_format: "single" | "selection" | null;
-            single_answer_question: string | null;
-            task_prompt: string | null;
-            steps: unknown;
-            estimated_minutes: number | null;
-            companies: { name: string } | null;
-          };
+    async function loadSimulation() {
+      try {
+        if (isPreview) {
+          const data = await getAdminSimulationPreview({ data: { id } });
           setSim({
-            id: row.id,
-            title: row.title,
-            simulation_format: row.simulation_format === "selection" ? "selection" : "single",
-            single_answer_question: row.single_answer_question,
-            task_prompt: row.task_prompt,
-            steps: row.steps,
-            estimated_minutes: row.estimated_minutes,
-            company_name: row.companies?.name ?? "",
+            id: data.id,
+            title: data.title,
+            simulation_format: data.simulationFormat,
+            single_answer_question: data.singleAnswerQuestion,
+            task_prompt: data.taskPrompt,
+            steps: data.steps,
+            estimated_minutes: data.estimatedMinutes,
+            company_name: data.companyName,
           });
+          return;
         }
+
+        const { data } = await supabase
+          .from("job_simulations")
+          .select(
+            "id, title, simulation_format, single_answer_question, task_prompt, steps, estimated_minutes, companies(name)",
+          )
+          .eq("id", id)
+          .eq("is_public", true)
+          .is("deleted_at", null)
+          .maybeSingle();
+
+        if (!data) return;
+        const row = data as unknown as {
+          id: string;
+          title: string;
+          simulation_format: "single" | "selection" | null;
+          single_answer_question: string | null;
+          task_prompt: string | null;
+          steps: unknown;
+          estimated_minutes: number | null;
+          companies: { name: string } | null;
+        };
+        setSim({
+          id: row.id,
+          title: row.title,
+          simulation_format: row.simulation_format === "selection" ? "selection" : "single",
+          single_answer_question: row.single_answer_question,
+          task_prompt: row.task_prompt,
+          steps: row.steps,
+          estimated_minutes: row.estimated_minutes,
+          company_name: row.companies?.name ?? "",
+        });
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "시뮬레이션을 불러오지 못했습니다.");
+      } finally {
         setLoading(false);
-      });
-  }, [id, user, authLoading, navigate]);
+      }
+    }
+
+    void loadSimulation();
+  }, [id, isPreview, user, authLoading]);
 
   // 위저드 임시저장 복원 (이탈 방지)
   useEffect(() => {
-    if (!model || typeof window === "undefined") return;
+    if (!model || typeof window === "undefined" || isPreview) return;
     try {
       const raw = window.localStorage.getItem(draftKey);
       if (raw) {
@@ -241,23 +268,27 @@ function SimulationDetailPage() {
     } catch {
       // 무시
     }
-  }, [model, draftKey]);
+  }, [model, draftKey, isPreview]);
 
   // 위저드 임시저장
   useEffect(() => {
-    if (!model || typeof window === "undefined" || submittedAt) return;
+    if (!model || typeof window === "undefined" || submittedAt || isPreview) return;
     try {
       window.localStorage.setItem(draftKey, JSON.stringify({ answers, stepIdx }));
     } catch {
       // 무시
     }
-  }, [answers, stepIdx, model, draftKey, submittedAt]);
+  }, [answers, stepIdx, model, draftKey, submittedAt, isPreview]);
 
   const setAnswer = (qid: string, value: string) =>
     setAnswers((prev) => ({ ...prev, [qid]: value }));
 
   const handleSubmit = async () => {
     if (!sim) return;
+    if (isPreview) {
+      toast("미리보기에서는 답안을 제출할 수 없습니다.");
+      return;
+    }
 
     let response_text: string;
     let response_json: ReturnType<typeof buildResponseJson> | null = null;
