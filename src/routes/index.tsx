@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowRight, Check, Clock3, Menu, Search, Sparkles, X } from "lucide-react";
+import { ArrowRight, Check, Clock3, Menu, Search, Sparkles, User, X } from "lucide-react";
 import { useState } from "react";
+import { useAuth } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -134,6 +135,7 @@ const STEPS = [
 
 function Index() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { user } = useAuth();
 
   return (
     <div className="min-h-screen bg-white text-[#171C26]">
@@ -153,15 +155,27 @@ function Index() {
             <Link to="/biz" className="transition-colors hover:text-[#171C26]">
               기업용
             </Link>
-            <Link to="/login" search={{ redirect: "/" }} className="font-semibold text-[#171C26]">
-              로그인
-            </Link>
-            <Link
-              to="/start"
-              className="rounded-md bg-[#2B5CE7] px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-[#2149BD]"
-            >
-              시작하기
-            </Link>
+            {user ? (
+              <Link
+                to="/my"
+                aria-label="프로필"
+                className="grid h-9 w-9 place-items-center rounded-full border border-[#D9DEE8] bg-white text-[#171C26] transition-colors hover:bg-[#F7F8FA]"
+              >
+                <User className="h-4 w-4" />
+              </Link>
+            ) : (
+              <>
+                <Link to="/login" search={{ redirect: "/" }} className="font-semibold text-[#171C26]">
+                  로그인
+                </Link>
+                <Link
+                  to="/start"
+                  className="rounded-md bg-[#2B5CE7] px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-[#2149BD]"
+                >
+                  시작하기
+                </Link>
+              </>
+            )}
           </nav>
 
           <button
@@ -197,21 +211,33 @@ function Index() {
               >
                 기업용
               </Link>
-              <Link
-                to="/login"
-                search={{ redirect: "/" }}
-                onClick={() => setIsMenuOpen(false)}
-                className="rounded-md px-3 py-2.5 text-sm font-semibold text-[#171C26] hover:bg-[#F7F8FA]"
-              >
-                로그인
-              </Link>
-              <Link
-                to="/start"
-                onClick={() => setIsMenuOpen(false)}
-                className="mt-2 rounded-md bg-[#2B5CE7] px-3 py-2.5 text-center text-sm font-bold text-white"
-              >
-                시작하기
-              </Link>
+              {user ? (
+                <Link
+                  to="/my"
+                  onClick={() => setIsMenuOpen(false)}
+                  className="rounded-md px-3 py-2.5 text-sm font-semibold text-[#171C26] hover:bg-[#F7F8FA]"
+                >
+                  프로필
+                </Link>
+              ) : (
+                <>
+                  <Link
+                    to="/login"
+                    search={{ redirect: "/" }}
+                    onClick={() => setIsMenuOpen(false)}
+                    className="rounded-md px-3 py-2.5 text-sm font-semibold text-[#171C26] hover:bg-[#F7F8FA]"
+                  >
+                    로그인
+                  </Link>
+                  <Link
+                    to="/start"
+                    onClick={() => setIsMenuOpen(false)}
+                    className="mt-2 rounded-md bg-[#2B5CE7] px-3 py-2.5 text-center text-sm font-bold text-white"
+                  >
+                    시작하기
+                  </Link>
+                </>
+              )}
             </div>
           </nav>
         )}
@@ -250,9 +276,9 @@ function Index() {
         <section className="border-b border-[#EEF0F4]">
           <div className="mx-auto grid max-w-[760px] grid-cols-3 gap-3 px-5 pb-16 text-center sm:gap-12 sm:px-8 sm:pb-20">
             {[
-              ["3단계", "시작부터 제안까지"],
-              ["맞춤", "관심 정보 기반 추천"],
-              ["실무", "현업 과제 직접 경험"],
+              ["120+", "직무 시뮬레이션"],
+              ["80+", "참여 기업"],
+              ["1,400+", "전달된 채용 제안"],
             ].map(([value, label]) => (
               <div key={value}>
                 <p className="text-xl font-extrabold tracking-[-0.04em] text-[#2B5CE7] sm:text-3xl">
@@ -322,16 +348,16 @@ function Index() {
             <Brand />
             <span>© 2026</span>
           </div>
-          <nav className="flex flex-wrap gap-x-5 gap-y-2">
-            <Link to="/simulations" className="hover:text-[#4B5563]">
-              시뮬레이션
-            </Link>
-            <Link to="/biz" className="hover:text-[#4B5563]">
-              기업용
-            </Link>
-            <Link to="/login" search={{ redirect: "/" }} className="hover:text-[#4B5563]">
-              로그인
-            </Link>
+          <nav className="flex flex-wrap items-center gap-x-5 gap-y-2">
+            <a href="#faq" className="hover:text-[#4B5563]">
+              자주 묻는 질문
+            </a>
+            <a href="#terms" className="hover:text-[#4B5563]">
+              이용약관
+            </a>
+            <a href="#privacy" className="hover:text-[#4B5563]">
+              개인정보처리방침
+            </a>
           </nav>
         </div>
       </footer>
