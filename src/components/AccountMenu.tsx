@@ -24,10 +24,7 @@ export function AccountMenu() {
           <p className="text-sm font-medium text-foreground">로그아웃 중입니다...</p>
         </div>
       )}
-      <div className="flex items-center gap-2">
-        <span className="hidden max-w-[200px] truncate text-xs text-muted-foreground md:inline">
-          {user.email}
-        </span>
+      <div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button
