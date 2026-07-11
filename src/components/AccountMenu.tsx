@@ -80,9 +80,9 @@ export function AccountMenu() {
             <button
               type="button"
               aria-label="프로필 메뉴"
-              className="grid h-10 w-10 place-items-center rounded-full border border-neutral-300 bg-white text-neutral-800 transition-colors hover:bg-neutral-50"
+              className="grid h-9 w-9 place-items-center rounded-full border border-neutral-300 bg-white text-neutral-800 transition-colors hover:bg-neutral-50"
             >
-              <UserRound className="h-5 w-5" strokeWidth={2.2} />
+              <UserRound className="h-4 w-4" strokeWidth={2.2} />
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">
