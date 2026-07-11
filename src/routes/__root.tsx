@@ -30,6 +30,7 @@ function GlobalNavigationOverlay() {
 function SiteLayout({ children }: { children: React.ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const bare =
+    pathname === "/" ||
     pathname.startsWith("/onboarding") ||
     pathname.startsWith("/biz") ||
     pathname.startsWith("/admin");
