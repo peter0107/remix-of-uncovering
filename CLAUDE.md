@@ -3,19 +3,19 @@
 Claude Code가 세션 시작 시 자동으로 읽는 파일. 이 프로젝트에서 작업할 때 항상 적용.
 
 ## 프로젝트 개요
-언커버링(Uncovering) — Forage 모델의 한국형 적응. 구직 대학생이 지원 전에 실제
+Beginner — Forage 모델의 한국형 적응. 구직 대학생이 지원 전에 실제
 업무 과제를 시뮬레이션으로 경험하고, 기업은 이를 통해 고관심 지원자를 발견하는
 양면 플랫폼. 자기보고(성격검사)가 아니라 행동(실제 과제 수행)으로 직무 적합도를
 드러낸다는 철학.
 
-- 배경·의사결정 전체 맥락: @docs/uncovering_project_brief.md
-- DB 스키마: @docs/uncovering_schema.sql
+- 배경·의사결정 전체 맥락: @docs/beginner_project_brief.md
+- DB 스키마: @docs/beginner_schema.sql
 
 ## 절대 규칙 (변경 없이 항상 적용)
 
 1. **사이트는 3개로 완전히 분리, 절대 하나로 합치지 않는다.**
-   - 구직자 사이트 (uncovering.com) — 시뮬레이션 수행
-   - 기업 사이트 (uncoveringforcompany.com) — 고유코드 로그인, 지원자 열람 전용,
+   - 구직자 사이트 (beginner.today) — 시뮬레이션 수행
+   - 기업 사이트 (Beginner biz) — 고유코드 로그인, 지원자 열람 전용,
      구직자 사이트와 별개 도메인/앱
    - groupby — 완전 외부 채용사이트. '지원하기' 버튼의 딥링크 대상일 뿐 우리 DB와 무관
 

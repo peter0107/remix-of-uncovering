@@ -1,8 +1,8 @@
 -- ============================================================
--- 언커버링 (Uncovering) MVP · Supabase / PostgreSQL 스키마
+-- Beginner MVP · Supabase / PostgreSQL 스키마
 -- 사이트 2개 분리:
---   - 구직자 사이트  uncovering.com          (시뮬 수행)
---   - 기업 사이트    uncoveringforcompany.com (고유코드로 지원자 열람)
+--   - 구직자 사이트  beginner.today (시뮬 수행)
+--   - 기업 사이트    Beginner biz (고유코드로 지원자 열람)
 --   - groupby 는 외부 채용사이트 → 링크만, DB 없음
 -- 결정 반영: A안(답안 원문 전송) + 동의 절차 / 룰 기반 추천 / 11축 자동채점 미사용
 -- ============================================================
