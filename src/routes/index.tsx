@@ -352,12 +352,12 @@ function Index() {
             <a href="#faq" className="hover:text-[#4B5563]">
               자주 묻는 질문
             </a>
-            <Link to="/terms" className="hover:text-[#4B5563]">
+            <a href="#terms" className="hover:text-[#4B5563]">
               이용약관
-            </Link>
-            <Link to="/privacy" className="hover:text-[#4B5563]">
+            </a>
+            <a href="#privacy" className="hover:text-[#4B5563]">
               개인정보처리방침
-            </Link>
+            </a>
           </nav>
         </div>
       </footer>
