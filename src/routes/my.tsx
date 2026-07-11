@@ -582,7 +582,7 @@ function SectionRow({
 const LINK_PILL_CLASS =
   "inline-flex items-center gap-1.5 rounded-full border border-zinc-200 px-3 py-1 text-xs font-medium text-zinc-600 hover:border-zinc-400 hover:text-zinc-900";
 const PROFILE_LINK_INPUT_CLASS =
-  "inline-flex h-10 items-center gap-2 rounded-full border border-zinc-200 bg-white px-4 text-sm text-zinc-700 shadow-sm transition-colors focus-within:border-zinc-400";
+  "inline-flex h-10 items-center gap-2 rounded-full border border-zinc-200 bg-white px-4 text-sm text-zinc-700 transition-colors focus-within:border-zinc-400";
 
 function normalizeExternalUrl(value: string | undefined) {
   const trimmed = value?.trim();
@@ -2030,7 +2030,7 @@ function MyPage() {
   if (!hasProfile) {
     return (
       <div className="mx-auto max-w-md px-4 py-16">
-        <Card className="p-8 text-center">
+        <Card className="p-8 text-center shadow-none">
           <h1 className="text-xl font-bold text-zinc-900">아직 프로필이 없어요</h1>
           <p className="mt-2 text-sm text-zinc-500">
             온보딩을 완료하면 프로필과 추천 시뮬레이션을 볼 수 있어요.
@@ -2047,10 +2047,10 @@ function MyPage() {
 
   const hasAnyLink = Boolean(links.github || links.portfolio || links.linkedin);
   return (
-    <div className="mx-auto max-w-2xl px-4 py-12">
+    <div className="mx-auto max-w-2xl px-4 py-12 [&_button]:!shadow-none [&_input]:!shadow-none [&_textarea]:!shadow-none [&_[role=combobox]]:!shadow-none">
       <h1 className="text-2xl font-bold text-zinc-900">프로필</h1>
 
-      <Card className="mt-6 p-6">
+      <Card className="mt-6 p-6 shadow-none">
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-start gap-4">
             <div className="relative shrink-0">
@@ -2065,7 +2065,7 @@ function MyPage() {
                 onClick={() => fileInputRef.current?.click()}
                 disabled={uploadingAvatar}
                 aria-label="프로필 사진 변경"
-                className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full bg-zinc-900 text-white shadow hover:bg-zinc-700 disabled:opacity-50"
+                className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full bg-zinc-900 text-white hover:bg-zinc-700 disabled:opacity-50"
               >
                 <Camera className="h-3.5 w-3.5" />
               </button>
@@ -2221,7 +2221,7 @@ function MyPage() {
         />
       </div>
 
-      <Card className="mt-4 p-6">
+      <Card className="mt-4 p-6 shadow-none">
         <>
           <SectionRow
             icon={GraduationCap}
@@ -2390,7 +2390,7 @@ function MyPage() {
         {resumesLoading ? (
           <Skeleton className="mt-4 h-32 w-full rounded-2xl" />
         ) : resumes.length === 0 ? (
-          <Card className="mt-4 p-6 text-center text-sm text-zinc-400">
+          <Card className="mt-4 p-6 text-center text-sm text-zinc-400 shadow-none">
             <FileText className="mx-auto h-8 w-8 opacity-40" />
             <p className="mt-2">아직 등록된 이력서가 없어요.</p>
           </Card>
@@ -2402,7 +2402,7 @@ function MyPage() {
               return (
                 <Card
                   key={resume.id}
-                  className="flex min-h-36 flex-col rounded-2xl border-zinc-200 p-5 shadow-sm"
+                  className="flex min-h-36 flex-col rounded-2xl border-zinc-200 p-5 shadow-none"
                 >
                   <div className="flex items-center gap-2">
                     <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-zinc-100 text-zinc-700">
@@ -2484,7 +2484,7 @@ function MyPage() {
         {history === null ? (
           <Skeleton className="mt-4 h-24 w-full" />
         ) : history.length === 0 ? (
-          <Card className="mt-4 p-6 text-center text-sm text-zinc-400">
+          <Card className="mt-4 p-6 text-center text-sm text-zinc-400 shadow-none">
             <FileText className="mx-auto h-8 w-8 opacity-40" />
             <p className="mt-2">아직 완료한 시뮬레이션이 없어요.</p>
             <Link to="/simulations" className="mt-3 inline-block text-sm text-zinc-600 underline">
@@ -2495,7 +2495,7 @@ function MyPage() {
           <ul className="mt-4 space-y-2">
             {history.map((h) => (
               <li key={h.submissionId}>
-                <Card className="flex items-center gap-3 p-4">
+                <Card className="flex items-center gap-3 p-4 shadow-none">
                   <CheckCircle2 className="h-4 w-4 shrink-0 text-zinc-400" />
                   <div>
                     <p className="font-medium text-zinc-900">{h.title}</p>
@@ -2512,7 +2512,7 @@ function MyPage() {
       </div>
 
       <Dialog open={!!avatarEditor} onOpenChange={(open) => !open && closeAvatarEditor()}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md shadow-none">
           <DialogHeader>
             <DialogTitle>프로필 사진 편집</DialogTitle>
             <DialogDescription>사진을 원형 영역에 맞게 조정한 뒤 적용하세요.</DialogDescription>
@@ -2594,7 +2594,7 @@ function MyPage() {
       </Dialog>
 
       <Dialog open={resumeEditorOpen} onOpenChange={setResumeEditorOpen}>
-        <DialogContent className="flex max-h-[88vh] max-w-4xl flex-col overflow-hidden rounded-md p-0 sm:rounded-md [&_input]:!rounded-sm [&_input]:!shadow-none [&_textarea]:!rounded-sm [&_textarea]:!shadow-none [&_[role=combobox]]:!rounded-sm [&_[role=combobox]]:!shadow-none">
+        <DialogContent className="flex max-h-[88vh] max-w-4xl flex-col overflow-hidden rounded-md p-0 shadow-none sm:rounded-md [&_input]:!rounded-sm [&_input]:!shadow-none [&_textarea]:!rounded-sm [&_textarea]:!shadow-none [&_[role=combobox]]:!rounded-sm [&_[role=combobox]]:!shadow-none">
           <DialogHeader className="shrink-0 px-6 pt-6">
             <DialogTitle>{editingResume ? "이력서 수정" : "새 이력서 작성"}</DialogTitle>
             <DialogDescription>
