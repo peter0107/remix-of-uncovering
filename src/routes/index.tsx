@@ -135,6 +135,7 @@ const STEPS = [
 
 function Index() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { user } = useAuth();
 
   return (
     <div className="min-h-screen bg-white text-[#171C26]">
