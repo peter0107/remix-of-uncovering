@@ -950,20 +950,7 @@ export const markApplicantReadByCompanyCode = createServerFn({ method: "POST" })
       String(company.id),
       data.applicantId,
     );
-    const { data: current, error: currentError } = await supabase
-      .from("company_applicant_review_states")
-      .select("decision_status")
-      .eq("company_id", company.id)
-      .eq("applicant_id", data.applicantId)
-      .maybeSingle();
-
-    if (currentError) {
-      console.error("Failed to load applicant decision state:", currentError);
-      throw new Error("지원자 검토 상태를 불러오지 못했습니다.");
-    }
-
     const now = new Date().toISOString();
-    const decisionStatus = decisionStatusEnum.parse(current?.decision_status ?? "undecided");
 
     const { error } = await supabase.from("company_applicant_review_states").upsert(
       {
@@ -1043,7 +1030,20 @@ export const markApplicantInterviewProposedByCompanyCode = createServerFn({ meth
       String(company.id),
       data.applicantId,
     );
+    const { data: current, error: currentError } = await supabase
+      .from("company_applicant_review_states")
+      .select("decision_status")
+      .eq("company_id", company.id)
+      .eq("applicant_id", data.applicantId)
+      .maybeSingle();
+
+    if (currentError) {
+      console.error("Failed to load applicant decision state:", currentError);
+      throw new Error("지원자 검토 상태를 불러오지 못했습니다.");
+    }
+
     const now = new Date().toISOString();
+    const decisionStatus = decisionStatusEnum.parse(current?.decision_status ?? "undecided");
 
     const { error } = await supabase.from("company_applicant_review_states").upsert(
       {
@@ -1097,7 +1097,7 @@ export const advanceApplicantReviewStageByCompanyCode = createServerFn({ method:
     }
 
     const currentIndex = REVIEW_STAGE_ORDER.indexOf(currentStage);
-    const nextStage = REVIEW_STAGE_ORDER[Math.min(currentIndex + 1, REVIEW_STAGE_ORDER.length - 1)];
+    const nextStage = REVIEW_STAGE_ORDER[(currentIndex + 1) % REVIEW_STAGE_ORDER.length];
     const now = new Date().toISOString();
     const decisionStatus = decisionStatusEnum.parse(current?.decision_status ?? "undecided");
 

@@ -333,6 +333,12 @@ function BizReview() {
 
   async function advanceReviewStage(id: string) {
     if (advancingIds.has(id)) return;
+    const currentStage =
+      reviewStateByApplicantId.get(id)?.reviewStage ?? DEFAULT_REVIEW_STATE.reviewStage;
+    if (currentStage === "document_review") {
+      toast.error("면접 제안 메일 템플릿을 복사하면 면접 제안으로 변경됩니다.");
+      return;
+    }
     setAdvancingIds((current) => new Set(current).add(id));
     try {
       const nextState = await advanceApplicantReviewStageByCompanyCode({
@@ -565,9 +571,6 @@ function BizReview() {
                 applicantId: applicant.id,
                 ...DEFAULT_REVIEW_STATE,
               };
-              const canAdvance =
-                reviewState.reviewStage !== "document_review" &&
-                reviewState.reviewStage !== "final_review";
 
               return (
                 <div
@@ -616,15 +619,15 @@ function BizReview() {
                     <button
                       type="button"
                       onClick={() => void advanceReviewStage(applicant.id)}
-                      disabled={!canAdvance || advancingIds.has(applicant.id)}
+                      disabled={advancingIds.has(applicant.id)}
                       title={
                         reviewState.reviewStage === "document_review"
                           ? "면접 제안 메일 템플릿을 복사하면 면접 제안으로 변경됩니다"
                           : reviewState.reviewStage === "final_review"
-                            ? "최종 검토 단계입니다"
+                            ? "클릭하면 서류 검토로 돌아갑니다"
                             : "클릭하면 다음 지원 단계로 변경됩니다"
                       }
-                      className="h-7 rounded bg-neutral-100 px-2 text-[11px] font-medium text-neutral-700 transition-colors hover:bg-neutral-200 disabled:cursor-not-allowed disabled:opacity-60"
+                      className="h-7 rounded border border-transparent bg-neutral-100 px-2 text-[11px] font-medium text-neutral-700 transition-colors hover:border-neutral-900 hover:bg-white hover:text-neutral-900 disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       {REVIEW_STAGE_LABELS[reviewState.reviewStage]}
                     </button>
@@ -634,7 +637,7 @@ function BizReview() {
                       disabled={decisionIds.has(applicant.id)}
                       aria-label={`${applicant.name} 지원 결과`}
                       title="클릭하면 미정, 합격, 불합격 순서로 변경됩니다"
-                      className="h-7 rounded border border-neutral-200 bg-white px-2 text-[11px] font-medium text-neutral-700 transition-colors hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="h-7 rounded border border-neutral-200 bg-white px-2 text-[11px] font-medium text-neutral-700 transition-colors hover:border-neutral-900 hover:bg-neutral-900 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       {DECISION_LABELS[reviewState.decisionStatus]}
                     </button>
