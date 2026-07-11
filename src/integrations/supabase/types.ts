@@ -129,9 +129,11 @@ export type Database = {
           applicant_id: string
           company_id: string
           created_at: string
+          decision_status: string
           id: string
           mail_sent_at: string | null
           read_at: string | null
+          review_stage: string
           submission_id: string | null
           updated_at: string
         }
@@ -139,9 +141,11 @@ export type Database = {
           applicant_id: string
           company_id: string
           created_at?: string
+          decision_status?: string
           id?: string
           mail_sent_at?: string | null
           read_at?: string | null
+          review_stage?: string
           submission_id?: string | null
           updated_at?: string
         }
@@ -149,9 +153,11 @@ export type Database = {
           applicant_id?: string
           company_id?: string
           created_at?: string
+          decision_status?: string
           id?: string
           mail_sent_at?: string | null
           read_at?: string | null
+          review_stage?: string
           submission_id?: string | null
           updated_at?: string
         }
@@ -175,6 +181,99 @@ export type Database = {
             columns: ["submission_id"]
             isOneToOne: false
             referencedRelation: "submissions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      company_applicant_ai_reviews: {
+        Row: {
+          analysis: Json
+          applicant_id: string
+          company_id: string
+          created_at: string
+          id: string
+          job_posting_id: string
+          updated_at: string
+        }
+        Insert: {
+          analysis: Json
+          applicant_id: string
+          company_id: string
+          created_at?: string
+          id?: string
+          job_posting_id: string
+          updated_at?: string
+        }
+        Update: {
+          analysis?: Json
+          applicant_id?: string
+          company_id?: string
+          created_at?: string
+          id?: string
+          job_posting_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_applicant_ai_reviews_applicant_id_fkey"
+            columns: ["applicant_id"]
+            isOneToOne: false
+            referencedRelation: "submissions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_applicant_ai_reviews_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_applicant_ai_reviews_job_posting_id_fkey"
+            columns: ["job_posting_id"]
+            isOneToOne: false
+            referencedRelation: "company_job_postings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      company_job_postings: {
+        Row: {
+          company_id: string
+          content: string
+          created_at: string
+          id: string
+          role_label: string
+          source_url: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          content: string
+          created_at?: string
+          id?: string
+          role_label: string
+          source_url: string
+          title?: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          content?: string
+          created_at?: string
+          id?: string
+          role_label?: string
+          source_url?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_job_postings_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
             referencedColumns: ["id"]
           },
         ]

@@ -1,15 +1,26 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Bookmark, Filter, Search, Send, X } from "lucide-react";
+import { Bookmark, ChevronRight, FileText, Filter, Search, Send, Sparkles, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { z } from "zod";
 
 import {
+  advanceApplicantReviewStageByCompanyCode,
+  evaluateApplicantWithAiByCompanyCode,
+  extractJobPostingFromUrl,
   getApplicantsByCompanyCode,
+  markApplicantInterviewProposedByCompanyCode,
   markApplicantReadByCompanyCode,
+  saveCompanyJobPostingByCode,
+  setApplicantDecisionByCompanyCode,
   setApplicantMailSentByCompanyCode,
   setSavedApplicantByCompanyCode,
   type Applicant,
+  type ApplicantAiReview,
+  type ApplicantDecisionStatus,
+  type ApplicantReviewStage,
+  type ApplicantReviewState,
   type CompanyApplicants,
+  type CompanyJobPosting,
 } from "@/lib/applicants.functions";
 import { WORK_REGIONS } from "@/lib/profile-fields";
 import { toast } from "sonner";
@@ -54,6 +65,25 @@ const DEFAULT_FILTERS: ApplicantFilters = {
   experienceRange: [...EXPERIENCE_RANGE],
 };
 
+const REVIEW_STAGE_LABELS: Record<ApplicantReviewStage, string> = {
+  document_review: "서류 검토",
+  interview_proposed: "면접 제안",
+  interview_scheduled: "면접 예정",
+  interview_in_progress: "면접 중",
+  final_review: "최종 검토",
+};
+
+const DECISION_LABELS: Record<ApplicantDecisionStatus, string> = {
+  undecided: "미정",
+  passed: "합격",
+  rejected: "불합격",
+};
+
+const DEFAULT_REVIEW_STATE: Omit<ApplicantReviewState, "applicantId"> = {
+  reviewStage: "document_review",
+  decisionStatus: "undecided",
+};
+
 export const Route = createFileRoute("/biz_/review")({
   validateSearch: searchSchema,
   head: () => ({
@@ -77,6 +107,13 @@ function BizReview() {
   const [readingIds, setReadingIds] = useState<Set<string>>(() => new Set());
   const [mailSentIds, setMailSentIds] = useState<Set<string>>(() => new Set());
   const [mailingIds, setMailingIds] = useState<Set<string>>(() => new Set());
+  const [reviewStates, setReviewStates] = useState<ApplicantReviewState[]>([]);
+  const [jobPostings, setJobPostings] = useState<CompanyJobPosting[]>([]);
+  const [aiReviews, setAiReviews] = useState<ApplicantAiReview[]>([]);
+  const [isJobPostingOpen, setIsJobPostingOpen] = useState(false);
+  const [advancingIds, setAdvancingIds] = useState<Set<string>>(() => new Set());
+  const [decisionIds, setDecisionIds] = useState<Set<string>>(() => new Set());
+  const [evaluatingIds, setEvaluatingIds] = useState<Set<string>>(() => new Set());
   const [showSavedOnly, setShowSavedOnly] = useState(false);
   const [roleFilter, setRoleFilter] = useState("all");
   const [filters, setFilters] = useState<ApplicantFilters>(DEFAULT_FILTERS);
@@ -102,6 +139,9 @@ function BizReview() {
         setSavedIds(new Set(result.savedApplicantIds));
         setReadIds(new Set(result.readApplicantIds));
         setMailSentIds(new Set(result.mailSentApplicantIds));
+        setReviewStates(result.reviewStates);
+        setJobPostings(result.jobPostings);
+        setAiReviews(result.aiReviews);
         setSelectedId(result.applicants[0]?.id ?? null);
       } catch {
         if (!alive) return;
@@ -191,6 +231,34 @@ function BizReview() {
       null,
     [selectedId, visibleApplicants],
   );
+
+  const reviewStateByApplicantId = useMemo(
+    () => new Map(reviewStates.map((state) => [state.applicantId, state])),
+    [reviewStates],
+  );
+
+  const selectedJobPosting = useMemo(() => {
+    if (!selectedApplicant) return null;
+    return jobPostings.find((posting) => posting.roleLabel === selectedApplicant.role) ?? null;
+  }, [jobPostings, selectedApplicant]);
+
+  const selectedAiReview = useMemo(() => {
+    if (!selectedApplicant || !selectedJobPosting) return null;
+    return (
+      aiReviews.find(
+        (review) =>
+          review.applicantId === selectedApplicant.id &&
+          review.jobPostingId === selectedJobPosting.id,
+      ) ?? null
+    );
+  }, [aiReviews, selectedApplicant, selectedJobPosting]);
+
+  function updateReviewState(nextState: ApplicantReviewState) {
+    setReviewStates((current) => [
+      ...current.filter((state) => state.applicantId !== nextState.applicantId),
+      nextState,
+    ]);
+  }
 
   async function toggleSaved(id: string) {
     if (savingIds.has(id)) return;
@@ -293,6 +361,84 @@ function BizReview() {
       toast.error("메일 발송 상태 저장 중 오류가 발생했습니다.");
     } finally {
       setMailingIds((current) => {
+        const next = new Set(current);
+        next.delete(id);
+        return next;
+      });
+    }
+  }
+
+  async function advanceReviewStage(id: string) {
+    if (advancingIds.has(id)) return;
+    setAdvancingIds((current) => new Set(current).add(id));
+    try {
+      const nextState = await advanceApplicantReviewStageByCompanyCode({
+        data: { code, applicantId: id },
+      });
+      updateReviewState(nextState);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "지원 단계 저장에 실패했습니다.");
+    } finally {
+      setAdvancingIds((current) => {
+        const next = new Set(current);
+        next.delete(id);
+        return next;
+      });
+    }
+  }
+
+  async function setDecision(id: string, decisionStatus: ApplicantDecisionStatus) {
+    if (decisionIds.has(id)) return;
+    const previous = reviewStateByApplicantId.get(id) ?? {
+      applicantId: id,
+      ...DEFAULT_REVIEW_STATE,
+    };
+    updateReviewState({ ...previous, decisionStatus });
+    setDecisionIds((current) => new Set(current).add(id));
+    try {
+      const nextState = await setApplicantDecisionByCompanyCode({
+        data: { code, applicantId: id, decisionStatus },
+      });
+      updateReviewState(nextState);
+    } catch {
+      updateReviewState(previous);
+      toast.error("지원 결과 저장에 실패했습니다.");
+    } finally {
+      setDecisionIds((current) => {
+        const next = new Set(current);
+        next.delete(id);
+        return next;
+      });
+    }
+  }
+
+  async function markInterviewProposed(id: string) {
+    const nextState = await markApplicantInterviewProposedByCompanyCode({
+      data: { code, applicantId: id },
+    });
+    updateReviewState(nextState);
+    setMailSentIds((current) => new Set(current).add(id));
+  }
+
+  async function evaluateApplicant(id: string) {
+    if (!selectedJobPosting || evaluatingIds.has(id)) return;
+    setEvaluatingIds((current) => new Set(current).add(id));
+    try {
+      const review = await evaluateApplicantWithAiByCompanyCode({
+        data: { code, applicantId: id, jobPostingId: selectedJobPosting.id },
+      });
+      setAiReviews((current) => [
+        ...current.filter(
+          (item) =>
+            item.applicantId !== review.applicantId || item.jobPostingId !== review.jobPostingId,
+        ),
+        review,
+      ]);
+      toast.success("AI 평가와 면접 질문 추천을 생성했습니다.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "AI 평가 생성에 실패했습니다.");
+    } finally {
+      setEvaluatingIds((current) => {
         const next = new Set(current);
         next.delete(id);
         return next;
@@ -431,70 +577,130 @@ function BizReview() {
             </select>
           </div>
 
+          <button
+            type="button"
+            onClick={() => setIsJobPostingOpen(true)}
+            className="mt-2 inline-flex h-9 w-full items-center justify-center gap-2 rounded-md border border-neutral-300 bg-white px-3 text-xs font-medium text-neutral-700 hover:bg-neutral-50"
+          >
+            <FileText className="h-3.5 w-3.5" />
+            {selectedJobPosting ? "채용 공고 수정" : "채용 공고 연결"}
+          </button>
+          {selectedJobPosting && (
+            <p className="mt-2 truncate text-xs text-neutral-500" title={selectedJobPosting.title}>
+              {selectedJobPosting.title}
+            </p>
+          )}
+
           <div className="mt-6 space-y-2">
-            {visibleApplicants.map((applicant) => (
-              <div
-                key={applicant.id}
-                className={`grid grid-cols-[1fr_auto] gap-2 rounded-md border transition-colors ${
-                  applicant.id === selectedApplicant?.id
-                    ? "border-neutral-900 bg-neutral-50"
-                    : "border-neutral-200 hover:bg-neutral-50"
-                }`}
-              >
-                <button
-                  type="button"
-                  onClick={() => selectApplicant(applicant.id)}
-                  className="min-w-0 p-4 text-left"
+            {visibleApplicants.map((applicant) => {
+              const reviewState = reviewStateByApplicantId.get(applicant.id) ?? {
+                applicantId: applicant.id,
+                ...DEFAULT_REVIEW_STATE,
+              };
+              const canAdvance =
+                reviewState.reviewStage !== "document_review" &&
+                reviewState.reviewStage !== "final_review";
+
+              return (
+                <div
+                  key={applicant.id}
+                  className={`grid grid-cols-[1fr_auto] gap-2 rounded-md border transition-colors ${
+                    applicant.id === selectedApplicant?.id
+                      ? "border-neutral-900 bg-neutral-50"
+                      : "border-neutral-200 hover:bg-neutral-50"
+                  }`}
                 >
-                  <div className="flex items-center gap-2 font-medium text-neutral-900">
-                    {!readIds.has(applicant.id) && (
-                      <span
-                        aria-label="새 제출"
-                        className="h-1.5 w-1.5 shrink-0 rounded-full bg-red-500"
+                  <button
+                    type="button"
+                    onClick={() => selectApplicant(applicant.id)}
+                    className="min-w-0 p-4 text-left"
+                  >
+                    <div className="flex items-center gap-2 font-medium text-neutral-900">
+                      {!readIds.has(applicant.id) && (
+                        <span
+                          aria-label="새 제출"
+                          className="h-1.5 w-1.5 shrink-0 rounded-full bg-red-500"
+                        />
+                      )}
+                      <span>{applicant.name}</span>
+                    </div>
+                    <div className="mt-1 text-xs text-neutral-500">
+                      {applicant.role} · {applicant.experience}
+                    </div>
+                  </button>
+                  <div className="mr-3 mt-3 flex items-start gap-1">
+                    <button
+                      type="button"
+                      onClick={() => toggleMailSent(applicant.id)}
+                      aria-disabled={mailingIds.has(applicant.id)}
+                      aria-label={`${applicant.name} 메일 발송 표시`}
+                      aria-pressed={mailSentIds.has(applicant.id)}
+                      className={`grid h-8 w-8 place-items-center rounded-md transition-colors hover:bg-white ${
+                        mailSentIds.has(applicant.id)
+                          ? "text-blue-600"
+                          : "text-pink-500 hover:text-pink-600"
+                      }`}
+                    >
+                      <Send
+                        className={`h-4 w-4 ${
+                          mailSentIds.has(applicant.id) ? "fill-blue-600" : "fill-pink-500"
+                        }`}
                       />
-                    )}
-                    <span>{applicant.name}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => toggleSaved(applicant.id)}
+                      aria-disabled={savingIds.has(applicant.id)}
+                      aria-label={`${applicant.name} 관심 지원자`}
+                      aria-pressed={savedIds.has(applicant.id)}
+                      className="grid h-8 w-8 place-items-center rounded-md text-neutral-400 hover:bg-white hover:text-neutral-900"
+                    >
+                      <Bookmark
+                        className={`h-4 w-4 ${
+                          savedIds.has(applicant.id) ? "fill-neutral-900 text-neutral-900" : ""
+                        }`}
+                      />
+                    </button>
                   </div>
-                  <div className="mt-1 text-xs text-neutral-500">
-                    {applicant.role} · {applicant.experience}
+                  <div className="col-span-2 flex flex-wrap items-center gap-2 border-t border-neutral-200 px-3 pb-3 pt-2">
+                    <span className="rounded bg-neutral-100 px-2 py-1 text-[11px] font-medium text-neutral-600">
+                      {REVIEW_STAGE_LABELS[reviewState.reviewStage]}
+                    </span>
+                    <select
+                      value={reviewState.decisionStatus}
+                      onChange={(event) =>
+                        void setDecision(
+                          applicant.id,
+                          event.target.value as ApplicantDecisionStatus,
+                        )
+                      }
+                      disabled={decisionIds.has(applicant.id)}
+                      aria-label={`${applicant.name} 지원 결과`}
+                      className="h-7 rounded border border-neutral-200 bg-white px-2 text-[11px] text-neutral-700 outline-none focus:border-neutral-900 disabled:opacity-50"
+                    >
+                      {Object.entries(DECISION_LABELS).map(([value, label]) => (
+                        <option key={value} value={value}>
+                          {label}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      onClick={() => void advanceReviewStage(applicant.id)}
+                      disabled={!canAdvance || advancingIds.has(applicant.id)}
+                      title={
+                        reviewState.reviewStage === "document_review"
+                          ? "면접 제안 메일 템플릿 복사 후 진행할 수 있습니다"
+                          : undefined
+                      }
+                      className="ml-auto inline-flex h-7 items-center gap-1 rounded border border-neutral-300 px-2 text-[11px] font-medium text-neutral-700 hover:bg-white disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      다음 <ChevronRight className="h-3.5 w-3.5" />
+                    </button>
                   </div>
-                </button>
-                <div className="mr-3 mt-3 flex items-start gap-1">
-                  <button
-                    type="button"
-                    onClick={() => toggleMailSent(applicant.id)}
-                    aria-disabled={mailingIds.has(applicant.id)}
-                    aria-label={`${applicant.name} 메일 발송 표시`}
-                    aria-pressed={mailSentIds.has(applicant.id)}
-                    className={`grid h-8 w-8 place-items-center rounded-md transition-colors hover:bg-white ${
-                      mailSentIds.has(applicant.id)
-                        ? "text-blue-600"
-                        : "text-pink-500 hover:text-pink-600"
-                    }`}
-                  >
-                    <Send
-                      className={`h-4 w-4 ${
-                        mailSentIds.has(applicant.id) ? "fill-blue-600" : "fill-pink-500"
-                      }`}
-                    />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => toggleSaved(applicant.id)}
-                    aria-disabled={savingIds.has(applicant.id)}
-                    aria-label={`${applicant.name} 관심 지원자`}
-                    aria-pressed={savedIds.has(applicant.id)}
-                    className="grid h-8 w-8 place-items-center rounded-md text-neutral-400 hover:bg-white hover:text-neutral-900"
-                  >
-                    <Bookmark
-                      className={`h-4 w-4 ${
-                        savedIds.has(applicant.id) ? "fill-neutral-900 text-neutral-900" : ""
-                      }`}
-                    />
-                  </button>
                 </div>
-              </div>
-            ))}
+              );
+            })}
 
             {visibleApplicants.length === 0 && (
               <div className="rounded-md border border-dashed border-neutral-200 p-6 text-center text-sm text-neutral-500">
@@ -505,7 +711,14 @@ function BizReview() {
         </aside>
 
         {selectedApplicant ? (
-          <ApplicantDetail applicant={selectedApplicant} />
+          <ApplicantDetail
+            applicant={selectedApplicant}
+            jobPosting={selectedJobPosting}
+            aiReview={selectedAiReview}
+            isEvaluating={evaluatingIds.has(selectedApplicant.id)}
+            onEvaluate={() => void evaluateApplicant(selectedApplicant.id)}
+            onInterviewProposed={() => markInterviewProposed(selectedApplicant.id)}
+          />
         ) : (
           <section className="rounded-md border border-neutral-200 p-8 text-sm text-neutral-500">
             {roleFilter === "all"
@@ -526,6 +739,27 @@ function BizReview() {
             setIsFilterOpen(false);
           }}
           onClose={() => setIsFilterOpen(false)}
+        />
+      )}
+
+      {isJobPostingOpen && (
+        <JobPostingDialog
+          companyCode={code}
+          roleOptions={roleOptions}
+          initialRole={
+            selectedApplicant?.role ?? (roleFilter !== "all" ? roleFilter : (roleOptions[0] ?? ""))
+          }
+          initialPosting={selectedJobPosting}
+          onSaved={(posting) => {
+            setJobPostings((current) => [
+              ...current.filter(
+                (item) => item.id !== posting.id && item.roleLabel !== posting.roleLabel,
+              ),
+              posting,
+            ]);
+            setIsJobPostingOpen(false);
+          }}
+          onClose={() => setIsJobPostingOpen(false)}
         />
       )}
     </div>
@@ -593,8 +827,7 @@ function sortApplicants(applicants: Applicant[], sortKey: ApplicantSortKey) {
           parseExperienceMonths(a.experience),
           parseExperienceMonths(b.experience),
           "desc",
-        ) ||
-        fallback
+        ) || fallback
       );
     }
 
@@ -604,8 +837,7 @@ function sortApplicants(applicants: Applicant[], sortKey: ApplicantSortKey) {
           parseExperienceMonths(a.experience),
           parseExperienceMonths(b.experience),
           "asc",
-        ) ||
-        fallback
+        ) || fallback
       );
     }
 
@@ -615,8 +847,7 @@ function sortApplicants(applicants: Applicant[], sortKey: ApplicantSortKey) {
           parseSalaryManwon(a.desiredSalary),
           parseSalaryManwon(b.desiredSalary),
           "asc",
-        ) ||
-        fallback
+        ) || fallback
       );
     }
 
@@ -626,8 +857,7 @@ function sortApplicants(applicants: Applicant[], sortKey: ApplicantSortKey) {
           parseSalaryManwon(a.desiredSalary),
           parseSalaryManwon(b.desiredSalary),
           "desc",
-        ) ||
-        fallback
+        ) || fallback
       );
     }
 
@@ -773,9 +1003,7 @@ function ApplicantFilterDialog({
   const filteredSchoolOptions = useMemo(() => {
     const keyword = schoolQuery.trim().toLowerCase();
     if (!keyword) return schoolOptions.slice(0, 8);
-    return schoolOptions
-      .filter((school) => school.toLowerCase().includes(keyword))
-      .slice(0, 8);
+    return schoolOptions.filter((school) => school.toLowerCase().includes(keyword)).slice(0, 8);
   }, [schoolOptions, schoolQuery]);
 
   function toggleEmploymentType(type: string) {
@@ -1042,7 +1270,21 @@ function BizShell({ children }: { children: React.ReactNode }) {
   );
 }
 
-function ApplicantDetail({ applicant }: { applicant: Applicant }) {
+function ApplicantDetail({
+  applicant,
+  jobPosting,
+  aiReview,
+  isEvaluating,
+  onEvaluate,
+  onInterviewProposed,
+}: {
+  applicant: Applicant;
+  jobPosting: CompanyJobPosting | null;
+  aiReview: ApplicantAiReview | null;
+  isEvaluating: boolean;
+  onEvaluate: () => void;
+  onInterviewProposed: () => Promise<void>;
+}) {
   const [isMailOpen, setIsMailOpen] = useState(false);
 
   return (
@@ -1056,13 +1298,25 @@ function ApplicantDetail({ applicant }: { applicant: Applicant }) {
               {applicant.role} · {applicant.experience}
             </p>
           </div>
-          <button
-            type="button"
-            onClick={() => setIsMailOpen(true)}
-            className="h-10 rounded-md bg-neutral-900 px-4 text-sm font-medium text-white hover:bg-neutral-800"
-          >
-            면접 제안 메일
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={onEvaluate}
+              disabled={!jobPosting || isEvaluating}
+              title={!jobPosting ? "채용 공고를 먼저 연결해주세요" : undefined}
+              className="inline-flex h-10 items-center gap-2 rounded-md border border-neutral-300 bg-white px-4 text-sm font-medium text-neutral-800 hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <Sparkles className="h-4 w-4" />
+              {isEvaluating ? "AI 평가 중..." : aiReview ? "AI 평가 갱신" : "AI 평가"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsMailOpen(true)}
+              className="h-10 rounded-md bg-neutral-900 px-4 text-sm font-medium text-white hover:bg-neutral-800"
+            >
+              면접 제안 메일
+            </button>
+          </div>
         </div>
       </div>
 
@@ -1213,6 +1467,8 @@ function ApplicantDetail({ applicant }: { applicant: Applicant }) {
               </div>
             </InfoBlock>
 
+            <AiReviewPanel jobPosting={jobPosting} review={aiReview} />
+
             <InfoBlock
               title={`AI 어시스트 활용 내역 (${applicant.aiChatLog.filter((m) => m.role === "user").length}건)`}
             >
@@ -1229,9 +1485,7 @@ function ApplicantDetail({ applicant }: { applicant: Applicant }) {
                     >
                       <div className="flex items-center gap-2 text-[11px] font-medium uppercase tracking-wide text-neutral-500">
                         <span
-                          className={
-                            m.role === "user" ? "text-neutral-900" : "text-indigo-600"
-                          }
+                          className={m.role === "user" ? "text-neutral-900" : "text-indigo-600"}
                         >
                           {m.role === "user" ? "응시자 질문" : "AI 응답"}
                         </span>
@@ -1259,9 +1513,12 @@ function ApplicantDetail({ applicant }: { applicant: Applicant }) {
         </section>
       </div>
 
-
       {isMailOpen && (
-        <InterviewMailDialog applicant={applicant} onClose={() => setIsMailOpen(false)} />
+        <InterviewMailDialog
+          applicant={applicant}
+          onInterviewProposed={onInterviewProposed}
+          onClose={() => setIsMailOpen(false)}
+        />
       )}
     </section>
   );
@@ -1309,18 +1566,281 @@ function ChipList({ items }: { items: string[] }) {
   );
 }
 
+function AiReviewPanel({
+  jobPosting,
+  review,
+}: {
+  jobPosting: CompanyJobPosting | null;
+  review: ApplicantAiReview | null;
+}) {
+  if (!jobPosting) {
+    return (
+      <InfoBlock title="AI 평가">
+        <p className="text-sm leading-6 text-neutral-500">
+          채용 공고를 연결하면 시뮬레이션, 이력서, 활동 내용을 공고 기준으로 평가할 수 있습니다.
+        </p>
+      </InfoBlock>
+    );
+  }
+
+  if (!review) {
+    return (
+      <InfoBlock title="AI 평가">
+        <p className="text-sm leading-6 text-neutral-500">
+          연결된 공고: {jobPosting.title}. AI 평가 버튼을 누르면 적합도와 면접 질문을 생성합니다.
+        </p>
+      </InfoBlock>
+    );
+  }
+
+  return (
+    <InfoBlock title="AI 평가">
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div>
+          <p className="text-xs text-neutral-500">시뮬레이션 평가</p>
+          <p className="mt-1 text-2xl font-semibold tracking-tight text-neutral-900">
+            {review.simulation.score}점
+          </p>
+          <p className="mt-2 text-sm leading-6 text-neutral-700">{review.simulation.summary}</p>
+          <ReviewList label="강점" items={review.simulation.strengths} />
+          <ReviewList label="확인할 점" items={review.simulation.concerns} />
+        </div>
+        <div className="border-t border-neutral-200 pt-4 sm:border-l sm:border-t-0 sm:pl-4 sm:pt-0">
+          <p className="text-xs text-neutral-500">공고 대비 이력서 적합도</p>
+          <p className="mt-1 text-2xl font-semibold tracking-tight text-neutral-900">
+            {review.resumeFit.score}점
+          </p>
+          <p className="mt-2 text-sm leading-6 text-neutral-700">{review.resumeFit.summary}</p>
+          <ReviewList label="일치 근거" items={review.resumeFit.matched} />
+          <ReviewList label="보완 확인" items={review.resumeFit.gaps} />
+        </div>
+      </div>
+
+      <div className="mt-5 border-t border-neutral-200 pt-4">
+        <p className="text-sm font-semibold text-neutral-900">추천 면접 질문</p>
+        <ol className="mt-3 space-y-3">
+          {review.interviewQuestions.map((question, index) => (
+            <li key={`${question.category}-${question.question}-${index}`}>
+              <p className="text-xs font-medium text-neutral-500">{question.category}</p>
+              <p className="mt-1 text-sm font-medium leading-6 text-neutral-900">
+                {question.question}
+              </p>
+              <p className="mt-1 text-xs leading-5 text-neutral-500">{question.intent}</p>
+            </li>
+          ))}
+        </ol>
+      </div>
+    </InfoBlock>
+  );
+}
+
+function ReviewList({ label, items }: { label: string; items: string[] }) {
+  if (items.length === 0) return null;
+  return (
+    <div className="mt-3">
+      <p className="text-xs font-medium text-neutral-500">{label}</p>
+      <ul className="mt-1 space-y-1 text-xs leading-5 text-neutral-600">
+        {items.map((item, index) => (
+          <li key={`${item}-${index}`}>{item}</li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function JobPostingDialog({
+  companyCode,
+  roleOptions,
+  initialRole,
+  initialPosting,
+  onSaved,
+  onClose,
+}: {
+  companyCode: string;
+  roleOptions: string[];
+  initialRole: string;
+  initialPosting: CompanyJobPosting | null;
+  onSaved: (posting: CompanyJobPosting) => void;
+  onClose: () => void;
+}) {
+  const [roleLabel, setRoleLabel] = useState(initialPosting?.roleLabel ?? initialRole);
+  const [sourceUrl, setSourceUrl] = useState(initialPosting?.sourceUrl ?? "");
+  const [title, setTitle] = useState(initialPosting?.title ?? "");
+  const [content, setContent] = useState(initialPosting?.content ?? "");
+  const [isExtracting, setIsExtracting] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+
+  async function extractPosting() {
+    if (!sourceUrl.trim()) {
+      toast.error("잡코리아 공고 링크를 입력해주세요.");
+      return;
+    }
+    setIsExtracting(true);
+    try {
+      const extracted = await extractJobPostingFromUrl({ data: { sourceUrl: sourceUrl.trim() } });
+      setSourceUrl(extracted.sourceUrl);
+      setTitle(extracted.title);
+      setContent(extracted.content);
+      toast.success("공고 내용을 불러왔습니다. 저장 전 내용을 확인해주세요.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "공고를 불러오지 못했습니다.");
+    } finally {
+      setIsExtracting(false);
+    }
+  }
+
+  async function savePosting() {
+    if (!roleLabel.trim() || !sourceUrl.trim() || !content.trim()) {
+      toast.error("직무, 공고 링크, 공고 내용을 모두 입력해주세요.");
+      return;
+    }
+    setIsSaving(true);
+    try {
+      const posting = await saveCompanyJobPostingByCode({
+        data: {
+          code: companyCode,
+          roleLabel: roleLabel.trim(),
+          sourceUrl: sourceUrl.trim(),
+          title: title.trim(),
+          content: content.trim(),
+        },
+      });
+      onSaved(posting);
+      toast.success("채용 공고를 저장했습니다.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "채용 공고 저장에 실패했습니다.");
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4">
+      <div className="max-h-[calc(100vh-2rem)] w-full max-w-2xl overflow-y-auto rounded-md bg-white shadow-xl">
+        <div className="flex items-start justify-between border-b border-neutral-200 p-5">
+          <div>
+            <h2 className="text-lg font-semibold tracking-tight text-neutral-900">
+              채용 공고 연결
+            </h2>
+            <p className="mt-1 text-sm text-neutral-500">
+              잡코리아 공고를 불러와 지원자 평가 기준으로 사용합니다.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="채용 공고 연결 닫기"
+            className="grid h-8 w-8 place-items-center rounded-md text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="grid gap-4 p-5">
+          <label className="block">
+            <span className="text-xs font-medium text-neutral-600">직무</span>
+            <select
+              value={roleLabel}
+              onChange={(event) => setRoleLabel(event.target.value)}
+              className="mt-2 h-10 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm outline-none focus:border-neutral-900"
+            >
+              {roleOptions.map((role) => (
+                <option key={role} value={role}>
+                  {role}
+                </option>
+              ))}
+            </select>
+          </label>
+          <div className="grid gap-2 sm:grid-cols-[1fr_auto] sm:items-end">
+            <label className="block min-w-0">
+              <span className="text-xs font-medium text-neutral-600">잡코리아 공고 링크</span>
+              <input
+                type="url"
+                value={sourceUrl}
+                onChange={(event) => setSourceUrl(event.target.value)}
+                placeholder="https://www.jobkorea.co.kr/..."
+                className="mt-2 h-10 w-full rounded-md border border-neutral-300 px-3 text-sm outline-none focus:border-neutral-900"
+              />
+            </label>
+            <button
+              type="button"
+              onClick={() => void extractPosting()}
+              disabled={isExtracting}
+              className="h-10 rounded-md border border-neutral-300 px-3 text-xs font-medium text-neutral-800 hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {isExtracting ? "불러오는 중..." : "공고 불러오기"}
+            </button>
+          </div>
+          <label className="block">
+            <span className="text-xs font-medium text-neutral-600">공고 제목</span>
+            <input
+              value={title}
+              onChange={(event) => setTitle(event.target.value)}
+              className="mt-2 h-10 w-full rounded-md border border-neutral-300 px-3 text-sm outline-none focus:border-neutral-900"
+            />
+          </label>
+          <label className="block">
+            <span className="text-xs font-medium text-neutral-600">공고 내용</span>
+            <textarea
+              value={content}
+              onChange={(event) => setContent(event.target.value)}
+              rows={14}
+              className="mt-2 w-full resize-y rounded-md border border-neutral-300 p-3 text-sm leading-6 outline-none focus:border-neutral-900"
+            />
+          </label>
+        </div>
+
+        <div className="flex justify-end gap-2 border-t border-neutral-200 p-5">
+          <button
+            type="button"
+            onClick={onClose}
+            className="h-9 rounded-md border border-neutral-300 px-3 text-xs font-medium hover:bg-neutral-50"
+          >
+            취소
+          </button>
+          <button
+            type="button"
+            onClick={() => void savePosting()}
+            disabled={isSaving}
+            className="h-9 rounded-md bg-neutral-900 px-3 text-xs font-medium text-white hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {isSaving ? "저장 중..." : "공고 저장"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function InterviewMailDialog({
   applicant,
+  onInterviewProposed,
   onClose,
 }: {
   applicant: Applicant;
+  onInterviewProposed: () => Promise<void>;
   onClose: () => void;
 }) {
   const subject = `[Beginner] ${applicant.name}님 면접 일정 안내`;
   const body = `${applicant.name}님, 안녕하세요.\n\nBeginner를 통해 제출해주신 ${applicant.role} 실무 시뮬레이션 결과를 검토한 뒤 면접을 제안드리고자 연락드립니다.\n\n가능하신 일정 2~3개를 회신해주시면 확인 후 면접 일정을 확정해드리겠습니다.\n\n감사합니다.`;
+  const [isCopying, setIsCopying] = useState(false);
 
-  function copyTemplate() {
-    void navigator.clipboard?.writeText(`제목: ${subject}\n\n${body}`);
+  async function copyTemplate() {
+    if (!navigator.clipboard) {
+      toast.error("이 브라우저에서는 클립보드 복사를 지원하지 않습니다.");
+      return;
+    }
+    setIsCopying(true);
+    try {
+      await navigator.clipboard.writeText(`제목: ${subject}\n\n${body}`);
+      await onInterviewProposed();
+      toast.success("메일 템플릿을 복사했습니다.");
+      onClose();
+    } catch {
+      toast.error("메일 템플릿을 복사하지 못했습니다.");
+    } finally {
+      setIsCopying(false);
+    }
   }
 
   return (
@@ -1358,10 +1878,11 @@ function InterviewMailDialog({
             취소
           </button>
           <button
-            onClick={copyTemplate}
+            onClick={() => void copyTemplate()}
+            disabled={isCopying}
             className="h-9 rounded-md bg-neutral-900 px-3 text-xs font-medium text-white hover:bg-neutral-800"
           >
-            템플릿 복사
+            {isCopying ? "복사 중..." : "템플릿 복사"}
           </button>
         </div>
       </div>
