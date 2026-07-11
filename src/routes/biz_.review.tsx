@@ -1219,7 +1219,7 @@ function ApplicantDetail({
           <div className="mt-5 space-y-4">
             <InfoBlock title="기본 정보">
               <div className="flex gap-4">
-                <div className="h-32 w-24 shrink-0 overflow-hidden rounded-md border border-neutral-200 bg-neutral-100">
+                <div className="h-32 w-24 shrink-0 overflow-hidden border border-neutral-200 bg-neutral-100">
                   {applicant.photoUrl ? (
                     <img
                       src={applicant.photoUrl}

@@ -2839,7 +2839,7 @@ function MyPage() {
 
               return (
                 <div className="space-y-6 py-2">
-                  <div className="relative mx-auto aspect-[3/4] h-80 overflow-hidden rounded-md border border-zinc-200 bg-zinc-100">
+                  <div className="relative mx-auto aspect-[3/4] h-80 overflow-hidden border border-zinc-200 bg-zinc-100">
                     <img
                       src={resumePhotoEditor.previewUrl}
                       alt="이력서 사진 편집 미리보기"
@@ -2963,7 +2963,7 @@ function MyPage() {
                   <button
                     type="button"
                     onClick={() => resumePhotoInputRef.current?.click()}
-                    className="group relative mt-2 aspect-[3/4] w-full overflow-hidden rounded-md border border-dashed border-zinc-300 bg-zinc-50 text-zinc-500 transition-colors hover:border-zinc-500"
+                    className="group relative mt-2 aspect-[3/4] w-full overflow-hidden border border-dashed border-zinc-300 bg-zinc-50 text-zinc-500 transition-colors hover:border-zinc-500"
                   >
                     {resumeForm.photoUrl ? (
                       <img
