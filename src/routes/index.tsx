@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowRight, Check, Clock3, Menu, Search, Sparkles, X } from "lucide-react";
+import { ArrowRight, Check, Clock3, Menu, Search, Sparkles, User, X } from "lucide-react";
 import { useState } from "react";
+import { useAuth } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/")({
   head: () => ({
