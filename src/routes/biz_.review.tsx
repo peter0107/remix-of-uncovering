@@ -1620,19 +1620,17 @@ function JobPostingDialog({
     if (selectingCandidateUrl) return;
     setSelectingCandidateUrl(candidate.sourceUrl);
     try {
-      if (candidate.content.length >= 120) {
-        setSourceUrl(candidate.sourceUrl);
-        setTitle(candidate.title);
-        setContent(candidate.content);
-      } else {
-        const extracted = await extractJobPostingFromUrl({
-          data: { sourceUrl: candidate.sourceUrl },
-        });
-        setSourceUrl(extracted.sourceUrl);
-        setTitle(extracted.title);
-        setContent(extracted.content);
-      }
-      toast.success("선택한 공고 내용을 불러왔습니다. 저장 전 내용을 확인해주세요.");
+      const extracted = await extractJobPostingFromUrl({
+        data: { sourceUrl: candidate.sourceUrl },
+      });
+      setSourceUrl(extracted.sourceUrl);
+      setTitle(extracted.title);
+      setContent(extracted.content);
+      toast.success(
+        extracted.ocrImageCount > 0
+          ? `공고 이미지 ${extracted.ocrImageCount}장을 OCR로 함께 읽었습니다. 저장 전 내용을 확인해주세요.`
+          : "선택한 공고 내용을 불러왔습니다. 저장 전 내용을 확인해주세요.",
+      );
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "공고 내용을 불러오지 못했습니다.");
     } finally {
@@ -1697,7 +1695,7 @@ function JobPostingDialog({
               채용 공고 연결
             </h2>
             <p className="mt-1 text-sm text-neutral-500">
-              잡코리아 공고를 불러와 지원자 평가 기준으로 사용합니다.
+              잡코리아의 텍스트와 공고 이미지를 함께 읽어 지원자 평가 기준으로 사용합니다.
             </p>
           </div>
           <button
@@ -1745,7 +1743,7 @@ function JobPostingDialog({
               disabled={isExtracting}
               className="h-10 rounded-md border border-neutral-300 px-3 text-xs font-medium text-neutral-800 hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {isExtracting ? "불러오는 중..." : "공고 목록 불러오기"}
+              {isExtracting ? "불러오는 중..." : "공고 불러오기"}
             </button>
           </div>
           {candidates.length > 1 && (

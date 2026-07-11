@@ -617,6 +617,160 @@ async function fetchJobKoreaHtml(url: URL) {
   return response.text();
 }
 
+const CLAUDE_IMAGE_MEDIA_TYPES = new Set(["image/jpeg", "image/png", "image/gif", "image/webp"]);
+const MAX_JOB_POSTING_OCR_IMAGES = 4;
+const MAX_JOB_POSTING_OCR_IMAGE_BYTES = 4 * 1024 * 1024;
+
+type JobPostingOcrImage = {
+  mediaType: "image/jpeg" | "image/png" | "image/gif" | "image/webp";
+  data: string;
+};
+
+function isJobKoreaAssetUrl(url: URL) {
+  const hostname = url.hostname.toLowerCase();
+  return hostname === "jobkorea.co.kr" || hostname.endsWith(".jobkorea.co.kr");
+}
+
+function getMarkupAttribute(markup: string, attribute: string) {
+  const escapedAttribute = attribute.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const match = markup.match(new RegExp(`\\b${escapedAttribute}=["']([^"']+)["']`, "i"));
+  return match?.[1] ? decodeHtmlEntities(match[1].trim()) : "";
+}
+
+function extractJobPostingImageUrls(html: string, sourceUrl: URL) {
+  const found = new Map<string, URL>();
+  const add = (rawUrl: string) => {
+    if (!rawUrl || rawUrl.startsWith("data:")) return;
+    try {
+      const url = new URL(rawUrl, sourceUrl);
+      if (url.protocol !== "https:" || !isJobKoreaAssetUrl(url)) return;
+      found.set(url.toString(), url);
+    } catch {
+      // 잘못된 이미지 주소는 건너뜁니다.
+    }
+  };
+
+  const ogImage = extractMetaContent(html, "og:image");
+  if (ogImage) add(ogImage);
+
+  for (const match of html.matchAll(/<img\b[^>]*>/gi)) {
+    const markup = match[0];
+    for (const attribute of ["src", "data-src", "data-original", "data-lazy-src", "data-lazy"]) {
+      add(getMarkupAttribute(markup, attribute));
+    }
+  }
+
+  for (const match of html.matchAll(/url\(\s*["']?([^"')\s]+)["']?\s*\)/gi)) {
+    add(decodeHtmlEntities(match[1]));
+  }
+
+  for (const match of html.matchAll(
+    /https?:\/\/[^"'\s]+?\.(?:jpe?g|png|gif|webp)(?:\?[^"'\s]*)?/gi,
+  )) {
+    add(decodeHtmlEntities(match[0]));
+  }
+
+  return Array.from(found.values()).slice(0, MAX_JOB_POSTING_OCR_IMAGES);
+}
+
+function toBase64(bytes: Uint8Array) {
+  let binary = "";
+  const chunkSize = 0x8000;
+  for (let start = 0; start < bytes.length; start += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(start, start + chunkSize));
+  }
+  return btoa(binary);
+}
+
+function getClaudeImageMediaType(
+  contentType: string | null,
+): JobPostingOcrImage["mediaType"] | null {
+  const mediaType = contentType?.split(";", 1)[0].trim().toLowerCase();
+  const normalized = mediaType === "image/jpg" ? "image/jpeg" : mediaType;
+  return normalized && CLAUDE_IMAGE_MEDIA_TYPES.has(normalized)
+    ? (normalized as JobPostingOcrImage["mediaType"])
+    : null;
+}
+
+async function fetchJobPostingOcrImage(url: URL, referer: URL): Promise<JobPostingOcrImage | null> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 12000);
+  try {
+    const response = await fetch(url, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (compatible; BeginnerHiringReview/1.0)",
+        Accept: "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
+        Referer: referer.toString(),
+      },
+      signal: controller.signal,
+    });
+    const mediaType = getClaudeImageMediaType(response.headers.get("content-type"));
+    const contentLength = Number(response.headers.get("content-length") ?? "0");
+    if (!response.ok || !mediaType || contentLength > MAX_JOB_POSTING_OCR_IMAGE_BYTES) return null;
+
+    const bytes = new Uint8Array(await response.arrayBuffer());
+    if (bytes.length === 0 || bytes.length > MAX_JOB_POSTING_OCR_IMAGE_BYTES) return null;
+    return { mediaType, data: toBase64(bytes) };
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+async function extractJobPostingImageOcr(html: string, sourceUrl: URL) {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) return { text: "", imageCount: 0 };
+
+  const imageUrls = extractJobPostingImageUrls(html, sourceUrl);
+  const images = (
+    await Promise.all(imageUrls.map((url) => fetchJobPostingOcrImage(url, sourceUrl)))
+  ).filter((image): image is JobPostingOcrImage => image !== null);
+  if (images.length === 0) return { text: "", imageCount: 0 };
+
+  const response = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "x-api-key": apiKey,
+      "anthropic-version": "2023-06-01",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: process.env.ANTHROPIC_MODEL || "claude-sonnet-4-6",
+      max_tokens: 4000,
+      messages: [
+        {
+          role: "user",
+          content: [
+            {
+              type: "text",
+              text: "아래 이미지는 잡코리아 채용 공고 화면입니다. 이미지 안에서 실제 채용 공고와 관련된 텍스트만 정확히 옮겨 적으세요. 직무명, 주요 업무, 자격 요건, 우대 사항, 고용 형태, 근무 조건, 지원 방법을 가능한 한 구조적으로 정리하세요. 로고, 메뉴, 광고처럼 공고와 무관한 내용은 제외하고 추측으로 내용을 만들지 마세요. 읽을 수 있는 텍스트가 없다면 빈 문자열만 반환하세요.",
+            },
+            ...images.map((image) => ({
+              type: "image" as const,
+              source: { type: "base64" as const, media_type: image.mediaType, data: image.data },
+            })),
+          ],
+        },
+      ],
+    }),
+  });
+
+  if (!response.ok) {
+    console.warn("Failed to OCR job posting images:", response.status);
+    return { text: "", imageCount: images.length };
+  }
+
+  const payload = (await response.json()) as Record<string, unknown>;
+  return { text: getClaudeOutput(payload), imageCount: images.length };
+}
+
+function combineJobPostingContent(htmlText: string, ocrText: string) {
+  if (!ocrText.trim()) return htmlText;
+  if (!htmlText.trim()) return `이미지 공고 OCR\n${ocrText.trim()}`;
+  return `${htmlText.trim()}\n\n이미지 공고 OCR\n${ocrText.trim()}`.slice(0, 60000);
+}
+
 function extractJobPostingTitle(html: string) {
   return (
     extractMetaContent(html, "og:title") ||
@@ -1195,16 +1349,32 @@ export const listJobPostingCandidatesFromUrl = createServerFn({ method: "POST" }
 
 export const extractJobPostingFromUrl = createServerFn({ method: "POST" })
   .inputValidator(jobPostingExtractInputSchema)
-  .handler(async ({ data }): Promise<{ sourceUrl: string; title: string; content: string }> => {
-    const url = getJobKoreaUrl(data.sourceUrl);
-    const html = await fetchJobKoreaHtml(url);
-    const content = extractJobPostingText(html);
-    if (content.length < 120) {
-      throw new Error("공고 본문을 충분히 읽지 못했습니다. 공고 내용을 직접 입력해주세요.");
-    }
+  .handler(
+    async ({
+      data,
+    }): Promise<{
+      sourceUrl: string;
+      title: string;
+      content: string;
+      ocrImageCount: number;
+    }> => {
+      const url = getJobKoreaUrl(data.sourceUrl);
+      const html = await fetchJobKoreaHtml(url);
+      const htmlText = extractJobPostingText(html);
+      const ocr = await extractJobPostingImageOcr(html, url);
+      const content = combineJobPostingContent(htmlText, ocr.text);
+      if (content.length < 120) {
+        throw new Error("공고 본문을 충분히 읽지 못했습니다. 공고 내용을 직접 입력해주세요.");
+      }
 
-    return { sourceUrl: url.toString(), title: extractJobPostingTitle(html), content };
-  });
+      return {
+        sourceUrl: url.toString(),
+        title: extractJobPostingTitle(html),
+        content,
+        ocrImageCount: ocr.imageCount,
+      };
+    },
+  );
 
 export const saveCompanyJobPostingByCode = createServerFn({ method: "POST" })
   .inputValidator(jobPostingInputSchema)
