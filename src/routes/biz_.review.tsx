@@ -1218,12 +1218,28 @@ function ApplicantDetail({
           </h3>
           <div className="mt-5 space-y-4">
             <InfoBlock title="기본 정보">
-              <dl className="grid gap-x-8 gap-y-4 text-sm md:grid-cols-2">
-                <Field label="이메일" value={applicant.email} />
-                <Field label="전화번호" value={applicant.phone} />
-                <Field label="거주 지역" value={applicant.location} />
-                <Field label="제출 일시" value={applicant.submittedAt} />
-              </dl>
+              <div className="flex gap-4">
+                <div className="aspect-[3/4] w-24 shrink-0 overflow-hidden rounded-md border border-neutral-200 bg-neutral-100">
+                  {applicant.photoUrl ? (
+                    <img
+                      src={applicant.photoUrl}
+                      alt={`${applicant.name} 이력서 사진`}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-full items-center justify-center px-2 text-center text-xs text-neutral-400">
+                      사진 없음
+                    </div>
+                  )}
+                </div>
+                <dl className="min-w-0 flex-1 space-y-3 text-sm">
+                  <Field label="이름" value={applicant.name} />
+                  <Field label="이메일" value={applicant.email} />
+                  <Field label="전화번호" value={applicant.phone} />
+                  <Field label="거주 지역" value={applicant.location} />
+                  <Field label="한 줄 소개" value={applicant.headline} />
+                </dl>
+              </div>
             </InfoBlock>
 
             <InfoBlock title="구직조건">

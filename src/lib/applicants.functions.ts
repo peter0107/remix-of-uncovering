@@ -95,6 +95,7 @@ export type Applicant = {
   phone: string;
   location: string;
   headline: string;
+  photoUrl: string;
   education: string;
   educations: EducationItem[];
   recentJob: string;
@@ -212,6 +213,7 @@ const applicantSchema = z.object({
   phone: z.string(),
   location: z.string(),
   headline: z.string(),
+  photoUrl: z.string(),
   education: z.string(),
   educations: z.array(educationItemSchema),
   recentJob: z.string(),
@@ -418,6 +420,7 @@ function mapApplicant(row: Record<string, unknown>): Applicant {
     phone: String(row.phone),
     location: String(row.location),
     headline: String(row.headline),
+    photoUrl: String(row.photo_url ?? ""),
     education: String(row.education),
     educations,
     recentJob: String(row.recent_job),
@@ -958,7 +961,19 @@ export const getApplicantsByCompanyCode = createServerFn({ method: "GET" })
       throw new Error("Failed to load applicants");
     }
 
-    const applicants = ((rows ?? []) as Record<string, unknown>[]).map(mapApplicant);
+    const applicantRows = await Promise.all(
+      ((rows ?? []) as Record<string, unknown>[]).map(async (row) => {
+        const photoPath = String(row.photo_path ?? "");
+        if (!photoPath) return row;
+
+        const { data: signedPhoto } = await supabase.storage
+          .from("resume-photos")
+          .createSignedUrl(photoPath, 60 * 60);
+
+        return { ...row, photo_url: signedPhoto?.signedUrl ?? "" };
+      }),
+    );
+    const applicants = applicantRows.map(mapApplicant);
 
     // AI 어시스트 대화 로그를 submission id로 조회해 응시자 데이터에 병합
     const applicantIds = applicants.map((a) => a.id);

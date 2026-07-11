@@ -83,6 +83,12 @@ export const Route = createFileRoute("/my")({
 
 type ExternalLinks = { github?: string; portfolio?: string; linkedin?: string };
 type AvatarEditorState = { previewUrl: string };
+type ResumePhotoEditorState = {
+  previewUrl: string;
+  sourceWidth: number;
+  sourceHeight: number;
+};
+type PendingResumePhoto = { blob: Blob; previewUrl: string };
 
 type CompletedSimulation = {
   submissionId: string;
@@ -113,6 +119,8 @@ type ResumeForm = {
   title: string;
   memo: string;
   target_role: string;
+  photoUrl: string;
+  photoPath: string;
   name: string;
   email: string;
   phone: string;
@@ -154,12 +162,17 @@ type ResumeActivityForm = {
 
 const MAX_AVATAR_BYTES = 5 * 1024 * 1024;
 const MAX_RESUME_BYTES = 6 * 1024 * 1024;
+const MAX_RESUME_PHOTO_BYTES = 5 * 1024 * 1024;
 const AVATAR_EXPORT_SIZE = 512;
+const RESUME_PHOTO_EXPORT_WIDTH = 900;
+const RESUME_PHOTO_EXPORT_HEIGHT = 1200;
 
 const EMPTY_RESUME_FORM: ResumeForm = {
   title: "",
   memo: "",
   target_role: "",
+  photoUrl: "",
+  photoPath: "",
   name: "",
   email: "",
   phone: "",
@@ -638,6 +651,16 @@ function resumeBasicsWithName(basics: Json | null, name: string): Json {
   };
 }
 
+function formatPhoneNumber(value: string) {
+  let digits = value.replace(/\D/g, "").slice(0, 11);
+  if (digits.length >= 3 && !digits.startsWith("010")) {
+    digits = `010${digits.slice(3)}`;
+  }
+  if (digits.length <= 3) return digits;
+  if (digits.length <= 7) return `${digits.slice(0, 3)}-${digits.slice(3)}`;
+  return `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7)}`;
+}
+
 function firstRecord(value: Json | null): JsonRecord {
   if (!Array.isArray(value)) return {};
   const first = value[0];
@@ -781,27 +804,54 @@ async function createCroppedAvatarBlob(
   src: string,
   options: { zoom: number; offsetX: number; offsetY: number },
 ) {
+  return createCroppedImageBlob(src, options, AVATAR_EXPORT_SIZE, AVATAR_EXPORT_SIZE);
+}
+
+function getCropGeometry(
+  sourceWidth: number,
+  sourceHeight: number,
+  targetWidth: number,
+  targetHeight: number,
+  options: { zoom: number; offsetX: number; offsetY: number },
+) {
+  const baseScale = Math.max(targetWidth / sourceWidth, targetHeight / sourceHeight);
+  const drawWidth = sourceWidth * baseScale * options.zoom;
+  const drawHeight = sourceHeight * baseScale * options.zoom;
+  const overflowX = Math.max(0, drawWidth - targetWidth);
+  const overflowY = Math.max(0, drawHeight - targetHeight);
+
+  return {
+    drawWidth,
+    drawHeight,
+    drawX: (targetWidth - drawWidth) / 2 - (overflowX * options.offsetX) / 100,
+    drawY: (targetHeight - drawHeight) / 2 - (overflowY * options.offsetY) / 100,
+  };
+}
+
+async function createCroppedImageBlob(
+  src: string,
+  options: { zoom: number; offsetX: number; offsetY: number },
+  targetWidth: number,
+  targetHeight: number,
+) {
   const image = await loadImage(src);
   const canvas = document.createElement("canvas");
-  canvas.width = AVATAR_EXPORT_SIZE;
-  canvas.height = AVATAR_EXPORT_SIZE;
+  canvas.width = targetWidth;
+  canvas.height = targetHeight;
 
   const context = canvas.getContext("2d");
   if (!context) throw new Error("Canvas is not available");
 
-  const baseScale = Math.max(
-    AVATAR_EXPORT_SIZE / image.naturalWidth,
-    AVATAR_EXPORT_SIZE / image.naturalHeight,
+  const { drawWidth, drawHeight, drawX, drawY } = getCropGeometry(
+    image.naturalWidth,
+    image.naturalHeight,
+    targetWidth,
+    targetHeight,
+    options,
   );
-  const drawWidth = image.naturalWidth * baseScale * options.zoom;
-  const drawHeight = image.naturalHeight * baseScale * options.zoom;
-  const overflowX = Math.max(0, drawWidth - AVATAR_EXPORT_SIZE);
-  const overflowY = Math.max(0, drawHeight - AVATAR_EXPORT_SIZE);
-  const drawX = (AVATAR_EXPORT_SIZE - drawWidth) / 2 - (overflowX * options.offsetX) / 100;
-  const drawY = (AVATAR_EXPORT_SIZE - drawHeight) / 2 - (overflowY * options.offsetY) / 100;
 
   context.fillStyle = "#ffffff";
-  context.fillRect(0, 0, AVATAR_EXPORT_SIZE, AVATAR_EXPORT_SIZE);
+  context.fillRect(0, 0, targetWidth, targetHeight);
   context.drawImage(image, drawX, drawY, drawWidth, drawHeight);
 
   return new Promise<Blob>((resolve, reject) => {
@@ -814,6 +864,18 @@ async function createCroppedAvatarBlob(
       0.92,
     );
   });
+}
+
+function createCroppedResumePhotoBlob(
+  src: string,
+  options: { zoom: number; offsetX: number; offsetY: number },
+) {
+  return createCroppedImageBlob(
+    src,
+    options,
+    RESUME_PHOTO_EXPORT_WIDTH,
+    RESUME_PHOTO_EXPORT_HEIGHT,
+  );
 }
 
 function buildBlankResumeForm(userEmail: string, seeker: JobSeeker | null): ResumeForm {
@@ -855,6 +917,8 @@ function formFromResume(resume: Resume, userEmail: string, seeker: JobSeeker | n
     title: resume.title,
     memo: resume.memo ?? "",
     target_role: resume.target_role ?? "",
+    photoUrl: asString(basics.photo_url),
+    photoPath: asString(basics.photo_path),
     name: asString(basics.name) || seeker?.display_name || fallbackDisplayName(userEmail),
     email: asString(basics.email) || userEmail,
     phone: asString(basics.phone),
@@ -921,6 +985,8 @@ function patchFromResumeForm(
     memo: form.memo.trim() || null,
     target_role: form.target_role.trim() || null,
     basics: {
+      photo_url: "",
+      photo_path: form.photoPath.trim(),
       name: form.name.trim(),
       email: form.email.trim(),
       phone: form.phone.trim(),
@@ -1011,6 +1077,8 @@ function ResumeField({
   placeholder?: string;
   shared?: boolean;
 }) {
+  const isPhoneField = id === "phone";
+
   return (
     <div>
       <ResumeLabel htmlFor={id} shared={shared}>
@@ -1019,8 +1087,12 @@ function ResumeField({
       <Input
         id={id}
         value={value}
-        onChange={(e) => onChange(id, e.target.value)}
-        placeholder={placeholder}
+        onChange={(e) =>
+          onChange(id, isPhoneField ? formatPhoneNumber(e.target.value) : e.target.value)
+        }
+        placeholder={placeholder ?? (isPhoneField ? "010-0000-0000" : undefined)}
+        inputMode={isPhoneField ? "tel" : undefined}
+        maxLength={isPhoneField ? 13 : undefined}
         className="mt-2"
       />
     </div>
@@ -1294,6 +1366,7 @@ function MyPage() {
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const resumeFileInputRef = useRef<HTMLInputElement>(null);
+  const resumePhotoInputRef = useRef<HTMLInputElement>(null);
   const cachedProfile = user ? profileCache.get(user.id) : undefined;
 
   const [hasProfile, setHasProfile] = useState<boolean | null>(cachedProfile?.hasProfile ?? null);
@@ -1331,6 +1404,11 @@ function MyPage() {
   const [resumeForm, setResumeForm] = useState<ResumeForm>(EMPTY_RESUME_FORM);
   const [savingResume, setSavingResume] = useState(false);
   const [uploadingResume, setUploadingResume] = useState(false);
+  const [resumePhotoEditor, setResumePhotoEditor] = useState<ResumePhotoEditorState | null>(null);
+  const [resumePhotoZoom, setResumePhotoZoom] = useState(1);
+  const [resumePhotoOffsetX, setResumePhotoOffsetX] = useState(0);
+  const [resumePhotoOffsetY, setResumePhotoOffsetY] = useState(0);
+  const [pendingResumePhoto, setPendingResumePhoto] = useState<PendingResumePhoto | null>(null);
 
   const userEmail = user?.email ?? "";
   const defaultResumeId = useMemo(() => resumes.find((resume) => resume.is_default)?.id, [resumes]);
@@ -1445,6 +1523,20 @@ function MyPage() {
     };
   }, [avatarEditor?.previewUrl]);
 
+  useEffect(() => {
+    const previewUrl = resumePhotoEditor?.previewUrl;
+    return () => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+    };
+  }, [resumePhotoEditor?.previewUrl]);
+
+  useEffect(() => {
+    const previewUrl = pendingResumePhoto?.previewUrl;
+    return () => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+    };
+  }, [pendingResumePhoto?.previewUrl]);
+
   const handleAvatarChange = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     e.target.value = "";
@@ -1468,6 +1560,62 @@ function MyPage() {
   const closeAvatarEditor = () => {
     if (uploadingAvatar) return;
     setAvatarEditor(null);
+  };
+
+  const handleResumePhotoChange = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("이미지 파일만 업로드할 수 있어요.");
+      return;
+    }
+    if (file.size > MAX_RESUME_PHOTO_BYTES) {
+      toast.error("5MB 이하의 이미지만 업로드할 수 있어요.");
+      return;
+    }
+
+    const previewUrl = URL.createObjectURL(file);
+    try {
+      const image = await loadImage(previewUrl);
+      setResumePhotoZoom(1);
+      setResumePhotoOffsetX(0);
+      setResumePhotoOffsetY(0);
+      setResumePhotoEditor({
+        previewUrl,
+        sourceWidth: image.naturalWidth,
+        sourceHeight: image.naturalHeight,
+      });
+    } catch {
+      URL.revokeObjectURL(previewUrl);
+      toast.error("사진을 불러오지 못했어요.");
+    }
+  };
+
+  const closeResumePhotoEditor = () => {
+    setResumePhotoEditor(null);
+  };
+
+  const applyResumePhotoEdit = async () => {
+    if (!resumePhotoEditor) return;
+
+    let blob: Blob;
+    try {
+      blob = await createCroppedResumePhotoBlob(resumePhotoEditor.previewUrl, {
+        zoom: resumePhotoZoom,
+        offsetX: resumePhotoOffsetX,
+        offsetY: resumePhotoOffsetY,
+      });
+    } catch {
+      toast.error("사진 편집 중 오류가 발생했어요.");
+      return;
+    }
+
+    const previewUrl = URL.createObjectURL(blob);
+    setPendingResumePhoto({ blob, previewUrl });
+    setResumeForm((prev) => ({ ...prev, photoUrl: previewUrl, photoPath: "" }));
+    setResumePhotoEditor(null);
   };
 
   const applyAvatarEdit = async () => {
@@ -1827,6 +1975,8 @@ function MyPage() {
   const openNewResume = () => {
     setEditingResume(null);
     setResumeSourceType("manual");
+    setPendingResumePhoto(null);
+    setResumePhotoEditor(null);
     setResumeForm(buildBlankResumeForm(userEmail, seeker));
     setResumeEditorOpen(true);
   };
@@ -1834,18 +1984,74 @@ function MyPage() {
   const openResumeEditor = (resume: Resume) => {
     setEditingResume(resume);
     setResumeSourceType(resume.source_type as ResumeSource);
-    setResumeForm(formFromResume(resume, userEmail, seeker));
+    setPendingResumePhoto(null);
+    setResumePhotoEditor(null);
+    const nextForm = formFromResume(resume, userEmail, seeker);
+    setResumeForm(nextForm);
+    if (nextForm.photoPath) {
+      void supabase.storage
+        .from("resume-photos")
+        .createSignedUrl(nextForm.photoPath, 60 * 60)
+        .then(({ data }) => {
+          if (!data?.signedUrl) return;
+          setResumeForm((current) =>
+            current.photoPath === nextForm.photoPath
+              ? { ...current, photoUrl: data.signedUrl }
+              : current,
+          );
+        });
+    }
     setResumeEditorOpen(true);
+  };
+
+  const closeResumeEditor = () => {
+    if (savingResume) return;
+    setResumeEditorOpen(false);
+    setEditingResume(null);
+    setResumePhotoEditor(null);
+    setPendingResumePhoto(null);
   };
 
   const saveResume = async () => {
     if (!user) return;
     setSavingResume(true);
 
-    const normalizedResumeForm = {
+    let normalizedResumeForm = {
       ...resumeForm,
       name: resumeForm.name.trim() || displayName,
     };
+
+    let uploadedPhotoPath: string | null = null;
+    if (pendingResumePhoto) {
+      const photoId = editingResume?.id ?? crypto.randomUUID();
+      const photoPath = `${user.id}/${photoId}/resume-photo.jpg`;
+      const { error: uploadError } = await supabase.storage
+        .from("resume-photos")
+        .upload(photoPath, pendingResumePhoto.blob, { contentType: "image/jpeg", upsert: true });
+
+      if (uploadError) {
+        setSavingResume(false);
+        toast.error("이력서 사진 업로드 중 오류가 발생했어요.");
+        return;
+      }
+
+      const { data: signedUrl, error: signedUrlError } = await supabase.storage
+        .from("resume-photos")
+        .createSignedUrl(photoPath, 60 * 60);
+      if (signedUrlError || !signedUrl?.signedUrl) {
+        await supabase.storage.from("resume-photos").remove([photoPath]);
+        setSavingResume(false);
+        toast.error("이력서 사진을 준비하지 못했어요.");
+        return;
+      }
+      uploadedPhotoPath = photoPath;
+      normalizedResumeForm = {
+        ...normalizedResumeForm,
+        photoUrl: signedUrl.signedUrl,
+        photoPath,
+      };
+    }
+
     const patch = patchFromResumeForm(normalizedResumeForm);
     const result = editingResume
       ? await supabase.from("resumes").update(patch).eq("id", editingResume.id).select("*").single()
@@ -1863,8 +2069,18 @@ function MyPage() {
     setSavingResume(false);
 
     if (result.error) {
+      if (uploadedPhotoPath) {
+        await supabase.storage.from("resume-photos").remove([uploadedPhotoPath]);
+      }
       toast.error("이력서 저장 중 오류가 발생했어요.");
       return;
+    }
+
+    const previousPhotoPath = editingResume
+      ? asString(asRecord(editingResume.basics).photo_path)
+      : "";
+    if (previousPhotoPath && previousPhotoPath !== normalizedResumeForm.photoPath) {
+      await supabase.storage.from("resume-photos").remove([previousPhotoPath]);
     }
 
     const nextResumeName = normalizedResumeForm.name.trim();
@@ -1895,6 +2111,9 @@ function MyPage() {
       }
     }
 
+    setResumeForm(normalizedResumeForm);
+    setPendingResumePhoto(null);
+    setResumePhotoEditor(null);
     setResumeEditorOpen(false);
     setEditingResume(null);
     await refreshResumes();
@@ -2012,6 +2231,10 @@ function MyPage() {
 
     if (resume.uploaded_file_path) {
       await supabase.storage.from("resumes").remove([resume.uploaded_file_path]);
+    }
+    const resumePhotoPath = asString(asRecord(resume.basics).photo_path);
+    if (resumePhotoPath) {
+      await supabase.storage.from("resume-photos").remove([resumePhotoPath]);
     }
 
     await refreshResumes();
@@ -2593,7 +2816,105 @@ function MyPage() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={resumeEditorOpen} onOpenChange={setResumeEditorOpen}>
+      <Dialog open={!!resumePhotoEditor} onOpenChange={(open) => !open && closeResumePhotoEditor()}>
+        <DialogContent className="max-w-md rounded-md shadow-none">
+          <DialogHeader>
+            <DialogTitle>이력서 사진 편집</DialogTitle>
+            <DialogDescription>3:4 영역 안에서 사진 위치와 크기를 조정하세요.</DialogDescription>
+          </DialogHeader>
+
+          {resumePhotoEditor &&
+            (() => {
+              const preview = getCropGeometry(
+                resumePhotoEditor.sourceWidth,
+                resumePhotoEditor.sourceHeight,
+                RESUME_PHOTO_EXPORT_WIDTH,
+                RESUME_PHOTO_EXPORT_HEIGHT,
+                {
+                  zoom: resumePhotoZoom,
+                  offsetX: resumePhotoOffsetX,
+                  offsetY: resumePhotoOffsetY,
+                },
+              );
+
+              return (
+                <div className="space-y-6 py-2">
+                  <div className="relative mx-auto aspect-[3/4] h-80 overflow-hidden rounded-md border border-zinc-200 bg-zinc-100">
+                    <img
+                      src={resumePhotoEditor.previewUrl}
+                      alt="이력서 사진 편집 미리보기"
+                      className="pointer-events-none absolute max-w-none"
+                      style={{
+                        width: `${(preview.drawWidth / RESUME_PHOTO_EXPORT_WIDTH) * 100}%`,
+                        height: `${(preview.drawHeight / RESUME_PHOTO_EXPORT_HEIGHT) * 100}%`,
+                        left: `${(preview.drawX / RESUME_PHOTO_EXPORT_WIDTH) * 100}%`,
+                        top: `${(preview.drawY / RESUME_PHOTO_EXPORT_HEIGHT) * 100}%`,
+                      }}
+                    />
+                  </div>
+
+                  <div className="space-y-5">
+                    <div>
+                      <div className="mb-2 flex items-center justify-between text-sm">
+                        <span className="font-medium text-zinc-700">확대</span>
+                        <span className="text-zinc-400">{resumePhotoZoom.toFixed(1)}x</span>
+                      </div>
+                      <Slider
+                        value={[resumePhotoZoom]}
+                        min={1}
+                        max={3}
+                        step={0.05}
+                        onValueChange={([value]) => setResumePhotoZoom(value ?? 1)}
+                      />
+                    </div>
+
+                    <div>
+                      <div className="mb-2 flex items-center justify-between text-sm">
+                        <span className="font-medium text-zinc-700">가로 위치</span>
+                        <span className="text-zinc-400">{resumePhotoOffsetX}</span>
+                      </div>
+                      <Slider
+                        value={[resumePhotoOffsetX]}
+                        min={-100}
+                        max={100}
+                        step={1}
+                        onValueChange={([value]) => setResumePhotoOffsetX(value ?? 0)}
+                      />
+                    </div>
+
+                    <div>
+                      <div className="mb-2 flex items-center justify-between text-sm">
+                        <span className="font-medium text-zinc-700">세로 위치</span>
+                        <span className="text-zinc-400">{resumePhotoOffsetY}</span>
+                      </div>
+                      <Slider
+                        value={[resumePhotoOffsetY]}
+                        min={-100}
+                        max={100}
+                        step={1}
+                        onValueChange={([value]) => setResumePhotoOffsetY(value ?? 0)}
+                      />
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={closeResumePhotoEditor}>
+              취소
+            </Button>
+            <Button
+              onClick={applyResumePhotoEdit}
+              className="bg-zinc-900 text-white hover:bg-zinc-700"
+            >
+              적용
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={resumeEditorOpen} onOpenChange={(open) => !open && closeResumeEditor()}>
         <DialogContent className="flex max-h-[88vh] max-w-4xl flex-col overflow-hidden rounded-md p-0 shadow-none sm:rounded-md [&_input]:!rounded-sm [&_input]:!shadow-none [&_textarea]:!rounded-sm [&_textarea]:!shadow-none [&_[role=combobox]]:!rounded-sm [&_[role=combobox]]:!shadow-none">
           <DialogHeader className="shrink-0 px-6 pt-6">
             <DialogTitle>{editingResume ? "이력서 수정" : "새 이력서 작성"}</DialogTitle>
@@ -2636,36 +2957,70 @@ function MyPage() {
 
             <section>
               <h3 className="text-sm font-bold text-zinc-900">기본정보</h3>
-              <div className="mt-4 grid gap-4 md:grid-cols-2">
-                <ResumeField
-                  id="name"
-                  label="이름"
-                  value={resumeForm.name}
-                  onChange={updateResumeForm}
-                  shared
-                />
-                <ResumeField
-                  id="email"
-                  label="이메일"
-                  value={resumeForm.email}
-                  onChange={updateResumeForm}
-                  shared
-                />
-                <ResumeField
-                  id="phone"
-                  label="전화번호"
-                  value={resumeForm.phone}
-                  onChange={updateResumeForm}
-                  shared
-                />
-                <ResumeField
-                  id="location"
-                  label="거주 지역"
-                  value={resumeForm.location}
-                  onChange={updateResumeForm}
-                  shared
-                />
-                <div className="md:col-span-2">
+              <div className="mt-4 grid gap-5 md:grid-cols-[9rem_minmax(0,1fr)]">
+                <div>
+                  <ResumeLabel shared>사진</ResumeLabel>
+                  <button
+                    type="button"
+                    onClick={() => resumePhotoInputRef.current?.click()}
+                    className="group relative mt-2 aspect-[3/4] w-full overflow-hidden rounded-md border border-dashed border-zinc-300 bg-zinc-50 text-zinc-500 transition-colors hover:border-zinc-500"
+                  >
+                    {resumeForm.photoUrl ? (
+                      <img
+                        src={resumeForm.photoUrl}
+                        alt="이력서 사진 미리보기"
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <span className="flex h-full flex-col items-center justify-center gap-2 px-3 text-xs">
+                        <Upload className="h-5 w-5" />
+                        사진 업로드
+                      </span>
+                    )}
+                    {resumeForm.photoUrl && (
+                      <span className="absolute inset-x-0 bottom-0 bg-black/65 px-2 py-2 text-xs font-medium text-white">
+                        사진 변경
+                      </span>
+                    )}
+                  </button>
+                  <input
+                    ref={resumePhotoInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleResumePhotoChange}
+                  />
+                </div>
+
+                <div className="space-y-4">
+                  <ResumeField
+                    id="name"
+                    label="이름"
+                    value={resumeForm.name}
+                    onChange={updateResumeForm}
+                    shared
+                  />
+                  <ResumeField
+                    id="email"
+                    label="이메일"
+                    value={resumeForm.email}
+                    onChange={updateResumeForm}
+                    shared
+                  />
+                  <ResumeField
+                    id="phone"
+                    label="전화번호"
+                    value={resumeForm.phone}
+                    onChange={updateResumeForm}
+                    shared
+                  />
+                  <ResumeField
+                    id="location"
+                    label="거주 지역"
+                    value={resumeForm.location}
+                    onChange={updateResumeForm}
+                    shared
+                  />
                   <ResumeField
                     id="headline"
                     label="한 줄 소개"
@@ -3078,11 +3433,7 @@ function MyPage() {
           </div>
 
           <DialogFooter className="shrink-0 border-t border-zinc-200 bg-white px-6 py-4">
-            <Button
-              variant="outline"
-              onClick={() => setResumeEditorOpen(false)}
-              disabled={savingResume}
-            >
+            <Button variant="outline" onClick={closeResumeEditor} disabled={savingResume}>
               취소
             </Button>
             <Button
