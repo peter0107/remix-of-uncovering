@@ -32,7 +32,7 @@ function Brand() {
 
 function ProfilePreview() {
   return (
-    <div className="w-full max-w-[360px] border border-[#E7EAF0] bg-[#F7F8FA] p-5">
+    <div className="w-full rounded-2xl border border-[#E7EAF0] bg-[#F7F8FA] p-5">
       <p className="text-xs font-semibold text-[#6B7280]">프로필 등록</p>
       <div className="mt-4 flex flex-wrap gap-2">
         <span className="rounded-full border border-[#D9DEE8] bg-white px-3 py-1.5 text-xs text-[#4B5563]">
@@ -58,7 +58,7 @@ function ProfilePreview() {
 
 function SimulationPreview() {
   return (
-    <div className="w-full max-w-[360px] border border-[#E7EAF0] bg-[#F7F8FA] p-5">
+    <div className="w-full rounded-2xl border border-[#E7EAF0] bg-[#F7F8FA] p-5">
       <div className="flex items-center justify-between gap-3">
         <span className="text-xs font-bold text-[#2B5CE7]">기획/PM 시뮬레이션</span>
         <span className="inline-flex items-center gap-1 rounded-full border border-[#D9DEE8] bg-white px-2 py-1 text-[11px] text-[#6B7280]">
@@ -80,7 +80,7 @@ function SimulationPreview() {
 
 function OfferPreview() {
   return (
-    <div className="w-full max-w-[360px] space-y-2 border border-[#E7EAF0] bg-[#F7F8FA] p-5">
+    <div className="w-full space-y-2 rounded-2xl border border-[#E7EAF0] bg-[#F7F8FA] p-5">
       <div className="flex items-center gap-3 rounded-md border border-[#D9DEE8] bg-white p-3">
         <span className="grid h-9 w-9 shrink-0 place-items-center rounded-md bg-[#EAF0FF] text-xs font-extrabold text-[#2B5CE7]">
           A
