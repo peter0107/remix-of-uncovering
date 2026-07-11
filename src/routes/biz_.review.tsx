@@ -1174,7 +1174,9 @@ function ApplicantDetail({
 
   function openAiReview() {
     setIsAiReviewOpen(true);
-    onEvaluate();
+    if (!aiReview) {
+      onEvaluate();
+    }
   }
 
   return (
@@ -1196,7 +1198,7 @@ function ApplicantDetail({
               className="inline-flex h-10 items-center gap-2 rounded-md border border-neutral-300 bg-white px-4 text-sm font-medium text-neutral-800 hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-40"
             >
               <Sparkles className="h-4 w-4" />
-              {isEvaluating ? "AI 평가 중..." : aiReview ? "AI 평가 갱신" : "AI 평가"}
+              {isEvaluating ? "AI 평가 중..." : aiReview ? "AI 평가 보기" : "AI 평가"}
             </button>
             <button
               type="button"
@@ -1371,7 +1373,6 @@ function ApplicantDetail({
         <AiReviewDialog
           review={aiReview}
           isEvaluating={isEvaluating}
-          onRefresh={onEvaluate}
           onClose={() => setIsAiReviewOpen(false)}
         />
       )}
@@ -1424,12 +1425,10 @@ function ChipList({ items }: { items: string[] }) {
 function AiReviewDialog({
   review,
   isEvaluating,
-  onRefresh,
   onClose,
 }: {
   review: ApplicantAiReview | null;
   isEvaluating: boolean;
-  onRefresh: () => void;
   onClose: () => void;
 }) {
   return (
@@ -1513,14 +1512,6 @@ function AiReviewDialog({
             className="h-9 rounded-md border border-neutral-300 px-3 text-xs font-medium hover:bg-neutral-50"
           >
             닫기
-          </button>
-          <button
-            type="button"
-            onClick={onRefresh}
-            disabled={isEvaluating}
-            className="h-9 rounded-md bg-neutral-900 px-3 text-xs font-medium text-white hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {isEvaluating ? "생성 중..." : "평가 갱신"}
           </button>
         </div>
       </div>
