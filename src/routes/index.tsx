@@ -142,12 +142,12 @@ function Index() {
   return (
     <div className="min-h-screen bg-white text-[#171C26]">
       <header className="sticky top-0 z-40 border-b border-[#EEF0F4] bg-white/95 backdrop-blur">
-        <div className="mx-auto flex h-16 max-w-[1160px] items-center justify-between px-5 sm:px-8">
+        <div className="relative mx-auto flex h-16 max-w-[1160px] items-center justify-between px-5 sm:px-8">
           <Link to="/" aria-label="uncovering 홈">
             <Brand />
           </Link>
 
-          <nav className="hidden items-center gap-7 text-sm text-[#4B5563] md:flex">
+          <nav className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-7 text-sm text-[#4B5563] md:flex">
             <a href="#how-it-works" className="transition-colors hover:text-[#171C26]">
               서비스 소개
             </a>
@@ -157,6 +157,9 @@ function Index() {
             <Link to="/biz" className="transition-colors hover:text-[#171C26]">
               기업용
             </Link>
+          </nav>
+
+          <div className="hidden items-center gap-4 md:flex">
             {user ? (
               <AccountMenu />
             ) : (
@@ -176,7 +179,7 @@ function Index() {
                 </Link>
               </>
             )}
-          </nav>
+          </div>
 
           <div className="flex items-center gap-1 md:hidden">
             {user && <AccountMenu />}
