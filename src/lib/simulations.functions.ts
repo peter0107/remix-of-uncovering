@@ -10,6 +10,7 @@ export type AdminCompany = {
   code: string;
   uniqueCode: string;
   name: string;
+  description: string;
   logoUrl: string;
   roleLabel: string;
   createdAt: string;
@@ -20,6 +21,7 @@ export type AdminCompanySimulation = {
   companyId: string;
   companyCode: string;
   companyName: string;
+  companyDescription: string;
   companyLogoUrl: string;
   title: string;
   roleLabel: string;
@@ -64,6 +66,7 @@ const simulationFormatSchema = z.enum(["single", "selection"]);
 const createCompanyInputSchema = z.object({
   name: z.string().min(1),
   code: z.string().min(4),
+  description: z.string().max(200).optional().default(""),
   logoUrl: z.string().optional().default(""),
   roleLabel: z.string().optional().default(""),
 });
@@ -197,6 +200,7 @@ function mapAdminSimulation(row: Record<string, unknown>): AdminCompanySimulatio
     companyId: String(row.company_id),
     companyCode: String(company.code ?? company.unique_code ?? ""),
     companyName: String(company.name ?? ""),
+    companyDescription: String(company.description ?? ""),
     companyLogoUrl: String(company.logo_url ?? ""),
     title: String(row.title),
     roleLabel: String(row.role_label ?? row.job_family ?? row.title),
@@ -227,6 +231,7 @@ function mapAdminCompany(row: Record<string, unknown>): AdminCompany {
     code,
     uniqueCode: String(row.unique_code ?? code),
     name,
+    description: String(row.description ?? ""),
     logoUrl: String(row.logo_url ?? ""),
     roleLabel: String(row.role_label ?? name),
     createdAt: formatDateTime(String(row.created_at)),
@@ -240,7 +245,7 @@ export const getAdminCompanies = createServerFn({ method: "GET" }).handler(
 
     const { data, error } = await supabaseAdmin
       .from("companies")
-      .select("id, code, unique_code, name, logo_url, role_label, created_at")
+      .select("id, code, unique_code, name, description, logo_url, role_label, created_at")
       .order("name", { ascending: true });
 
     if (error) {
@@ -260,7 +265,7 @@ export const getAdminCompanySimulations = createServerFn({ method: "GET" }).hand
     const { data, error } = await supabaseAdmin
       .from("job_simulations")
       .select(
-        "id, company_id, title, role_label, job_family, domain, estimated_minutes, card_image_url, description, simulation_format, single_answer_question, task_prompt, steps, is_public, deleted_at, created_at, companies(code, unique_code, name, logo_url)",
+        "id, company_id, title, role_label, job_family, domain, estimated_minutes, card_image_url, description, simulation_format, single_answer_question, task_prompt, steps, is_public, deleted_at, created_at, companies(code, unique_code, name, description, logo_url)",
       )
       .is("deleted_at", null)
       .order("created_at", { ascending: false });
@@ -282,6 +287,7 @@ export const createCompany = createServerFn({ method: "POST" })
 
     const code = data.code.trim().toUpperCase();
     const name = data.name.trim();
+    const description = data.description.trim();
     const logoUrl = data.logoUrl.trim();
     const roleLabel = data.roleLabel.trim() || name;
 
@@ -306,10 +312,11 @@ export const createCompany = createServerFn({ method: "POST" })
         name,
         code,
         unique_code: code,
+        description,
         logo_url: logoUrl || null,
         role_label: roleLabel,
       })
-      .select("id, code, unique_code, name, logo_url, role_label, created_at")
+      .select("id, code, unique_code, name, description, logo_url, role_label, created_at")
       .single();
 
     if (error) {
@@ -328,6 +335,7 @@ export const updateCompany = createServerFn({ method: "POST" })
 
     const code = data.code.trim().toUpperCase();
     const name = data.name.trim();
+    const description = data.description.trim();
     const logoUrl = data.logoUrl.trim();
     const roleLabel = data.roleLabel.trim() || name;
 
@@ -353,11 +361,12 @@ export const updateCompany = createServerFn({ method: "POST" })
         name,
         code,
         unique_code: code,
+        description,
         logo_url: logoUrl || null,
         role_label: roleLabel,
       })
       .eq("id", data.id)
-      .select("id, code, unique_code, name, logo_url, role_label, created_at")
+      .select("id, code, unique_code, name, description, logo_url, role_label, created_at")
       .single();
 
     if (error) {

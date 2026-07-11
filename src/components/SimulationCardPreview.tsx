@@ -39,6 +39,7 @@ const LOGO_TONES = [
 
 type SimulationCardPreviewProps = {
   companyName: string;
+  companyDescription?: string | null;
   companyLogoUrl?: string | null;
   cardImageUrl?: string | null;
   roleLabel: string;
@@ -78,6 +79,7 @@ function getFallbackImage(domain = "", roleLabel = "", title = "") {
 
 export function SimulationCardPreview({
   companyName,
+  companyDescription,
   companyLogoUrl,
   cardImageUrl,
   roleLabel,
@@ -95,6 +97,7 @@ export function SimulationCardPreview({
   className,
 }: SimulationCardPreviewProps) {
   const resolvedCompanyName = companyName.trim() || "Beginner";
+  const resolvedCompanyDescription = companyDescription?.trim() ?? "";
   const resolvedRole = roleLabel.trim() || title.trim();
   const summary = (description?.trim() || title.trim()).replace(/\s+/g, " ");
   const imageUrl = cardImageUrl?.trim() || getFallbackImage(domain ?? "", resolvedRole, title);
@@ -110,7 +113,7 @@ export function SimulationCardPreview({
     <span className={cn("grid h-full w-full place-items-center", logoTone)}>{logoText}</span>
   );
   const logoClassName = cn(
-    "grid shrink-0 place-items-center overflow-hidden rounded-lg bg-white font-bold text-neutral-900 shadow-sm",
+    "grid shrink-0 place-items-center overflow-hidden rounded-md bg-white font-bold text-neutral-900",
     compact ? "h-9 w-9 text-sm" : "h-10 w-10 text-base",
     onLogoClick &&
       "cursor-pointer ring-1 ring-white/30 transition-all hover:scale-105 hover:ring-2 hover:ring-white",
@@ -119,7 +122,7 @@ export function SimulationCardPreview({
   return (
     <article
       className={cn(
-        "group flex aspect-[4/3] flex-col overflow-hidden rounded-xl border border-zinc-200 bg-white text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-zinc-900 hover:shadow-md",
+        "group flex aspect-[4/3] flex-col overflow-hidden rounded-md border border-zinc-200 bg-white text-left transition-colors hover:border-zinc-900",
         className,
       )}
     >
@@ -161,8 +164,10 @@ export function SimulationCardPreview({
           )}
           <div className="min-w-0 pb-0.5 text-white">
             <p className="truncate text-sm font-bold leading-tight">{resolvedCompanyName}</p>
-            {domain && (
-              <p className="mt-0.5 truncate text-[11px] font-medium text-white/80">{domain}</p>
+            {resolvedCompanyDescription && (
+              <p className="mt-0.5 truncate text-[11px] font-medium text-white/80">
+                {resolvedCompanyDescription}
+              </p>
             )}
           </div>
         </div>

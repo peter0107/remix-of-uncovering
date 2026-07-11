@@ -26,6 +26,7 @@ export type Simulation = {
   estimated_minutes: number | null;
   card_image_url: string | null;
   company_name: string;
+  company_description: string | null;
   company_logo_url: string | null;
 };
 
@@ -45,7 +46,7 @@ type RawRow = {
   domain: string | null;
   estimated_minutes: number | null;
   card_image_url: string | null;
-  companies: { name: string; logo_url: string | null } | null;
+  companies: { name: string; description: string | null; logo_url: string | null } | null;
 };
 
 function toSimulation(row: RawRow): Simulation {
@@ -59,6 +60,7 @@ function toSimulation(row: RawRow): Simulation {
     estimated_minutes: row.estimated_minutes,
     card_image_url: row.card_image_url,
     company_name: row.companies?.name ?? "",
+    company_description: row.companies?.description ?? null,
     company_logo_url: row.companies?.logo_url ?? null,
   };
 }
@@ -71,7 +73,7 @@ async function fetchRecommended(seeker: JobSeeker): Promise<Simulation[]> {
   const { data, error } = await supabase
     .from("job_simulations")
     .select(
-      "id, title, role_label, description, job_family, domain, estimated_minutes, card_image_url, companies(name, logo_url)",
+      "id, title, role_label, description, job_family, domain, estimated_minutes, card_image_url, companies(name, description, logo_url)",
     )
     .eq("is_public", true)
     .is("deleted_at", null)
@@ -102,7 +104,7 @@ export async function fetchAll(): Promise<Simulation[]> {
   const { data, error } = await supabase
     .from("job_simulations")
     .select(
-      "id, title, role_label, description, job_family, domain, estimated_minutes, card_image_url, companies(name, logo_url)",
+      "id, title, role_label, description, job_family, domain, estimated_minutes, card_image_url, companies(name, description, logo_url)",
     )
     .eq("is_public", true)
     .is("deleted_at", null)
@@ -122,6 +124,7 @@ export function SimCard({ sim }: { sim: Simulation }) {
     <Link to="/simulation/$id" params={{ id: sim.id }} className="block h-full">
       <SimulationCardPreview
         companyName={sim.company_name}
+        companyDescription={sim.company_description}
         companyLogoUrl={sim.company_logo_url}
         cardImageUrl={sim.card_image_url}
         roleLabel={roleLine}
@@ -139,7 +142,7 @@ export function SimCard({ sim }: { sim: Simulation }) {
 
 export function CardSkeleton() {
   return (
-    <div className="flex aspect-[4/3] flex-col overflow-hidden rounded-xl border border-zinc-100 bg-white">
+    <div className="flex aspect-[4/3] flex-col overflow-hidden rounded-md border border-zinc-100 bg-white">
       <Skeleton className="basis-[38%] shrink-0 w-full" />
       <div className="flex min-h-0 flex-1 flex-col p-4">
         <Skeleton className="h-5 w-32" />

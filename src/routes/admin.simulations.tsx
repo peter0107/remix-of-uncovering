@@ -71,6 +71,7 @@ type SimulationForm = {
 type CompanyForm = {
   name: string;
   code: string;
+  description: string;
   logoUrl: string;
   roleLabel: string;
 };
@@ -102,6 +103,7 @@ type AssetEditorPreset = {
 const EMPTY_COMPANY_FORM: CompanyForm = {
   name: "",
   code: "",
+  description: "",
   logoUrl: "",
   roleLabel: "",
 };
@@ -530,6 +532,7 @@ function AdminSimulations() {
     setCompanyForm({
       name: company.name,
       code: company.code,
+      description: company.description,
       logoUrl: company.logoUrl,
       roleLabel: company.roleLabel === company.name ? "" : company.roleLabel,
     });
@@ -599,6 +602,7 @@ function AdminSimulations() {
           id: company.id,
           name: company.name,
           code: company.code,
+          description: company.description,
           logoUrl: publicUrl,
           roleLabel: company.roleLabel,
         },
@@ -725,6 +729,7 @@ function AdminSimulations() {
       const payload = {
         name: companyForm.name.trim(),
         code: companyForm.code.trim(),
+        description: companyForm.description.trim(),
         logoUrl: companyForm.logoUrl.trim(),
         roleLabel: companyForm.roleLabel.trim(),
       };
@@ -1128,6 +1133,7 @@ function AdminSimulations() {
                 <SimulationCardPreview
                   compact
                   companyName={simulation.companyName}
+                  companyDescription={simulation.companyDescription}
                   companyLogoUrl={simulation.companyLogoUrl}
                   cardImageUrl={simulation.cardImageUrl}
                   roleLabel={simulation.roleLabel}
@@ -1746,6 +1752,12 @@ function CompanyFormEditor({
         onChange={(value) => onChange("code", value)}
         placeholder="예: BGNR-2024-B"
         required
+      />
+      <InputField
+        label="기업 한 줄 설명"
+        value={form.description}
+        onChange={(value) => onChange("description", value)}
+        placeholder="예: 라이프스타일 커머스 브랜드"
       />
       <InputField
         label="기업 화면 표시명"
