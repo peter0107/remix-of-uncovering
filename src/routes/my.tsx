@@ -1229,7 +1229,7 @@ function ResumeMultiSelectField({
             id={id}
             type="button"
             variant="outline"
-            className="mt-2 h-9 w-full justify-between rounded-sm border-neutral-300 px-3 text-left font-normal shadow-none"
+            className="mt-2 h-9 w-full justify-between rounded-sm border-input px-3 text-left font-normal shadow-none"
           >
             <span className={selected.length ? "truncate text-neutral-900" : "text-neutral-400"}>
               {selected.length ? selected.join(", ") : placeholder}
@@ -1301,7 +1301,7 @@ function ResumeSchoolField({
             id={id}
             type="button"
             variant="outline"
-            className="mt-2 h-9 w-full justify-between rounded-sm border-neutral-300 px-3 text-left font-normal shadow-none"
+            className="mt-2 h-9 w-full justify-between rounded-sm border-input px-3 text-left font-normal shadow-none"
           >
             <span className={value ? "truncate text-neutral-900" : "text-neutral-400"}>
               {value || "학교명 검색"}
