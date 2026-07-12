@@ -1294,12 +1294,9 @@ function ApplicantDetail({
               }
             >
               {applicant.experiences.length ? (
-                <div className="divide-y divide-neutral-200">
+                <div className="space-y-5">
                   {applicant.experiences.map((experience, index) => (
-                    <div
-                      key={`${experience.company}-${experience.role}-${index}`}
-                      className="py-4 first:pt-0 last:pb-0"
-                    >
+                    <div key={`${experience.company}-${experience.role}-${index}`}>
                       <div className="flex flex-wrap items-center gap-2">
                         <p className="text-sm font-semibold text-neutral-900">
                           {[experience.company, experience.role].filter(Boolean).join(" · ") ||
