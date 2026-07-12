@@ -1327,7 +1327,16 @@ function ApplicantDetail({
             </InfoBlock>
 
             <InfoBlock title="스킬 / 툴">
-              <ChipList items={[...applicant.skills, ...applicant.tools]} />
+              <div className="space-y-3">
+                <div>
+                  <p className="mb-2 text-xs font-medium text-neutral-500">스킬</p>
+                  <ChipList items={applicant.skills} />
+                </div>
+                <div>
+                  <p className="mb-2 text-xs font-medium text-neutral-500">툴</p>
+                  <ChipList items={applicant.tools} />
+                </div>
+              </div>
             </InfoBlock>
 
             <InfoBlock title="활동">
