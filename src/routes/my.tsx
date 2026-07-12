@@ -1097,7 +1097,7 @@ function ResumeLabel({
   shared?: boolean;
 }) {
   return (
-    <Label htmlFor={htmlFor}>
+    <Label htmlFor={htmlFor} className="text-xs font-medium text-zinc-600">
       {children}
       {shared && <span className="ml-1 text-red-500">*</span>}
     </Label>
