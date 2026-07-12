@@ -1200,7 +1200,7 @@ function ResumeSelectField({
         value={value || EMPTY_SELECT_VALUE}
         onValueChange={(next) => onChange(id, next === EMPTY_SELECT_VALUE ? "" : next)}
       >
-        <SelectTrigger id={id} className="mt-2 h-9 rounded-[4px] shadow-none">
+        <SelectTrigger id={id} className="mt-2 h-9 rounded-[8px] shadow-none">
           <SelectValue placeholder={placeholder} />
         </SelectTrigger>
         <SelectContent>
@@ -1253,7 +1253,7 @@ function ResumeMultiSelectField({
             id={id}
             type="button"
             variant="outline"
-            className="mt-2 h-9 w-full justify-between rounded-[4px] border-input px-3 text-left font-normal shadow-none"
+            className="mt-2 h-9 w-full justify-between rounded-[8px] border-input px-3 text-left font-normal shadow-none"
           >
             <span className={selected.length ? "truncate text-neutral-900" : "text-neutral-400"}>
               {selected.length ? selected.join(", ") : placeholder}
@@ -1325,7 +1325,7 @@ function ResumeSchoolField({
             id={id}
             type="button"
             variant="outline"
-            className="mt-2 h-9 w-full justify-between rounded-[4px] border-input px-3 text-left font-normal shadow-none"
+            className="mt-2 h-9 w-full justify-between rounded-[8px] border-input px-3 text-left font-normal shadow-none"
           >
             <span className={value ? "truncate text-neutral-900" : "text-neutral-400"}>
               {value || "학교명 검색"}
@@ -1341,7 +1341,7 @@ function ResumeSchoolField({
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="학교명 검색"
-            className="mb-2 h-9 rounded-[4px] shadow-none"
+            className="mb-2 h-9 rounded-[8px] shadow-none"
           />
           <div className="max-h-60 overflow-y-auto">
             {filteredSchools.length ? (
@@ -2466,7 +2466,7 @@ function MyPage() {
   if (!hasProfile) {
     return (
       <div className="mx-auto max-w-md px-4 py-16">
-        <Card className="rounded-[6px] p-8 text-center shadow-none">
+        <Card className="rounded-[8px] p-8 text-center shadow-none">
           <h1 className="text-xl font-bold text-zinc-900">아직 프로필이 없어요</h1>
           <p className="mt-2 text-sm text-zinc-500">
             온보딩을 완료하면 프로필과 추천 시뮬레이션을 볼 수 있어요.
@@ -2486,7 +2486,7 @@ function MyPage() {
     <div className="mx-auto max-w-2xl px-4 py-12 [&_button]:!shadow-none [&_input]:!shadow-none [&_textarea]:!shadow-none [&_[role=combobox]]:!shadow-none">
       <h1 className="text-2xl font-bold text-zinc-900">프로필</h1>
 
-      <Card className="mt-6 rounded-[6px] p-6 shadow-none">
+      <Card className="mt-6 rounded-[8px] p-6 shadow-none">
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-start gap-4">
             <div className="relative shrink-0">
@@ -2642,7 +2642,7 @@ function MyPage() {
         </div>
       </Card>
 
-      <div className="mt-4 flex items-center justify-between gap-4 rounded-[6px] border border-zinc-200 bg-white px-5 py-4">
+      <div className="mt-4 flex items-center justify-between gap-4 rounded-[8px] border border-zinc-200 bg-white px-5 py-4">
         <div className="flex items-start gap-3">
           <Building2 className="mt-0.5 h-4 w-4 shrink-0 text-zinc-400" />
           <div>
@@ -2659,7 +2659,7 @@ function MyPage() {
         />
       </div>
 
-      <Card className="mt-4 rounded-[6px] p-6 shadow-none">
+      <Card className="mt-4 rounded-[8px] p-6 shadow-none">
         <>
           <SectionRow
             icon={GraduationCap}
@@ -2785,7 +2785,7 @@ function MyPage() {
           <button
             type="button"
             onClick={openNewResume}
-            className="flex min-h-36 flex-col items-start rounded-[6px] border border-dashed border-zinc-300 bg-white p-5 text-left transition hover:border-zinc-900 hover:bg-zinc-50"
+            className="flex min-h-36 flex-col items-start rounded-[8px] border border-dashed border-zinc-300 bg-white p-5 text-left transition hover:border-zinc-900 hover:bg-zinc-50"
           >
             <span className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-100 text-zinc-700">
               <FilePlus2 className="h-5 w-5" />
@@ -2800,7 +2800,7 @@ function MyPage() {
             type="button"
             onClick={() => resumeFileInputRef.current?.click()}
             disabled={uploadingResume}
-            className="flex min-h-36 flex-col items-start rounded-[6px] border border-dashed border-zinc-300 bg-white p-5 text-left transition hover:border-zinc-900 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-60"
+            className="flex min-h-36 flex-col items-start rounded-[8px] border border-dashed border-zinc-300 bg-white p-5 text-left transition hover:border-zinc-900 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-60"
           >
             <span className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-100 text-zinc-700">
               <Upload className="h-5 w-5" />
@@ -2820,9 +2820,9 @@ function MyPage() {
         </div>
 
         {resumesLoading ? (
-          <Skeleton className="mt-4 h-32 w-full rounded-[6px]" />
+          <Skeleton className="mt-4 h-32 w-full rounded-[8px]" />
         ) : resumes.length === 0 ? (
-          <Card className="mt-4 rounded-[6px] p-6 text-center text-sm text-zinc-400 shadow-none">
+          <Card className="mt-4 rounded-[8px] p-6 text-center text-sm text-zinc-400 shadow-none">
             <FileText className="mx-auto h-8 w-8 opacity-40" />
             <p className="mt-2">아직 등록된 이력서가 없어요.</p>
           </Card>
@@ -2834,7 +2834,7 @@ function MyPage() {
               return (
                 <Card
                   key={resume.id}
-                  className="flex min-h-36 flex-col rounded-[6px] border-zinc-300 bg-zinc-50/50 p-5 shadow-none"
+                  className="flex min-h-36 flex-col rounded-[8px] border-zinc-300 bg-zinc-50/50 p-5 shadow-none"
                 >
                   <div className="flex items-center gap-2">
                     <span
@@ -2932,7 +2932,7 @@ function MyPage() {
         {history === null ? (
           <Skeleton className="mt-4 h-24 w-full" />
         ) : history.length === 0 ? (
-          <Card className="mt-4 rounded-[6px] p-6 text-center text-sm text-zinc-400 shadow-none">
+          <Card className="mt-4 rounded-[8px] p-6 text-center text-sm text-zinc-400 shadow-none">
             <FileText className="mx-auto h-8 w-8 opacity-40" />
             <p className="mt-2">아직 완료한 시뮬레이션이 없어요.</p>
             <Link to="/simulations" className="mt-3 inline-block text-sm text-zinc-600 underline">
@@ -2943,7 +2943,7 @@ function MyPage() {
           <ul className="mt-4 space-y-2">
             {history.map((h) => (
               <li key={h.submissionId}>
-                <Card className="flex items-center gap-3 rounded-[6px] p-4 shadow-none">
+                <Card className="flex items-center gap-3 rounded-[8px] p-4 shadow-none">
                   <CheckCircle2 className="h-4 w-4 shrink-0 text-zinc-400" />
                   <div>
                     <p className="font-medium text-zinc-900">{h.title}</p>
@@ -3140,7 +3140,7 @@ function MyPage() {
       </Dialog>
 
       <Dialog open={resumeEditorOpen} onOpenChange={(open) => !open && closeResumeEditor()}>
-        <DialogContent className="flex max-h-[88vh] max-w-4xl flex-col overflow-hidden rounded-md p-0 shadow-none data-[state=closed]:!animate-none data-[state=open]:!animate-none sm:rounded-md [&_input]:!rounded-[4px] [&_input]:!shadow-none [&_textarea]:!rounded-[4px] [&_textarea]:!shadow-none [&_[role=combobox]]:!rounded-[4px] [&_[role=combobox]]:!shadow-none">
+        <DialogContent className="flex max-h-[88vh] max-w-4xl flex-col overflow-hidden rounded-md p-0 shadow-none data-[state=closed]:!animate-none data-[state=open]:!animate-none sm:rounded-md [&_input]:!rounded-[8px] [&_input]:!shadow-none [&_textarea]:!rounded-[8px] [&_textarea]:!shadow-none [&_[role=combobox]]:!rounded-[8px] [&_[role=combobox]]:!shadow-none">
           <DialogHeader className="shrink-0 px-6 pt-6">
             <DialogTitle>{editingResume ? "이력서 수정" : "새 이력서 작성"}</DialogTitle>
             <DialogDescription>
