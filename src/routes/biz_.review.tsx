@@ -1252,11 +1252,10 @@ function ApplicantDetail({
 
             <InfoBlock title="학력">
               {applicant.educations.length ? (
-                <div className="divide-y divide-neutral-200">
+                <div className="space-y-4">
                   {applicant.educations.map((education, index) => (
                     <div
                       key={`${education.category}-${education.school}-${education.major}-${education.status}-${index}`}
-                      className="py-3 first:pt-0 last:pb-0"
                     >
                       <div className="flex flex-wrap items-center gap-2">
                         <p className="text-sm font-medium leading-6 text-neutral-900">
@@ -1295,12 +1294,9 @@ function ApplicantDetail({
               }
             >
               {applicant.experiences.length ? (
-                <div className="divide-y divide-neutral-200">
+                <div className="space-y-5">
                   {applicant.experiences.map((experience, index) => (
-                    <div
-                      key={`${experience.company}-${experience.role}-${index}`}
-                      className="py-4 first:pt-0 last:pb-0"
-                    >
+                    <div key={`${experience.company}-${experience.role}-${index}`}>
                       <div className="flex flex-wrap items-center gap-2">
                         <p className="text-sm font-semibold text-neutral-900">
                           {[experience.company, experience.role].filter(Boolean).join(" · ") ||
