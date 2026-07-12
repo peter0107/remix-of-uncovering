@@ -2513,15 +2513,17 @@ function MyPage() {
             </div>
           </div>
 
-          {!editingProfileCard && (
-            <Button
-              variant="outline"
-              onClick={startEditProfileCard}
-              className="shrink-0 rounded-xl"
-            >
-              프로필 수정
-            </Button>
-          )}
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={editingProfileCard ? cancelEditProfileCard : startEditProfileCard}
+            disabled={savingProfileCard}
+            aria-label={editingProfileCard ? "프로필 수정 취소" : "프로필 수정"}
+            className="shrink-0 rounded-full"
+          >
+            {editingProfileCard ? <X className="h-4 w-4" /> : <Pencil className="h-4 w-4" />}
+          </Button>
         </div>
       </Card>
 
