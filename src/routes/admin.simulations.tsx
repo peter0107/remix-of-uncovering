@@ -1057,15 +1057,10 @@ function AdminSimulations() {
 
             {isCompanyFormOpen && !editingCompanyId && (
               <CompanyFormEditor
-                title="새 기업 등록"
                 form={companyForm}
                 isSaving={isCreatingCompany}
                 submitLabel="기업 저장"
                 onSubmit={submitCompany}
-                onCancel={() => {
-                  resetCompanyForm();
-                  setIsCompanyFormOpen(false);
-                }}
                 onChange={updateCompanyForm}
               />
             )}
@@ -1119,13 +1114,25 @@ function AdminSimulations() {
                     type="button"
                     onClick={(event) => {
                       event.stopPropagation();
+                      if (editingCompanyId === company.id) {
+                        resetCompanyForm();
+                        return;
+                      }
                       startEditCompany(company);
                     }}
                     disabled={actioningCompanyId === company.id}
-                    aria-label={`${company.name} 기업 수정`}
+                    aria-label={
+                      editingCompanyId === company.id
+                        ? `${company.name} 기업 수정 취소`
+                        : `${company.name} 기업 수정`
+                    }
                     className="grid h-8 w-8 place-items-center rounded-md text-neutral-400 transition-colors hover:bg-white hover:text-neutral-900 disabled:cursor-not-allowed disabled:opacity-50"
                   >
-                    <Pencil className="h-4 w-4" />
+                    {editingCompanyId === company.id ? (
+                      <X className="h-4 w-4" />
+                    ) : (
+                      <Pencil className="h-4 w-4" />
+                    )}
                   </button>
                   <button
                     type="button"
@@ -1147,12 +1154,10 @@ function AdminSimulations() {
                     onKeyDown={(event) => event.stopPropagation()}
                   >
                     <CompanyFormEditor
-                      title="기업 정보 수정"
                       form={companyForm}
                       isSaving={isCreatingCompany}
                       submitLabel="수정 저장"
                       onSubmit={submitCompany}
-                      onCancel={resetCompanyForm}
                       onChange={updateCompanyForm}
                     />
                   </div>
@@ -1808,35 +1813,20 @@ function AdminShell({ children }: { children: React.ReactNode }) {
 }
 
 function CompanyFormEditor({
-  title,
   form,
   isSaving,
   submitLabel,
   onSubmit,
-  onCancel,
   onChange,
 }: {
-  title: string;
   form: CompanyForm;
   isSaving: boolean;
   submitLabel: string;
   onSubmit: (event: FormEvent) => void;
-  onCancel: () => void;
   onChange: <K extends keyof CompanyForm>(key: K, value: CompanyForm[K]) => void;
 }) {
   return (
     <form onSubmit={onSubmit} className="space-y-3 rounded-md bg-neutral-50 p-3">
-      <div className="flex items-center justify-between gap-2">
-        <p className="text-xs font-semibold text-neutral-700">{title}</p>
-        <button
-          type="button"
-          onClick={onCancel}
-          className="grid h-7 w-7 place-items-center rounded-md text-neutral-400 hover:bg-white hover:text-neutral-900"
-          aria-label={`${title} 닫기`}
-        >
-          <X className="h-3.5 w-3.5" />
-        </button>
-      </div>
       <InputField
         label="기업 이름"
         value={form.name}
