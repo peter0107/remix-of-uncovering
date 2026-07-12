@@ -27,6 +27,7 @@ import {
   CalendarDays,
   Check,
   ChevronDown,
+  Copy,
   FilePlus2,
   Pencil,
   Trash2,
@@ -1448,6 +1449,7 @@ function MyPage() {
   const [resumeForm, setResumeForm] = useState<ResumeForm>(EMPTY_RESUME_FORM);
   const [savingResume, setSavingResume] = useState(false);
   const [uploadingResume, setUploadingResume] = useState(false);
+  const [duplicatingResumeId, setDuplicatingResumeId] = useState<string | null>(null);
   const [resumePhotoEditor, setResumePhotoEditor] = useState<ResumePhotoEditorState | null>(null);
   const [resumePhotoZoom, setResumePhotoZoom] = useState(1);
   const [resumePhotoOffsetX, setResumePhotoOffsetX] = useState(0);
@@ -2338,6 +2340,96 @@ function MyPage() {
     toast.success("기본 이력서로 설정됐어요.");
   };
 
+  const duplicateResume = async (resume: Resume) => {
+    if (!user || duplicatingResumeId) return;
+
+    const duplicateId = crypto.randomUUID();
+    const sourcePhotoPath = asString(asRecord(resume.basics).photo_path);
+    const copiedAssets: Array<{ bucket: "resumes" | "resume-photos"; path: string }> = [];
+    let duplicatedFilePath = resume.uploaded_file_path;
+    let duplicatedPhotoPath = sourcePhotoPath;
+
+    const removeCopiedAssets = async () => {
+      await Promise.all(
+        copiedAssets.map(({ bucket, path }) => supabase.storage.from(bucket).remove([path])),
+      );
+    };
+
+    setDuplicatingResumeId(resume.id);
+
+    if (resume.uploaded_file_path) {
+      const fileName =
+        resume.uploaded_file_name ?? resume.uploaded_file_path.split("/").pop() ?? "resume";
+      const nextFilePath = `${user.id}/${duplicateId}/${fileName}`;
+      const { error: copyFileError } = await supabase.storage
+        .from("resumes")
+        .copy(resume.uploaded_file_path, nextFilePath);
+
+      if (copyFileError) {
+        setDuplicatingResumeId(null);
+        toast.error("이력서 파일을 복사하지 못했어요.");
+        return;
+      }
+
+      duplicatedFilePath = nextFilePath;
+      copiedAssets.push({ bucket: "resumes", path: nextFilePath });
+    }
+
+    if (sourcePhotoPath) {
+      const nextPhotoPath = `${user.id}/${duplicateId}/resume-photo.jpg`;
+      const { error: copyPhotoError } = await supabase.storage
+        .from("resume-photos")
+        .copy(sourcePhotoPath, nextPhotoPath);
+
+      if (copyPhotoError) {
+        await removeCopiedAssets();
+        setDuplicatingResumeId(null);
+        toast.error("이력서 사진을 복사하지 못했어요.");
+        return;
+      }
+
+      duplicatedPhotoPath = nextPhotoPath;
+      copiedAssets.push({ bucket: "resume-photos", path: nextPhotoPath });
+    }
+
+    const duplicatedBasics: Json = {
+      ...compactJsonRecord(asRecord(resume.basics)),
+      photo_url: "",
+      photo_path: duplicatedPhotoPath,
+    };
+    const { error } = await supabase.from("resumes").insert({
+      id: duplicateId,
+      user_id: user.id,
+      title: `${resume.title} 복사본`,
+      memo: resume.memo,
+      target_role: resume.target_role,
+      basics: duplicatedBasics,
+      job_conditions: resume.job_conditions,
+      educations: resume.educations,
+      experiences: resume.experiences,
+      skills: resume.skills,
+      tools: resume.tools,
+      portfolios: resume.portfolios,
+      source_type: resume.source_type,
+      uploaded_file_path: duplicatedFilePath,
+      uploaded_file_name: resume.uploaded_file_name,
+      uploaded_file_type: resume.uploaded_file_type,
+      uploaded_file_size: resume.uploaded_file_size,
+      is_default: false,
+    } as TablesInsert<"resumes">);
+
+    setDuplicatingResumeId(null);
+
+    if (error) {
+      await removeCopiedAssets();
+      toast.error("이력서를 복사하지 못했어요.");
+      return;
+    }
+
+    await refreshResumes({ showLoading: false });
+    toast.success("이력서를 복사했어요.");
+  };
+
   const deleteResume = async (resume: Resume) => {
     const ok = window.confirm("이 이력서를 삭제할까요?");
     if (!ok) return;
@@ -2780,6 +2872,17 @@ function MyPage() {
                             resume.is_default ? "h-4 w-4 text-blue-600" : "h-4 w-4 text-zinc-400"
                           }
                         />
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => void duplicateResume(resume)}
+                        disabled={duplicatingResumeId === resume.id}
+                        aria-label="이력서 복사"
+                        className="h-8 w-8 rounded-full"
+                      >
+                        <Copy className="h-4 w-4 text-zinc-500" />
                       </Button>
                       <Button
                         type="button"
