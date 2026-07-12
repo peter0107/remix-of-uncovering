@@ -3671,20 +3671,20 @@ function MyPage() {
             <section className="py-6">
               <h3 className="text-sm font-bold text-zinc-900">스킬 / 툴</h3>
               <div className="mt-4 grid gap-4 md:grid-cols-2">
-                <ResumeField
+                <ResumeTagField
                   id="skills"
                   label="스킬"
                   value={resumeForm.skills}
                   onChange={updateResumeForm}
-                  placeholder="쉼표로 구분"
+                  placeholder="입력 후 Enter"
                   shared
                 />
-                <ResumeField
+                <ResumeTagField
                   id="tools"
                   label="툴"
                   value={resumeForm.tools}
                   onChange={updateResumeForm}
-                  placeholder="쉼표로 구분"
+                  placeholder="입력 후 Enter"
                   shared
                 />
               </div>
