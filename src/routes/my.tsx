@@ -1932,7 +1932,7 @@ function MyPage() {
 
     const SectionComponent = section.Component;
     return (
-      <div className="mt-4 rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
+      <div className="mt-4 rounded-[6px] border border-zinc-200 bg-zinc-50 p-4">
         <SectionComponent data={draftForm} setData={setDraftForm} showHeader={false} />
         <div className="mt-6 flex gap-2">
           <Button
