@@ -83,10 +83,10 @@ function AllSimulationsPage() {
               type="button"
               onClick={() => setSelectedDomain(null)}
               className={cn(
-                "rounded-md border px-3 py-1 text-xs transition-colors",
+                "rounded-lg px-4 py-2 text-sm font-medium transition-colors",
                 selectedDomain === null
-                  ? "border-zinc-900 bg-zinc-900 text-white"
-                  : "border-zinc-200 bg-white text-zinc-600 hover:border-zinc-500",
+                  ? "bg-zinc-900 text-white"
+                  : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200",
               )}
             >
               전체
@@ -97,10 +97,10 @@ function AllSimulationsPage() {
                 type="button"
                 onClick={() => setSelectedDomain(d === selectedDomain ? null : d)}
                 className={cn(
-                  "rounded-md border px-3 py-1 text-xs transition-colors",
+                  "rounded-lg px-4 py-2 text-sm font-medium transition-colors",
                   selectedDomain === d
-                    ? "border-zinc-900 bg-zinc-900 text-white"
-                    : "border-zinc-200 bg-white text-zinc-600 hover:border-zinc-500",
+                    ? "bg-zinc-900 text-white"
+                    : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200",
                 )}
               >
                 {d}
@@ -141,8 +141,7 @@ function AllSimulationsPage() {
       {/* 결과 카운트 */}
       {!loading && !error && (
         <p className="mt-6 text-xs text-zinc-400">
-          총 {filtered.length}개
-          {(query || selectedDomain) && ` (전체 ${sims.length}개 중)`}
+          총 {filtered.length}개{(query || selectedDomain) && ` (전체 ${sims.length}개 중)`}
         </p>
       )}
 

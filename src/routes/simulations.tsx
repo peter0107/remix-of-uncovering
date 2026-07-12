@@ -256,14 +256,14 @@ function SimulationsPage() {
           {seeker.job_interests.map((j) => (
             <span
               key={j}
-              className="rounded-sm border border-zinc-200 px-3 py-1 text-xs text-zinc-600"
+              className="rounded-lg bg-zinc-100 px-3 py-1.5 text-xs font-medium text-zinc-700"
             >
               {j}
             </span>
           ))}
           <Link
             to="/onboarding"
-            className="rounded-sm border border-dashed border-zinc-300 px-3 py-1 text-xs text-zinc-400 hover:border-zinc-500 hover:text-zinc-600"
+            className="rounded-lg bg-zinc-50 px-3 py-1.5 text-xs text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-700"
           >
             수정
           </Link>
