@@ -2842,7 +2842,12 @@ function MyPage() {
                   className="flex min-h-36 flex-col rounded-[6px] border-zinc-200 p-5 shadow-none"
                 >
                   <div className="flex items-center gap-2">
-                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-zinc-100 text-zinc-700">
+                    <span
+                      className={cn(
+                        "flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-zinc-100",
+                        resume.is_default ? "text-blue-600" : "text-zinc-700",
+                      )}
+                    >
                       <FileText className="h-5 w-5" />
                     </span>
                     <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
