@@ -1176,7 +1176,7 @@ function ResumeSelectField({
         value={value || EMPTY_SELECT_VALUE}
         onValueChange={(next) => onChange(id, next === EMPTY_SELECT_VALUE ? "" : next)}
       >
-        <SelectTrigger id={id} className="mt-2 h-9 rounded-sm shadow-none">
+        <SelectTrigger id={id} className="mt-2 h-9 rounded-[4px] shadow-none">
           <SelectValue placeholder={placeholder} />
         </SelectTrigger>
         <SelectContent>
@@ -1229,7 +1229,7 @@ function ResumeMultiSelectField({
             id={id}
             type="button"
             variant="outline"
-            className="mt-2 h-9 w-full justify-between rounded-sm border-input px-3 text-left font-normal shadow-none"
+            className="mt-2 h-9 w-full justify-between rounded-[4px] border-input px-3 text-left font-normal shadow-none"
           >
             <span className={selected.length ? "truncate text-neutral-900" : "text-neutral-400"}>
               {selected.length ? selected.join(", ") : placeholder}
@@ -1301,7 +1301,7 @@ function ResumeSchoolField({
             id={id}
             type="button"
             variant="outline"
-            className="mt-2 h-9 w-full justify-between rounded-sm border-input px-3 text-left font-normal shadow-none"
+            className="mt-2 h-9 w-full justify-between rounded-[4px] border-input px-3 text-left font-normal shadow-none"
           >
             <span className={value ? "truncate text-neutral-900" : "text-neutral-400"}>
               {value || "학교명 검색"}
@@ -1317,7 +1317,7 @@ function ResumeSchoolField({
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="학교명 검색"
-            className="mb-2 h-9 rounded-sm shadow-none"
+            className="mb-2 h-9 rounded-[4px] shadow-none"
           />
           <div className="max-h-60 overflow-y-auto">
             {filteredSchools.length ? (
@@ -3013,7 +3013,7 @@ function MyPage() {
       </Dialog>
 
       <Dialog open={resumeEditorOpen} onOpenChange={(open) => !open && closeResumeEditor()}>
-        <DialogContent className="flex max-h-[88vh] max-w-4xl flex-col overflow-hidden rounded-md p-0 shadow-none sm:rounded-md [&_input]:!rounded-sm [&_input]:!shadow-none [&_textarea]:!rounded-sm [&_textarea]:!shadow-none [&_[role=combobox]]:!rounded-sm [&_[role=combobox]]:!shadow-none">
+        <DialogContent className="flex max-h-[88vh] max-w-4xl flex-col overflow-hidden rounded-md p-0 shadow-none sm:rounded-md [&_input]:!rounded-[4px] [&_input]:!shadow-none [&_textarea]:!rounded-[4px] [&_textarea]:!shadow-none [&_[role=combobox]]:!rounded-[4px] [&_[role=combobox]]:!shadow-none">
           <DialogHeader className="shrink-0 px-6 pt-6">
             <DialogTitle>{editingResume ? "이력서 수정" : "새 이력서 작성"}</DialogTitle>
             <DialogDescription>
