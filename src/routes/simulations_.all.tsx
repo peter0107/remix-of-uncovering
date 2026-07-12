@@ -63,12 +63,7 @@ function AllSimulationsPage() {
         추천으로 돌아가기
       </Link>
 
-      {/* 헤더 */}
-      <div className="mb-2 mt-4 flex items-center gap-2">
-        <LayoutGrid className="h-5 w-5 text-zinc-500" />
-        <span className="text-sm font-medium text-zinc-500">전체 직무</span>
-      </div>
-      <h1 className="text-2xl font-bold text-zinc-900 md:text-3xl">
+      <h1 className="mt-5 text-2xl font-bold text-zinc-900 md:text-3xl">
         모든 직무 시뮬레이션 둘러보기
       </h1>
       <p className="mt-2 text-sm text-zinc-400">
