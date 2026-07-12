@@ -353,37 +353,39 @@ export function EducationFields({
         />
       )}
 
-      {/* 학교명 */}
-      <div className="mb-6">
-        <p className="mb-3 text-sm font-semibold text-zinc-700">대학교 이름</p>
-        <input
-          type="text"
-          list="profile-university-options"
-          placeholder="예: 연세대학교"
-          value={data.university_name}
-          onChange={(e) => setData({ university_name: e.target.value })}
-          className="w-full rounded-md border border-zinc-200 px-3 py-2 text-sm outline-none focus:border-zinc-900"
-        />
-        <datalist id="profile-university-options">
-          {UNIVERSITY_OPTIONS.map((school) => (
-            <option key={school} value={school} />
-          ))}
-        </datalist>
-      </div>
+      <div className="mb-6 grid gap-6 md:grid-cols-2">
+        {/* 학교명 */}
+        <div>
+          <p className="mb-3 text-sm font-semibold text-zinc-700">대학교 이름</p>
+          <input
+            type="text"
+            list="profile-university-options"
+            placeholder="예: 연세대학교"
+            value={data.university_name}
+            onChange={(e) => setData({ university_name: e.target.value })}
+            className="w-full rounded-md border border-zinc-200 px-3 py-2 text-sm outline-none focus:border-zinc-900"
+          />
+          <datalist id="profile-university-options">
+            {UNIVERSITY_OPTIONS.map((school) => (
+              <option key={school} value={school} />
+            ))}
+          </datalist>
+        </div>
 
-      {/* 전공 */}
-      <div className="mb-6">
-        <p className="mb-3 text-sm font-semibold text-zinc-700">전공</p>
-        <input
-          type="text"
-          placeholder="예: 신소재공학부"
-          value={major}
-          onChange={(e) => {
-            const value = e.target.value;
-            setData({ majors: value.trim() ? [value] : [] });
-          }}
-          className="w-full rounded-md border border-zinc-200 px-3 py-2 text-sm outline-none focus:border-zinc-900"
-        />
+        {/* 전공 */}
+        <div>
+          <p className="mb-3 text-sm font-semibold text-zinc-700">전공</p>
+          <input
+            type="text"
+            placeholder="예: 신소재공학부"
+            value={major}
+            onChange={(e) => {
+              const value = e.target.value;
+              setData({ majors: value.trim() ? [value] : [] });
+            }}
+            className="w-full rounded-md border border-zinc-200 px-3 py-2 text-sm outline-none focus:border-zinc-900"
+          />
+        </div>
       </div>
 
       {/* 학력 */}
