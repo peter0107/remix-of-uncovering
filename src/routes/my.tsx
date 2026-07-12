@@ -77,6 +77,7 @@ import {
   EDUCATION_SCHOOL_TYPES,
 } from "@/lib/profile-fields";
 import { isDomainCategory } from "@/lib/domain-categories";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/my")({
   head: () => ({ meta: [{ title: "프로필 — 언커버링" }] }),
