@@ -1216,10 +1216,10 @@ function ApplicantDetail({
           <h3 className="text-xl font-semibold tracking-tight text-neutral-900">
             이력서 / 포트폴리오
           </h3>
-          <div className="mt-5 space-y-4">
+          <div className="mt-5 space-y-0">
             <InfoBlock title="기본 정보">
               <div className="flex gap-4">
-                <div className="h-32 w-24 shrink-0 overflow-hidden border border-neutral-200 bg-neutral-100">
+                <div className="h-32 w-24 shrink-0 overflow-hidden bg-neutral-100">
                   {applicant.photoUrl ? (
                     <img
                       src={applicant.photoUrl}
@@ -1255,11 +1255,11 @@ function ApplicantDetail({
 
             <InfoBlock title="학력">
               {applicant.educations.length ? (
-                <div className="space-y-2">
+                <div className="divide-y divide-neutral-200">
                   {applicant.educations.map((education, index) => (
                     <div
                       key={`${education.category}-${education.school}-${education.major}-${education.status}-${index}`}
-                      className="rounded-md border border-neutral-200 p-3"
+                      className="py-3 first:pt-0 last:pb-0"
                     >
                       <div className="flex flex-wrap items-center gap-2">
                         <p className="text-sm font-medium leading-6 text-neutral-900">
@@ -1294,11 +1294,11 @@ function ApplicantDetail({
               }
             >
               {applicant.experiences.length ? (
-                <div className="space-y-4">
+                <div className="divide-y divide-neutral-200">
                   {applicant.experiences.map((experience, index) => (
                     <div
                       key={`${experience.company}-${experience.role}-${index}`}
-                      className="rounded-md border border-neutral-200 p-3"
+                      className="py-4 first:pt-0 last:pb-0"
                     >
                       <div className="flex flex-wrap items-center gap-2">
                         <p className="text-sm font-semibold text-neutral-900">
@@ -1334,11 +1334,11 @@ function ApplicantDetail({
             </InfoBlock>
 
             <InfoBlock title="활동">
-              <div className="grid gap-3 md:grid-cols-2">
+              <div className="grid gap-x-6 gap-y-0 md:grid-cols-2">
                 {applicant.portfolio.map((item) => (
                   <div
                     key={item.title}
-                    className="block rounded-md border border-neutral-200 p-3 text-sm"
+                    className="border-t border-neutral-200 py-3 first:border-t-0 first:pt-0 md:[&:nth-child(2)]:border-t-0 md:[&:nth-child(2)]:pt-0"
                   >
                     <div className="font-medium text-neutral-900">{item.title}</div>
                     {item.description ? (
@@ -1359,7 +1359,7 @@ function ApplicantDetail({
 
         <section>
           <h3 className="text-xl font-semibold tracking-tight text-neutral-900">제출 정보</h3>
-          <div className="mt-5 space-y-4">
+          <div className="mt-5 space-y-0">
             <InfoBlock>
               <dl className="grid gap-x-8 gap-y-4 text-sm md:grid-cols-2">
                 <Field label="제출 일시" value={applicant.submittedAt} />
@@ -1422,7 +1422,7 @@ function Field({ label, value }: { label: string; value: string }) {
 
 function InfoBlock({ title, children }: { title?: React.ReactNode; children: React.ReactNode }) {
   return (
-    <section className="rounded-md border border-neutral-200 p-4">
+    <section className="border-t border-neutral-200 py-4 first:border-t-0 first:pt-0">
       {title && <h3 className="text-sm font-semibold text-neutral-900">{title}</h3>}
       <div className={title ? "mt-3" : ""}>{children}</div>
     </section>
@@ -1454,8 +1454,14 @@ function AiReviewDialog({
   onClose: () => void;
 }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4">
-      <div className="max-h-[calc(100vh-2rem)] w-full max-w-3xl overflow-y-auto rounded-md bg-white shadow-xl">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4"
+      onClick={onClose}
+    >
+      <div
+        className="max-h-[calc(100vh-2rem)] w-full max-w-3xl overflow-y-auto rounded-md border border-neutral-200 bg-white"
+        onClick={(event) => event.stopPropagation()}
+      >
         <div className="flex items-start justify-between border-b border-neutral-200 p-5">
           <div>
             <h2 className="text-lg font-semibold tracking-tight text-neutral-900">AI 평가</h2>
@@ -1473,15 +1479,15 @@ function AiReviewDialog({
           </button>
         </div>
 
-        <div className="p-5">
+        <div className="px-5">
           {isEvaluating ? (
             <div className="py-16 text-center text-sm text-neutral-500">
               AI 평가를 생성하고 있습니다...
             </div>
           ) : review ? (
-            <div className="space-y-6">
-              <div className="grid gap-4 md:grid-cols-2">
-                <section className="rounded-md border border-neutral-200 p-4">
+            <div className="divide-y divide-neutral-200">
+              <div className="grid divide-y divide-neutral-200 md:grid-cols-2 md:divide-x md:divide-y-0">
+                <section className="py-5 md:pr-5">
                   <p className="text-sm font-semibold text-neutral-900">시뮬레이션 결과물 평가</p>
                   <p className="mt-2 text-2xl font-semibold tracking-tight">
                     {review.simulation.score}점
@@ -1492,7 +1498,7 @@ function AiReviewDialog({
                   <ReviewList label="강점" items={review.simulation.strengths} />
                   <ReviewList label="확인할 점" items={review.simulation.concerns} />
                 </section>
-                <section className="rounded-md border border-neutral-200 p-4">
+                <section className="py-5 md:pl-5">
                   <p className="text-sm font-semibold text-neutral-900">AI 활용 능력 평가</p>
                   <p className="mt-2 text-2xl font-semibold tracking-tight">
                     {review.aiUtilization.score}점
@@ -1505,7 +1511,7 @@ function AiReviewDialog({
                 </section>
               </div>
 
-              <section className="rounded-md border border-neutral-200 p-4">
+              <section className="py-5">
                 <p className="text-sm font-semibold text-neutral-900">추천 면접 질문</p>
                 <ol className="mt-4 space-y-4">
                   {review.interviewQuestions.map((question, index) => (
