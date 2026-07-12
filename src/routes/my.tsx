@@ -3015,7 +3015,7 @@ function MyPage() {
       </Dialog>
 
       <Dialog open={resumeEditorOpen} onOpenChange={(open) => !open && closeResumeEditor()}>
-        <DialogContent className="flex max-h-[88vh] max-w-4xl flex-col overflow-hidden rounded-md p-0 shadow-none sm:rounded-md [&_input]:!rounded-[4px] [&_input]:!shadow-none [&_textarea]:!rounded-[4px] [&_textarea]:!shadow-none [&_[role=combobox]]:!rounded-[4px] [&_[role=combobox]]:!shadow-none">
+        <DialogContent className="flex max-h-[88vh] max-w-4xl flex-col overflow-hidden rounded-md p-0 shadow-none data-[state=closed]:!animate-none data-[state=open]:!animate-none sm:rounded-md [&_input]:!rounded-[4px] [&_input]:!shadow-none [&_textarea]:!rounded-[4px] [&_textarea]:!shadow-none [&_[role=combobox]]:!rounded-[4px] [&_[role=combobox]]:!shadow-none">
           <DialogHeader className="shrink-0 px-6 pt-6">
             <DialogTitle>{editingResume ? "이력서 수정" : "새 이력서 작성"}</DialogTitle>
             <DialogDescription>
