@@ -75,58 +75,59 @@ function AllSimulationsPage() {
         관심 직무·기업과 상관없이 현재 열려있는 모든 시뮬레이션을 볼 수 있어요.
       </p>
 
-      {/* 검색 */}
-      <div className="relative mt-6">
-        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
-        <input
-          type="text"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="직무, 기업, 키워드로 검색"
-          className="w-full rounded-md border border-zinc-200 bg-white py-2.5 pl-9 pr-9 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-500 focus:outline-none"
-        />
-        {query && (
-          <button
-            type="button"
-            onClick={() => setQuery("")}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-700"
-            aria-label="검색어 지우기"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        )}
-      </div>
-
-      {/* 직무군 필터 */}
+      {/* 직무군 필터 + 검색 */}
       {!loading && availableDomains.length > 0 && (
-        <div className="mt-4 flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={() => setSelectedDomain(null)}
-            className={cn(
-              "rounded-full border px-3 py-1 text-xs transition-colors",
-              selectedDomain === null
-                ? "border-zinc-900 bg-zinc-900 text-white"
-                : "border-zinc-200 bg-white text-zinc-600 hover:border-zinc-500",
-            )}
-          >
-            전체
-          </button>
-          {availableDomains.map((d) => (
+        <div className="mt-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div className="flex flex-wrap gap-2">
             <button
-              key={d}
               type="button"
-              onClick={() => setSelectedDomain(d === selectedDomain ? null : d)}
+              onClick={() => setSelectedDomain(null)}
               className={cn(
                 "rounded-full border px-3 py-1 text-xs transition-colors",
-                selectedDomain === d
+                selectedDomain === null
                   ? "border-zinc-900 bg-zinc-900 text-white"
                   : "border-zinc-200 bg-white text-zinc-600 hover:border-zinc-500",
               )}
             >
-              {d}
+              전체
             </button>
-          ))}
+            {availableDomains.map((d) => (
+              <button
+                key={d}
+                type="button"
+                onClick={() => setSelectedDomain(d === selectedDomain ? null : d)}
+                className={cn(
+                  "rounded-full border px-3 py-1 text-xs transition-colors",
+                  selectedDomain === d
+                    ? "border-zinc-900 bg-zinc-900 text-white"
+                    : "border-zinc-200 bg-white text-zinc-600 hover:border-zinc-500",
+                )}
+              >
+                {d}
+              </button>
+            ))}
+          </div>
+
+          <div className="relative md:w-60">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="직무, 기업, 키워드로 검색"
+              className="w-full rounded-md border border-zinc-200 bg-white py-1.5 pl-9 pr-9 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-500 focus:outline-none"
+            />
+            {query && (
+              <button
+                type="button"
+                onClick={() => setQuery("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-700"
+                aria-label="검색어 지우기"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
         </div>
       )}
 
