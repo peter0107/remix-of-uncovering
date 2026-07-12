@@ -1951,7 +1951,7 @@ function MyPage() {
 
     const SectionComponent = section.Component;
     return (
-      <div className="mt-4 rounded-[6px] border border-zinc-200 bg-zinc-50 p-4">
+      <div className="mt-4 border-t border-zinc-200 pt-4">
         <SectionComponent data={draftForm} setData={setDraftForm} showHeader={false} />
         <div className="mt-6 flex gap-2">
           <Button
@@ -3046,8 +3046,8 @@ function MyPage() {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="grid gap-8 overflow-y-auto px-6 py-4">
-            <section className="rounded-[6px] border border-zinc-200 bg-zinc-50 p-4">
+          <div className="divide-y divide-zinc-200 overflow-y-auto px-6 py-4">
+            <section className="py-6 first:pt-0">
               <h3 className="text-sm font-bold text-zinc-500">이력서 정보</h3>
               <div className="mt-4 grid gap-4 md:grid-cols-2">
                 <ResumeField
@@ -3074,7 +3074,7 @@ function MyPage() {
               </div>
             </section>
 
-            <section>
+            <section className="py-6">
               <h3 className="text-sm font-bold text-zinc-900">기본정보</h3>
               <div className="mt-4 grid gap-5 md:grid-cols-[9rem_minmax(0,1fr)]">
                 <div>
@@ -3154,7 +3154,7 @@ function MyPage() {
               </div>
             </section>
 
-            <section>
+            <section className="py-6">
               <h3 className="text-sm font-bold text-zinc-900">구직조건</h3>
               <div className="mt-4 grid gap-4 md:grid-cols-3">
                 <ResumeSelectField
@@ -3187,7 +3187,7 @@ function MyPage() {
               </div>
             </section>
 
-            <section>
+            <section className="py-6">
               <div className="flex items-center justify-between gap-3">
                 <h3 className="text-sm font-bold text-zinc-900">학력</h3>
                 <Button
@@ -3199,11 +3199,11 @@ function MyPage() {
                   <FilePlus2 className="mr-1.5 h-3.5 w-3.5" /> 추가
                 </Button>
               </div>
-              <div className="mt-4 space-y-4">
+              <div className="mt-4 divide-y divide-zinc-200">
                 {resumeForm.educations.map((education, index) => (
                   <div
                     key={education.id}
-                    className="rounded-[6px] border border-zinc-200 bg-zinc-50 p-4"
+                    className="py-6 first:pt-0 last:pb-0"
                   >
                     <div className="mb-4 flex items-center justify-between gap-3">
                       <p className="text-xs font-semibold text-zinc-500">학력 {index + 1}</p>
@@ -3314,7 +3314,7 @@ function MyPage() {
               </div>
             </section>
 
-            <section>
+            <section className="py-6">
               <div className="flex items-center justify-between gap-3">
                 <h3 className="text-sm font-bold text-zinc-900">
                   경력
@@ -3337,16 +3337,16 @@ function MyPage() {
                   <FilePlus2 className="mr-1.5 h-3.5 w-3.5" /> 추가
                 </Button>
               </div>
-              <div className="mt-4 space-y-4">
+              <div className="mt-4 divide-y divide-zinc-200">
                 {resumeForm.experiences.map((experience, index) => (
                   <div
                     key={experience.id}
-                    className="rounded-[6px] border border-zinc-200 bg-zinc-50 p-4"
+                    className="py-6 first:pt-0 last:pb-0"
                   >
                     <div className="mb-4 flex items-center justify-between gap-3">
                       <p className="text-xs font-semibold text-zinc-500">경력 {index + 1}</p>
                       <div className="flex items-center gap-1">
-                        <span className="rounded bg-white px-2 py-1 text-xs font-semibold text-zinc-600">
+                        <span className="rounded bg-zinc-100 px-2 py-1 text-xs font-semibold text-zinc-600">
                           {formatDuration(experienceMonths(experience))}
                         </span>
                         <ReorderButtons
@@ -3488,7 +3488,7 @@ function MyPage() {
               </div>
             </section>
 
-            <section>
+            <section className="py-6">
               <h3 className="text-sm font-bold text-zinc-900">스킬 / 툴</h3>
               <div className="mt-4 grid gap-4 md:grid-cols-2">
                 <ResumeField
@@ -3510,7 +3510,7 @@ function MyPage() {
               </div>
             </section>
 
-            <section>
+            <section className="py-6">
               <div className="flex items-center justify-between gap-3">
                 <h3 className="text-sm font-bold text-zinc-900">활동</h3>
                 <Button
@@ -3522,11 +3522,11 @@ function MyPage() {
                   <FilePlus2 className="mr-1.5 h-3.5 w-3.5" /> 추가
                 </Button>
               </div>
-              <div className="mt-4 space-y-4">
+              <div className="mt-4 divide-y divide-zinc-200">
                 {resumeForm.activities.map((activity, index) => (
                   <div
                     key={activity.id}
-                    className="rounded-[6px] border border-zinc-200 bg-zinc-50 p-4"
+                    className="py-6 first:pt-0 last:pb-0"
                   >
                     <div className="mb-4 flex items-center justify-between gap-3">
                       <p className="text-xs font-semibold text-zinc-500">활동 {index + 1}</p>
