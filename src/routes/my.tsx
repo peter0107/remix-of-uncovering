@@ -2779,12 +2779,6 @@ function MyPage() {
               직무와 회사에 맞춰 여러 이력서를 따로 관리할 수 있어요.
             </p>
           </div>
-          <Button
-            onClick={openNewResume}
-            className="shrink-0 rounded-md bg-zinc-900 text-white hover:bg-zinc-700"
-          >
-            <FilePlus2 className="mr-2 h-4 w-4" /> 새 이력서
-          </Button>
         </div>
 
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
@@ -2840,7 +2834,7 @@ function MyPage() {
               return (
                 <Card
                   key={resume.id}
-                  className="flex min-h-36 flex-col rounded-[6px] border-zinc-200 p-5 shadow-none"
+                  className="flex min-h-36 flex-col rounded-[6px] border-zinc-300 bg-zinc-50/50 p-5 shadow-none"
                 >
                   <div className="flex items-center gap-2">
                     <span
