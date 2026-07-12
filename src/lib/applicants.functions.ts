@@ -66,6 +66,7 @@ export type ExperienceItem = {
 };
 
 export type EducationItem = {
+  category: string;
   school: string;
   major: string;
   status: string;
@@ -168,6 +169,7 @@ const experienceItemSchema = z.object({
 });
 
 const educationItemSchema = z.object({
+  category: z.string(),
   school: z.string(),
   major: z.string(),
   status: z.string(),
@@ -357,6 +359,11 @@ function mapApplicant(row: Record<string, unknown>): Applicant {
   const simulation = Array.isArray(row.simulation) ? row.simulation : [];
   const educations = educationRows.map((item) =>
     educationItemSchema.parse({
+      category: String(
+        typeof item === "object" && item !== null && "category" in item
+          ? (item as { category?: unknown }).category
+          : "",
+      ),
       school: String(
         typeof item === "object" && item !== null && "school" in item
           ? (item as { school?: unknown }).school

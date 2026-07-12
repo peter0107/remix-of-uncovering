@@ -153,6 +153,7 @@ type ResumeForm = {
 
 type ResumeEducationForm = {
   id: string;
+  category: string;
   school: string;
   major: string;
   status: string;
@@ -207,6 +208,7 @@ const EMPTY_RESUME_FORM: ResumeForm = {
 const EMPTY_SELECT_VALUE = "__empty__";
 const MONTH_OPTIONS = Array.from({ length: 12 }, (_, index) => String(index + 1).padStart(2, "0"));
 const SALARY_OPTIONS = Array.from({ length: 40 }, (_, index) => (index + 1) * 500);
+const EDUCATION_CATEGORY_OPTIONS = ["고등학교", "학사", "석사", "박사", "전문학사"];
 const EDUCATION_STATUS_OPTIONS = ["재학", "휴학", "졸업", "졸업예정", "중퇴", "수료"];
 const UNIVERSITY_OPTIONS = [
   "가야대학교",
@@ -426,6 +428,7 @@ const UNIVERSITY_OPTIONS = [
 function createResumeEducation(overrides: Partial<ResumeEducationForm> = {}): ResumeEducationForm {
   return {
     id: crypto.randomUUID(),
+    category: "",
     school: "",
     major: "",
     status: "",
@@ -707,36 +710,45 @@ function normalizeEducationStatus(value: string) {
   return "";
 }
 
+function normalizeEducationCategory(value: string) {
+  return EDUCATION_CATEGORY_OPTIONS.includes(value) ? value : "";
+}
+
 function formatEducationLevelLabel(value: string) {
   return value.replace(/^대학교(?=\s|$)/, "학부");
 }
 
 function buildEducationDescription(education: ResumeEducationForm) {
+  const category = education.category.trim();
   const school = education.school.trim();
   const major = education.major.trim();
   const status = education.status.trim();
-  const schoolAndMajor = [school, major].filter(Boolean).join(" ");
-  if (schoolAndMajor && status) return `${schoolAndMajor} (${status})`;
-  return schoolAndMajor || status;
+  const educationText = [category ? `[${category}]` : "", school, major].filter(Boolean).join(" ");
+  if (educationText && status) return `${educationText} (${status})`;
+  return educationText || status;
 }
 
 function splitEducationDescription(description: string) {
   if (!description.trim()) {
-    return { school: "", major: "", status: "" };
+    return { category: "", school: "", major: "", status: "" };
   }
 
-  const statusMatch = description.match(/\((재학|휴학|졸업|졸업예정|중퇴|수료)\)$/);
+  const categoryMatch = description.match(/^\[(고등학교|학사|석사|박사|전문학사)\]\s*/);
+  const category = categoryMatch?.[1] ?? "";
+  const withoutCategory = category ? description.slice(categoryMatch?.[0].length ?? 0).trim() : description;
+  const statusMatch = withoutCategory.match(/\((재학|휴학|졸업|졸업예정|중퇴|수료)\)$/);
   const status = statusMatch?.[1] ?? "";
   const withoutStatus = status
-    ? description.replace(/\s*\((재학|휴학|졸업|졸업예정|중퇴|수료)\)$/, "")
-    : description;
+    ? withoutCategory.replace(/\s*\((재학|휴학|졸업|졸업예정|중퇴|수료)\)$/, "")
+    : withoutCategory;
   const matchedSchool = UNIVERSITY_OPTIONS.find((school) => withoutStatus.startsWith(school));
 
   if (!matchedSchool) {
-    return { school: withoutStatus.trim(), major: "", status };
+    return { category, school: withoutStatus.trim(), major: "", status };
   }
 
   return {
+    category,
     school: matchedSchool,
     major: withoutStatus.slice(matchedSchool.length).trim(),
     status,
@@ -953,6 +965,7 @@ function formFromResume(resume: Resume, userEmail: string, seeker: JobSeeker | n
       ? educationRows.map((education) => {
           const parsedEducation = splitEducationDescription(asString(education.description));
           return createResumeEducation({
+            category: normalizeEducationCategory(asString(education.category) || parsedEducation.category),
             school: asString(education.school) || parsedEducation.school,
             major: asString(education.major) || parsedEducation.major,
             status: normalizeEducationStatus(asString(education.status) || parsedEducation.status),
@@ -964,6 +977,7 @@ function formFromResume(resume: Resume, userEmail: string, seeker: JobSeeker | n
           firstEducation.status
         ? [
             createResumeEducation({
+              category: normalizeEducationCategory(asString(firstEducation.category)),
               school: asString(firstEducation.school),
               major: asString(firstEducation.major),
               status: normalizeEducationStatus(asString(firstEducation.status)),
@@ -1020,9 +1034,14 @@ function patchFromResumeForm(
     },
     educations: form.educations
       .filter(
-        (education) => education.school.trim() || education.major.trim() || education.status.trim(),
+        (education) =>
+          education.category.trim() ||
+          education.school.trim() ||
+          education.major.trim() ||
+          education.status.trim(),
       )
       .map((education) => ({
+        category: education.category.trim(),
         school: education.school.trim(),
         major: education.major.trim(),
         status: education.status.trim(),
@@ -3207,7 +3226,37 @@ function MyPage() {
                         </Button>
                       </div>
                     </div>
-                    <div className="grid gap-4 md:grid-cols-3">
+                    <div className="grid gap-4 md:grid-cols-4">
+                      <div>
+                        <ResumeLabel htmlFor={`education-category-${education.id}`} shared>
+                          분류
+                        </ResumeLabel>
+                        <Select
+                          value={education.category || EMPTY_SELECT_VALUE}
+                          onValueChange={(next) =>
+                            updateResumeEducation(
+                              education.id,
+                              "category",
+                              next === EMPTY_SELECT_VALUE ? "" : next,
+                            )
+                          }
+                        >
+                          <SelectTrigger
+                            id={`education-category-${education.id}`}
+                            className="mt-2 h-9"
+                          >
+                            <SelectValue placeholder="분류 선택" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value={EMPTY_SELECT_VALUE}>선택 안 함</SelectItem>
+                            {EDUCATION_CATEGORY_OPTIONS.map((option) => (
+                              <SelectItem key={option} value={option}>
+                                {option}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
                       <ResumeSchoolField
                         id={`education-school-${education.id}`}
                         label="학교명"

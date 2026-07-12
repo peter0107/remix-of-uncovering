@@ -1258,15 +1258,21 @@ function ApplicantDetail({
                 <div className="space-y-2">
                   {applicant.educations.map((education, index) => (
                     <div
-                      key={`${education.school}-${education.major}-${education.status}-${index}`}
+                      key={`${education.category}-${education.school}-${education.major}-${education.status}-${index}`}
                       className="rounded-md border border-neutral-200 p-3"
                     >
-                      <p className="text-sm font-medium leading-6 text-neutral-900">
-                        {education.description ||
-                          [education.school, education.major, education.status]
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="text-sm font-medium leading-6 text-neutral-900">
+                          {[education.category ? `[${education.category}]` : "", education.school, education.major]
                             .filter(Boolean)
-                            .join(" ")}
-                      </p>
+                            .join(" ") || education.description}
+                        </p>
+                        {education.status && (
+                          <span className="rounded bg-neutral-100 px-2 py-1 text-xs font-medium text-neutral-600">
+                            {education.status}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
