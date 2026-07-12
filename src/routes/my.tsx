@@ -1143,6 +1143,86 @@ function ResumeField({
   );
 }
 
+function ResumeTagField({
+  id,
+  label,
+  value,
+  onChange,
+  placeholder,
+  shared = false,
+}: {
+  id: keyof ResumeForm;
+  label: string;
+  value: string;
+  onChange: (id: keyof ResumeForm, value: string) => void;
+  placeholder?: string;
+  shared?: boolean;
+}) {
+  const [draft, setDraft] = useState("");
+  const tags = splitTags(value);
+
+  const commit = (raw: string) => {
+    const next = raw.trim();
+    if (!next) return;
+    if (tags.includes(next)) {
+      setDraft("");
+      return;
+    }
+    onChange(id, [...tags, next].join(", "));
+    setDraft("");
+  };
+
+  const removeAt = (index: number) => {
+    const next = tags.filter((_, i) => i !== index);
+    onChange(id, next.join(", "));
+  };
+
+  return (
+    <div>
+      <ResumeLabel htmlFor={id} shared={shared}>
+        {label}
+      </ResumeLabel>
+      <div className="mt-2 flex flex-wrap gap-2 rounded-md border border-input bg-transparent px-2 py-2 focus-within:ring-1 focus-within:ring-ring">
+        {tags.map((tag, index) => (
+          <span
+            key={`${tag}-${index}`}
+            className="inline-flex items-center gap-1 rounded-md bg-zinc-100 px-2 py-1 text-xs text-zinc-800"
+          >
+            {tag}
+            <button
+              type="button"
+              onClick={() => removeAt(index)}
+              className="text-zinc-500 hover:text-zinc-900"
+              aria-label={`${tag} 삭제`}
+            >
+              <X className="h-3 w-3" />
+            </button>
+          </span>
+        ))}
+        <input
+          id={id}
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              commit(draft);
+            } else if (e.key === "Backspace" && draft === "" && tags.length > 0) {
+              e.preventDefault();
+              removeAt(tags.length - 1);
+            }
+          }}
+          onBlur={() => {
+            if (draft.trim()) commit(draft);
+          }}
+          placeholder={tags.length === 0 ? placeholder : ""}
+          className="flex-1 min-w-[8ch] bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+        />
+      </div>
+    </div>
+  );
+}
+
 function ResumeTextField({
   id,
   label,
