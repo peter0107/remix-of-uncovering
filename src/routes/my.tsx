@@ -2902,7 +2902,7 @@ function MyPage() {
                         aria-label="이력서 삭제"
                         className="h-8 w-8 rounded-full"
                       >
-                        <Trash2 className="h-4 w-4 text-zinc-400" />
+                        <Trash2 className="h-4 w-4 text-zinc-500" />
                       </Button>
                     </div>
                   </div>
