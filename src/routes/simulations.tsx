@@ -371,7 +371,7 @@ function SimulationsPage() {
       )}
 
       <Dialog open={jobInterestEditorOpen} onOpenChange={setJobInterestEditorOpen}>
-        <DialogContent className="max-w-2xl rounded-md p-6 shadow-none">
+        <DialogContent className="max-w-2xl rounded-md p-6 shadow-none data-[state=closed]:!animate-none data-[state=open]:!animate-none">
           <DialogHeader>
             <DialogTitle>관심 직무 수정</DialogTitle>
             <DialogDescription>추천에 반영할 관심 직무군을 선택하세요.</DialogDescription>
