@@ -3,7 +3,6 @@ import {
   ChevronDown,
   Code2,
   Columns3,
-  Heading2,
   Italic,
   List,
   ListOrdered,
@@ -33,6 +32,7 @@ const ALLOWED_TAGS = new Set([
   "strike",
   "span",
   "font",
+  "h1",
   "h2",
   "h3",
   "h4",
@@ -55,7 +55,7 @@ function escapeHtml(value: string) {
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
-    .replace(/\"/g, "&quot;")
+    .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
 }
 
@@ -195,7 +195,7 @@ function markdownToRichHtml(markdown: string) {
 }
 
 function getAttribute(tag: string, attribute: string) {
-  const match = tag.match(new RegExp(`${attribute}\\s*=\\s*[\"']([^\"']*)[\"']`, "i"));
+  const match = tag.match(new RegExp(`${attribute}\\s*=\\s*["']([^"']*)["']`, "i"));
   return match?.[1]?.trim() ?? "";
 }
 
@@ -576,19 +576,6 @@ export function RichTextEditor({
               <ToolbarButton label="기울임" onClick={() => command("italic")}>
                 <Italic className="h-4 w-4" />
               </ToolbarButton>
-              <ToolbarButton label="제목" onClick={() => command("formatBlock", "h3")}>
-                <Heading2 className="h-4 w-4" />
-              </ToolbarButton>
-              <ToolbarButton label="글머리 목록" onClick={() => command("insertUnorderedList")}>
-                <List className="h-4 w-4" />
-              </ToolbarButton>
-              <ToolbarButton label="번호 목록" onClick={() => command("insertOrderedList")}>
-                <ListOrdered className="h-4 w-4" />
-              </ToolbarButton>
-              <ToolbarButton label="인용" onClick={() => command("formatBlock", "blockquote")}>
-                <Quote className="h-4 w-4" />
-              </ToolbarButton>
-              <span className="mx-1 h-4 w-px bg-neutral-200" />
               <ToolbarButton
                 label="밑줄"
                 active={isUnderlined}
@@ -603,8 +590,34 @@ export function RichTextEditor({
               >
                 <Strikethrough className="h-4 w-4" />
               </ToolbarButton>
+              <span className="mx-1 h-4 w-px bg-neutral-200" />
+              <ToolbarButton label="제목 1" onClick={() => command("formatBlock", "h1")}>
+                <span className="text-[11px] font-bold">H1</span>
+              </ToolbarButton>
+              <ToolbarButton label="제목 2" onClick={() => command("formatBlock", "h2")}>
+                <span className="text-[11px] font-bold">H2</span>
+              </ToolbarButton>
+              <ToolbarButton label="제목 3" onClick={() => command("formatBlock", "h3")}>
+                <span className="text-[11px] font-bold">H3</span>
+              </ToolbarButton>
+              <ToolbarButton label="제목 4" onClick={() => command("formatBlock", "h4")}>
+                <span className="text-[11px] font-bold">H4</span>
+              </ToolbarButton>
+              <ToolbarButton label="일반 텍스트" onClick={() => command("formatBlock", "p")}>
+                <span className="text-xs font-medium">T</span>
+              </ToolbarButton>
+              <span className="mx-1 h-4 w-px bg-neutral-200" />
+              <ToolbarButton label="글머리 목록" onClick={() => command("insertUnorderedList")}>
+                <List className="h-4 w-4" />
+              </ToolbarButton>
+              <ToolbarButton label="번호 목록" onClick={() => command("insertOrderedList")}>
+                <ListOrdered className="h-4 w-4" />
+              </ToolbarButton>
             </div>
             <div className="flex flex-wrap items-center gap-0.5 border-t border-neutral-200 pt-1">
+              <ToolbarButton label="인용" onClick={() => command("formatBlock", "blockquote")}>
+                <Quote className="h-4 w-4" />
+              </ToolbarButton>
               <ToolbarButton label="인라인 코드" active={isInlineCode} onClick={toggleInlineCode}>
                 <Code2 className="h-4 w-4" />
               </ToolbarButton>
