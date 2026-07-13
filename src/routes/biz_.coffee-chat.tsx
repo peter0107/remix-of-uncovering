@@ -3,8 +3,10 @@ import { CircleCheck, RefreshCw } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 
+import { Calendar } from "@/components/ui/calendar";
 import { TurnstileWidget, type TurnstileHandle } from "@/components/turnstile-widget";
 import {
+  COFFEE_CHAT_MAX_AHEAD_DAYS,
   COFFEE_CHAT_SLOT_TIMES,
   getCoffeeChatBookedSlots,
   submitCoffeeChatBooking,
@@ -39,19 +41,12 @@ function addDaysIso(iso: string, days: number): string {
   return d.toISOString().slice(0, 10);
 }
 
-function weekdayOf(iso: string): number {
-  return new Date(`${iso}T00:00:00Z`).getUTCDay();
-}
-
-function upcomingWeekdays(count: number): string[] {
-  const result: string[] = [];
-  let cursor = addDaysIso(kstTodayIso(), 1);
-  while (result.length < count) {
-    const wd = weekdayOf(cursor);
-    if (wd !== 0 && wd !== 6) result.push(cursor);
-    cursor = addDaysIso(cursor, 1);
-  }
-  return result;
+// 캘린더의 로컬 Date → 'YYYY-MM-DD'. 로컬 파츠 사용(브라우저 KST라 KST 달력 날짜와 일치).
+function dateToLocalIso(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
 }
 
 function dateLabel(iso: string): string {
@@ -64,7 +59,10 @@ function dateLabel(iso: string): string {
 }
 
 function BizCoffeeChat() {
-  const dates = useMemo(() => upcomingWeekdays(10), []);
+  const { minIso, maxIso } = useMemo(() => {
+    const today = kstTodayIso();
+    return { minIso: addDaysIso(today, 1), maxIso: addDaysIso(today, COFFEE_CHAT_MAX_AHEAD_DAYS) };
+  }, []);
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedTime, setSelectedTime] = useState("");
   const [bookedSet, setBookedSet] = useState<Set<string>>(new Set());
@@ -85,12 +83,11 @@ function BizCoffeeChat() {
   const turnstileRef = useRef<TurnstileHandle>(null);
 
   const loadSlots = useCallback(async () => {
-    if (dates.length === 0) return;
     setSlotsLoading(true);
     setSlotsError(false);
     try {
       const rows = await getCoffeeChatBookedSlots({
-        data: { fromDate: dates[0], toDate: dates[dates.length - 1] },
+        data: { fromDate: minIso, toDate: maxIso },
       });
       setBookedSet(new Set(rows.map((r) => `${r.slotDate}|${r.slotTime}`)));
     } catch {
@@ -98,7 +95,7 @@ function BizCoffeeChat() {
     } finally {
       setSlotsLoading(false);
     }
-  }, [dates]);
+  }, [minIso, maxIso]);
 
   useEffect(() => {
     void loadSlots();
@@ -191,7 +188,7 @@ function BizCoffeeChat() {
           </div>
         ) : (
           <div className="w-full max-w-2xl">
-            <h1 className="text-xl font-semibold tracking-tight">커피챗 신청</h1>
+            <h1 className="text-2xl font-bold tracking-tight">커피챗 신청</h1>
             <p className="mt-2 text-sm text-neutral-500">
               30분 구글미트로 Beginner 기업 서비스에 대해 편하게 이야기 나눠요. 원하는 시간을
               선택하고 예약 정보를 남겨주세요.
@@ -201,24 +198,23 @@ function BizCoffeeChat() {
               {/* 좌: 날짜 + 슬롯 선택 */}
               <div>
                 <p className={labelClass}>날짜 선택 *</p>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {dates.map((d) => (
-                    <button
-                      key={d}
-                      type="button"
-                      onClick={() => {
-                        setSelectedDate(d);
-                        setSelectedTime("");
-                      }}
-                      className={`h-10 rounded-md border px-3 text-sm font-medium transition-colors ${
-                        selectedDate === d
-                          ? "border-neutral-900 bg-neutral-900 text-white"
-                          : "border-neutral-300 text-neutral-700 hover:border-neutral-900"
-                      }`}
-                    >
-                      {dateLabel(d)}
-                    </button>
-                  ))}
+                <div className="mt-2 w-fit rounded-md border border-neutral-200">
+                  <Calendar
+                    mode="single"
+                    selected={selectedDate ? new Date(`${selectedDate}T00:00:00`) : undefined}
+                    onSelect={(date) => {
+                      setSelectedDate(date ? dateToLocalIso(date) : "");
+                      setSelectedTime("");
+                    }}
+                    disabled={(date) => {
+                      const iso = dateToLocalIso(date);
+                      if (iso < minIso || iso > maxIso) return true;
+                      const wd = date.getDay();
+                      return wd === 0 || wd === 6;
+                    }}
+                    startMonth={new Date(`${minIso}T00:00:00`)}
+                    endMonth={new Date(`${maxIso}T00:00:00`)}
+                  />
                 </div>
 
                 <div className="mt-6">

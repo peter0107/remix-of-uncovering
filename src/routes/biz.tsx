@@ -83,14 +83,12 @@ function BizIndex() {
             </button>
           </form>
 
-          <div className="mt-6">
-            <Link
-              to="/biz/contact"
-              className="flex h-10 w-full items-center justify-center rounded-md border border-neutral-300 px-3 text-sm font-medium text-neutral-700 transition-colors hover:border-neutral-900 hover:text-neutral-900"
-            >
-              코드가 없으신가요? 담당자에게 문의해주세요
-            </Link>
-          </div>
+          <Link
+            to="/biz/contact"
+            className="mt-6 inline-block text-sm text-neutral-500 underline underline-offset-4 hover:text-neutral-900"
+          >
+            코드가 없으신가요? 담당자에게 문의해주세요
+          </Link>
         </div>
       </main>
     </div>

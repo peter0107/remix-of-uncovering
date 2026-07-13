@@ -117,7 +117,7 @@ function BizApply() {
             </div>
           ) : (
             <>
-              <h1 className="text-xl font-semibold tracking-tight">Beginner 기업 서비스 가입 신청</h1>
+              <h1 className="text-2xl font-bold tracking-tight">Beginner 기업 서비스 가입 신청</h1>
               <p className="mt-2 text-sm text-neutral-500">
                 신청 내용을 확인한 뒤 담당자가 연락드립니다.
               </p>
