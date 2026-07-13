@@ -186,7 +186,9 @@ function SimulationDetailPage() {
       setChatMessages((prev) => prev.filter((m) => m !== userMsg));
       setChatInput(text);
       toast.error(
-        error instanceof Error ? error.message : "AI 응답을 받지 못했어요. 잠시 후 다시 시도해 주세요.",
+        error instanceof Error
+          ? error.message
+          : "AI 응답을 받지 못했어요. 잠시 후 다시 시도해 주세요.",
       );
     } finally {
       setChatSending(false);
@@ -814,8 +816,8 @@ function SimulationDetailPage() {
         </div>
 
         {/* 오른쪽: 제출 관련 */}
-        <div className="flex flex-col lg:sticky lg:top-20 lg:h-[calc(100vh-6rem)]">
-          <div className="flex min-h-0 flex-1 flex-col">
+        <div className="flex flex-col">
+          <div className="flex flex-col">
             <div id="response-question" className="shrink-0">
               <p className="text-sm font-medium text-zinc-700">제출 질문</p>
               <Card className="mt-2 p-4">
@@ -829,8 +831,8 @@ function SimulationDetailPage() {
               value={responseText}
               onChange={setResponseText}
               ariaLabelledby="response-question"
-              className="h-full flex-1"
-              containerClassName="mt-4 flex min-h-40 flex-1 flex-col"
+              className="min-h-64"
+              containerClassName="mt-4"
             />
           </div>
 
