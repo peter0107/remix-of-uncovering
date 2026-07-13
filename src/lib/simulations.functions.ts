@@ -168,6 +168,11 @@ const simulationVisibilityInputSchema = simulationIdInputSchema.extend({
   isPublic: z.boolean(),
 });
 
+const companySimulationCardImageInputSchema = z.object({
+  companyCode: z.string().min(1),
+  cardImageUrl: z.string().min(1),
+});
+
 const adminAiPromptSettingsInputSchema = z.object({
   settings: z
     .array(
@@ -721,6 +726,36 @@ export const setCompanySimulationVisibility = createServerFn({ method: "POST" })
     if (error) {
       console.error("Failed to update simulation visibility:", error);
       throw new Error("Failed to update simulation visibility");
+    }
+
+    return { ok: true };
+  });
+
+export const setCompanySimulationCardImage = createServerFn({ method: "POST" })
+  .inputValidator(companySimulationCardImageInputSchema)
+  .handler(async ({ data }) => {
+    await assertAdmin();
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { data: company, error: companyError } = await supabaseAdmin
+      .from("companies")
+      .select("id")
+      .eq("code", data.companyCode)
+      .single();
+
+    if (companyError || !company) {
+      throw new Error("Invalid company code");
+    }
+
+    const { error } = await supabaseAdmin
+      .from("job_simulations")
+      .update({ card_image_url: data.cardImageUrl.trim() })
+      .eq("company_id", company.id)
+      .is("deleted_at", null);
+
+    if (error) {
+      console.error("Failed to update company simulation card image:", error);
+      throw new Error("기업 시뮬레이션 배경을 저장하지 못했습니다.");
     }
 
     return { ok: true };

@@ -47,6 +47,7 @@ import {
   getAdminCompanies,
   getAdminCompanySimulations,
   setCompanySimulationVisibility,
+  setCompanySimulationCardImage,
   updateCompany,
   updateCompanySimulation,
   type AdminCompany,
@@ -700,29 +701,22 @@ function AdminSimulations() {
     const simulation = simulations.find((item) => item.id === target.simulationId);
     if (!simulation) throw new Error("시뮬레이션 정보를 찾지 못했습니다.");
 
-    await updateCompanySimulation({
+    await setCompanySimulationCardImage({
       data: {
-        id: simulation.id,
         companyCode: simulation.companyCode,
-        roleLabel: simulation.roleLabel,
-        title: simulation.title,
-        description: simulation.description,
         cardImageUrl: publicUrl,
-        domain: getDomainCategory(simulation.domain),
-        estimatedMinutes: simulation.estimatedMinutes,
-        taskPrompt: simulation.taskPrompt,
       },
     });
 
     setSimulations((current) =>
       current.map((item) =>
-        item.id === simulation.id ? { ...item, cardImageUrl: publicUrl } : item,
+        item.companyId === simulation.companyId ? { ...item, cardImageUrl: publicUrl } : item,
       ),
     );
-    if (selectedSimulationId === simulation.id) {
+    if (form.companyCode === simulation.companyCode) {
       setForm((current) => ({ ...current, cardImageUrl: publicUrl }));
     }
-    toast.success("카드 이미지를 변경했습니다.");
+    toast.success(`${simulation.companyName}의 모든 시뮬레이션 배경을 변경했습니다.`);
   }
 
   async function handleAssetFileChange(event: ChangeEvent<HTMLInputElement>) {
@@ -1179,6 +1173,9 @@ function AdminSimulations() {
               <h2 className="text-sm font-semibold text-neutral-900">직무 시뮬레이션</h2>
               <p className="mt-1 text-xs text-neutral-500">
                 {selectedCompany?.name ?? "기업 선택"} · {companySimulations.length}개
+              </p>
+              <p className="mt-1 text-xs text-neutral-400">
+                카드 배경을 변경하면 이 기업의 모든 시뮬레이션에 함께 적용됩니다.
               </p>
             </div>
             <ListChecks className="h-4 w-4 text-neutral-400" />
