@@ -513,7 +513,7 @@ function SimulationDetailPage() {
 
   const blockerDialog = (
     <AlertDialog open={blocker.status === "blocked"}>
-      <AlertDialogContent>
+      <AlertDialogContent className="data-[state=closed]:!animate-none data-[state=open]:!animate-none">
         <AlertDialogHeader>
           <AlertDialogTitle className="flex items-center gap-2">
             <AlertTriangle className="h-5 w-5 text-red-500" />
