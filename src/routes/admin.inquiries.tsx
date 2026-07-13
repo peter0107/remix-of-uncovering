@@ -123,6 +123,23 @@ function AdminInquiries() {
                   </div>
                 </div>
                 <div className="mt-2 grid gap-1 text-sm text-neutral-600 sm:grid-cols-2">
+                  <p>총 직원 수: {item.totalEmployees || "-"}</p>
+                  <p>개발자 수: {item.developerCount || "-"}</p>
+                  <p className="sm:col-span-2">
+                    서비스 링크:{" "}
+                    {/^https?:\/\//.test(item.serviceLink) ? (
+                      <a
+                        href={item.serviceLink}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-neutral-900 underline underline-offset-2 hover:text-neutral-600"
+                      >
+                        {item.serviceLink}
+                      </a>
+                    ) : (
+                      item.serviceLink || "-"
+                    )}
+                  </p>
                   <p>
                     담당자: {item.contactName}
                     {item.contactTitle ? ` (${item.contactTitle})` : ""}

@@ -128,6 +128,9 @@ const dateField = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 
 const serviceApplicationSchema = z.object({
   companyName: nameField,
+  totalEmployees: z.string().trim().min(1).max(100),
+  developerCount: z.string().trim().min(1).max(100),
+  serviceLink: z.string().trim().min(1).max(500),
   contactName: nameField,
   contactTitle: z.string().trim().max(100).optional().default(""),
   email: emailField,
@@ -162,6 +165,9 @@ export type BookedSlot = { slotDate: string; slotTime: string };
 export type ServiceApplication = {
   id: string;
   companyName: string;
+  totalEmployees: string;
+  developerCount: string;
+  serviceLink: string;
   contactName: string;
   contactTitle: string;
   email: string;
@@ -195,6 +201,9 @@ function mapServiceApplication(row: ServiceApplicationRow): ServiceApplication {
   return {
     id: row.id,
     companyName: row.company_name,
+    totalEmployees: row.total_employees ?? "",
+    developerCount: row.developer_count ?? "",
+    serviceLink: row.service_link ?? "",
     contactName: row.contact_name,
     contactTitle: row.contact_title ?? "",
     email: row.email,
@@ -230,6 +239,9 @@ export const submitServiceApplication = createServerFn({ method: "POST" })
     const title = data.contactTitle.trim();
     const { error } = await supabaseAdmin.from("service_applications").insert({
       company_name: data.companyName,
+      total_employees: data.totalEmployees,
+      developer_count: data.developerCount,
+      service_link: data.serviceLink,
       contact_name: data.contactName,
       contact_title: title ? title : null,
       email: data.email,

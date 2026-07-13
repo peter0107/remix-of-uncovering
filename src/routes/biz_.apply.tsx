@@ -27,6 +27,9 @@ const EMAIL_RE = /^\S+@\S+\.\S+$/;
 
 function BizApply() {
   const [companyName, setCompanyName] = useState("");
+  const [totalEmployees, setTotalEmployees] = useState("");
+  const [developerCount, setDeveloperCount] = useState("");
+  const [serviceLink, setServiceLink] = useState("");
   const [contactName, setContactName] = useState("");
   const [contactTitle, setContactTitle] = useState("");
   const [email, setEmail] = useState("");
@@ -42,11 +45,22 @@ function BizApply() {
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     const trimmedCompany = companyName.trim();
+    const trimmedEmployees = totalEmployees.trim();
+    const trimmedDevelopers = developerCount.trim();
+    const trimmedServiceLink = serviceLink.trim();
     const trimmedContact = contactName.trim();
     const trimmedEmail = email.trim();
     const trimmedPhone = phone.trim();
 
-    if (!trimmedCompany || !trimmedContact || !trimmedEmail || !trimmedPhone) {
+    if (
+      !trimmedCompany ||
+      !trimmedEmployees ||
+      !trimmedDevelopers ||
+      !trimmedServiceLink ||
+      !trimmedContact ||
+      !trimmedEmail ||
+      !trimmedPhone
+    ) {
       setError("필수 항목을 모두 입력해주세요.");
       return;
     }
@@ -69,6 +83,9 @@ function BizApply() {
       await submitServiceApplication({
         data: {
           companyName: trimmedCompany,
+          totalEmployees: trimmedEmployees,
+          developerCount: trimmedDevelopers,
+          serviceLink: trimmedServiceLink,
           contactName: trimmedContact,
           contactTitle: contactTitle.trim(),
           email: trimmedEmail,
@@ -135,6 +152,53 @@ function BizApply() {
                     placeholder="예: 비기너 주식회사"
                     className={inputClass}
                   />
+                </div>
+
+                <div>
+                  <label htmlFor="totalEmployees" className={labelClass}>
+                    총 직원 수 *
+                  </label>
+                  <input
+                    id="totalEmployees"
+                    type="text"
+                    inputMode="numeric"
+                    value={totalEmployees}
+                    onChange={(e) => setTotalEmployees(e.target.value)}
+                    placeholder="예: 50"
+                    className={inputClass}
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="developerCount" className={labelClass}>
+                    개발자 수 *
+                  </label>
+                  <input
+                    id="developerCount"
+                    type="text"
+                    inputMode="numeric"
+                    value={developerCount}
+                    onChange={(e) => setDeveloperCount(e.target.value)}
+                    placeholder="예: 10"
+                    className={inputClass}
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="serviceLink" className={labelClass}>
+                    서비스 링크 *
+                  </label>
+                  <input
+                    id="serviceLink"
+                    type="text"
+                    value={serviceLink}
+                    onChange={(e) => setServiceLink(e.target.value)}
+                    placeholder="예: https://beginner.today"
+                    className={inputClass}
+                  />
+                  <p className="mt-1.5 text-xs text-neutral-400">
+                    *아직 서비스 링크가 없다면 "준비중"으로 입력해주세요.
+                  </p>
                 </div>
 
                 <div>

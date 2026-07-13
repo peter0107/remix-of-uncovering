@@ -648,10 +648,13 @@ export type Database = {
           contact_name: string
           contact_title: string | null
           created_at: string
+          developer_count: string | null
           email: string
           id: string
           phone: string
           privacy_consent: boolean
+          service_link: string | null
+          total_employees: string | null
           wants_intro_meeting: boolean
         }
         Insert: {
@@ -659,10 +662,13 @@ export type Database = {
           contact_name: string
           contact_title?: string | null
           created_at?: string
+          developer_count?: string | null
           email: string
           id?: string
           phone: string
           privacy_consent?: boolean
+          service_link?: string | null
+          total_employees?: string | null
           wants_intro_meeting?: boolean
         }
         Update: {
@@ -670,10 +676,13 @@ export type Database = {
           contact_name?: string
           contact_title?: string | null
           created_at?: string
+          developer_count?: string | null
           email?: string
           id?: string
           phone?: string
           privacy_consent?: boolean
+          service_link?: string | null
+          total_employees?: string | null
           wants_intro_meeting?: boolean
         }
         Relationships: []

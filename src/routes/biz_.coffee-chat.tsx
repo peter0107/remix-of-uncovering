@@ -190,8 +190,9 @@ function BizCoffeeChat() {
           <div className="w-full max-w-2xl">
             <h1 className="text-2xl font-bold tracking-tight">커피챗 신청</h1>
             <p className="mt-2 text-sm text-neutral-500">
-              30분 구글미트로 Beginner 기업 서비스에 대해 편하게 이야기 나눠요. 원하는 시간을
-              선택하고 예약 정보를 남겨주세요.
+              30분 구글미트로 Beginner 기업 서비스에 대해 편하게 이야기 나눠요.
+              <br />
+              원하는 시간을 선택하고 예약 정보를 남겨주세요.
             </p>
 
             <form onSubmit={onSubmit} className="mt-8 grid gap-10 lg:grid-cols-2">
