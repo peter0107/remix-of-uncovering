@@ -254,12 +254,14 @@ function Index() {
             <br className="hidden sm:block" />내 직무 적합도를 확인해요
           </p>
           <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
-            <Link
-              to="/start"
-              className="inline-flex h-12 items-center justify-center gap-2 rounded-md bg-[#2B5CE7] px-6 text-sm font-bold text-white transition-colors hover:bg-[#2149BD] hover:text-white sm:text-base"
-            >
-              무료로 시작하기 <ArrowRight className="h-4 w-4" />
-            </Link>
+            {!user && (
+              <Link
+                to="/start"
+                className="inline-flex h-12 items-center justify-center gap-2 rounded-md bg-[#2B5CE7] px-6 text-sm font-bold text-white transition-colors hover:bg-[#2149BD] hover:text-white sm:text-base"
+              >
+                무료로 시작하기 <ArrowRight className="h-4 w-4" />
+              </Link>
+            )}
             <Link
               to="/simulations"
               className="inline-flex h-12 items-center justify-center rounded-md border border-[#D9DEE8] bg-white px-6 text-sm font-semibold text-[#171C26] transition-colors hover:bg-[#F7F8FA] sm:text-base"
