@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
 
 import { getApplicantsByCompanyCode } from "@/lib/applicants.functions";
@@ -83,9 +83,23 @@ function BizIndex() {
             </button>
           </form>
 
-          <p className="mt-6 text-xs text-neutral-400">
-            코드가 없으신가요? 담당자에게 문의해주세요.
-          </p>
+          <div className="mt-6">
+            <p className="text-xs text-neutral-400">코드가 없으신가요?</p>
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <Link
+                to="/biz/apply"
+                className="flex h-10 items-center justify-center rounded-md border border-neutral-300 px-3 text-sm font-medium text-neutral-700 transition-colors hover:border-neutral-900 hover:text-neutral-900"
+              >
+                서비스 가입 신청
+              </Link>
+              <Link
+                to="/biz/coffee-chat"
+                className="flex h-10 items-center justify-center rounded-md border border-neutral-300 px-3 text-sm font-medium text-neutral-700 transition-colors hover:border-neutral-900 hover:text-neutral-900"
+              >
+                커피챗 신청
+              </Link>
+            </div>
+          </div>
         </div>
       </main>
     </div>

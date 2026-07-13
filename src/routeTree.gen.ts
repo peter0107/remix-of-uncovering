@@ -20,8 +20,11 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as SimulationsAllRouteImport } from './routes/simulations_.all'
 import { Route as SimulationIdRouteImport } from './routes/simulation.$id'
 import { Route as BizReviewRouteImport } from './routes/biz_.review'
+import { Route as BizCoffeeChatRouteImport } from './routes/biz_.coffee-chat'
+import { Route as BizApplyRouteImport } from './routes/biz_.apply'
 import { Route as AdminSubmissionsRouteImport } from './routes/admin.submissions'
 import { Route as AdminSimulationsRouteImport } from './routes/admin.simulations'
+import { Route as AdminInquiriesRouteImport } from './routes/admin.inquiries'
 import { Route as AdminAiPromptsRouteImport } from './routes/admin.ai-prompts'
 
 const StartRoute = StartRouteImport.update({
@@ -79,6 +82,16 @@ const BizReviewRoute = BizReviewRouteImport.update({
   path: '/biz/review',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BizCoffeeChatRoute = BizCoffeeChatRouteImport.update({
+  id: '/biz_/coffee-chat',
+  path: '/biz/coffee-chat',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BizApplyRoute = BizApplyRouteImport.update({
+  id: '/biz_/apply',
+  path: '/biz/apply',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminSubmissionsRoute = AdminSubmissionsRouteImport.update({
   id: '/submissions',
   path: '/submissions',
@@ -87,6 +100,11 @@ const AdminSubmissionsRoute = AdminSubmissionsRouteImport.update({
 const AdminSimulationsRoute = AdminSimulationsRouteImport.update({
   id: '/simulations',
   path: '/simulations',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminInquiriesRoute = AdminInquiriesRouteImport.update({
+  id: '/inquiries',
+  path: '/inquiries',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminAiPromptsRoute = AdminAiPromptsRouteImport.update({
@@ -105,8 +123,11 @@ export interface FileRoutesByFullPath {
   '/simulations': typeof SimulationsRoute
   '/start': typeof StartRoute
   '/admin/ai-prompts': typeof AdminAiPromptsRoute
+  '/admin/inquiries': typeof AdminInquiriesRoute
   '/admin/simulations': typeof AdminSimulationsRoute
   '/admin/submissions': typeof AdminSubmissionsRoute
+  '/biz/apply': typeof BizApplyRoute
+  '/biz/coffee-chat': typeof BizCoffeeChatRoute
   '/biz/review': typeof BizReviewRoute
   '/simulation/$id': typeof SimulationIdRoute
   '/simulations/all': typeof SimulationsAllRoute
@@ -121,8 +142,11 @@ export interface FileRoutesByTo {
   '/simulations': typeof SimulationsRoute
   '/start': typeof StartRoute
   '/admin/ai-prompts': typeof AdminAiPromptsRoute
+  '/admin/inquiries': typeof AdminInquiriesRoute
   '/admin/simulations': typeof AdminSimulationsRoute
   '/admin/submissions': typeof AdminSubmissionsRoute
+  '/biz/apply': typeof BizApplyRoute
+  '/biz/coffee-chat': typeof BizCoffeeChatRoute
   '/biz/review': typeof BizReviewRoute
   '/simulation/$id': typeof SimulationIdRoute
   '/simulations/all': typeof SimulationsAllRoute
@@ -138,8 +162,11 @@ export interface FileRoutesById {
   '/simulations': typeof SimulationsRoute
   '/start': typeof StartRoute
   '/admin/ai-prompts': typeof AdminAiPromptsRoute
+  '/admin/inquiries': typeof AdminInquiriesRoute
   '/admin/simulations': typeof AdminSimulationsRoute
   '/admin/submissions': typeof AdminSubmissionsRoute
+  '/biz_/apply': typeof BizApplyRoute
+  '/biz_/coffee-chat': typeof BizCoffeeChatRoute
   '/biz_/review': typeof BizReviewRoute
   '/simulation/$id': typeof SimulationIdRoute
   '/simulations_/all': typeof SimulationsAllRoute
@@ -156,8 +183,11 @@ export interface FileRouteTypes {
     | '/simulations'
     | '/start'
     | '/admin/ai-prompts'
+    | '/admin/inquiries'
     | '/admin/simulations'
     | '/admin/submissions'
+    | '/biz/apply'
+    | '/biz/coffee-chat'
     | '/biz/review'
     | '/simulation/$id'
     | '/simulations/all'
@@ -172,8 +202,11 @@ export interface FileRouteTypes {
     | '/simulations'
     | '/start'
     | '/admin/ai-prompts'
+    | '/admin/inquiries'
     | '/admin/simulations'
     | '/admin/submissions'
+    | '/biz/apply'
+    | '/biz/coffee-chat'
     | '/biz/review'
     | '/simulation/$id'
     | '/simulations/all'
@@ -188,8 +221,11 @@ export interface FileRouteTypes {
     | '/simulations'
     | '/start'
     | '/admin/ai-prompts'
+    | '/admin/inquiries'
     | '/admin/simulations'
     | '/admin/submissions'
+    | '/biz_/apply'
+    | '/biz_/coffee-chat'
     | '/biz_/review'
     | '/simulation/$id'
     | '/simulations_/all'
@@ -204,6 +240,8 @@ export interface RootRouteChildren {
   OnboardingRoute: typeof OnboardingRoute
   SimulationsRoute: typeof SimulationsRoute
   StartRoute: typeof StartRoute
+  BizApplyRoute: typeof BizApplyRoute
+  BizCoffeeChatRoute: typeof BizCoffeeChatRoute
   BizReviewRoute: typeof BizReviewRoute
   SimulationIdRoute: typeof SimulationIdRoute
   SimulationsAllRoute: typeof SimulationsAllRoute
@@ -288,6 +326,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BizReviewRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/biz_/coffee-chat': {
+      id: '/biz_/coffee-chat'
+      path: '/biz/coffee-chat'
+      fullPath: '/biz/coffee-chat'
+      preLoaderRoute: typeof BizCoffeeChatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/biz_/apply': {
+      id: '/biz_/apply'
+      path: '/biz/apply'
+      fullPath: '/biz/apply'
+      preLoaderRoute: typeof BizApplyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/submissions': {
       id: '/admin/submissions'
       path: '/submissions'
@@ -302,6 +354,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminSimulationsRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/inquiries': {
+      id: '/admin/inquiries'
+      path: '/inquiries'
+      fullPath: '/admin/inquiries'
+      preLoaderRoute: typeof AdminInquiriesRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/ai-prompts': {
       id: '/admin/ai-prompts'
       path: '/ai-prompts'
@@ -314,12 +373,14 @@ declare module '@tanstack/react-router' {
 
 interface AdminRouteChildren {
   AdminAiPromptsRoute: typeof AdminAiPromptsRoute
+  AdminInquiriesRoute: typeof AdminInquiriesRoute
   AdminSimulationsRoute: typeof AdminSimulationsRoute
   AdminSubmissionsRoute: typeof AdminSubmissionsRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminAiPromptsRoute: AdminAiPromptsRoute,
+  AdminInquiriesRoute: AdminInquiriesRoute,
   AdminSimulationsRoute: AdminSimulationsRoute,
   AdminSubmissionsRoute: AdminSubmissionsRoute,
 }
@@ -335,6 +396,8 @@ const rootRouteChildren: RootRouteChildren = {
   OnboardingRoute: OnboardingRoute,
   SimulationsRoute: SimulationsRoute,
   StartRoute: StartRoute,
+  BizApplyRoute: BizApplyRoute,
+  BizCoffeeChatRoute: BizCoffeeChatRoute,
   BizReviewRoute: BizReviewRoute,
   SimulationIdRoute: SimulationIdRoute,
   SimulationsAllRoute: SimulationsAllRoute,
@@ -342,3 +405,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

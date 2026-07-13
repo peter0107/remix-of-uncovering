@@ -112,6 +112,45 @@ export type Database = {
           },
         ]
       }
+      coffee_chat_bookings: {
+        Row: {
+          company_name: string
+          created_at: string
+          email: string
+          hiring_concern: string | null
+          id: string
+          name: string
+          phone: string
+          privacy_consent: boolean
+          slot_date: string
+          slot_time: string
+        }
+        Insert: {
+          company_name: string
+          created_at?: string
+          email: string
+          hiring_concern?: string | null
+          id?: string
+          name: string
+          phone: string
+          privacy_consent?: boolean
+          slot_date: string
+          slot_time: string
+        }
+        Update: {
+          company_name?: string
+          created_at?: string
+          email?: string
+          hiring_concern?: string | null
+          id?: string
+          name?: string
+          phone?: string
+          privacy_consent?: boolean
+          slot_date?: string
+          slot_time?: string
+        }
+        Relationships: []
+      }
       companies: {
         Row: {
           code: string | null
@@ -602,6 +641,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      service_applications: {
+        Row: {
+          company_name: string
+          contact_name: string
+          contact_title: string | null
+          created_at: string
+          email: string
+          id: string
+          phone: string
+          privacy_consent: boolean
+          wants_intro_meeting: boolean
+        }
+        Insert: {
+          company_name: string
+          contact_name: string
+          contact_title?: string | null
+          created_at?: string
+          email: string
+          id?: string
+          phone: string
+          privacy_consent?: boolean
+          wants_intro_meeting?: boolean
+        }
+        Update: {
+          company_name?: string
+          contact_name?: string
+          contact_title?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          phone?: string
+          privacy_consent?: boolean
+          wants_intro_meeting?: boolean
+        }
+        Relationships: []
       }
       submissions: {
         Row: {

@@ -1,5 +1,5 @@
 import { createFileRoute, Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
-import { ArrowRight, BriefcaseBusiness, FileText, SlidersHorizontal } from "lucide-react";
+import { ArrowRight, BriefcaseBusiness, FileText, Inbox, SlidersHorizontal } from "lucide-react";
 import { useEffect } from "react";
 
 import { useAuth } from "@/hooks/use-auth";
@@ -113,6 +113,26 @@ function AdminHome() {
                   </h2>
                   <p className="mt-2 text-sm leading-6 text-neutral-500">
                     Claude 지원자 평가 기준을 수정합니다.
+                  </p>
+                </div>
+                <ArrowRight className="mt-1 h-4 w-4 text-neutral-400 transition-colors group-hover:text-neutral-900" />
+              </div>
+            </Link>
+
+            <Link
+              to="/admin/inquiries"
+              className="group rounded-md border border-neutral-200 p-5 transition-colors hover:border-neutral-900 hover:bg-neutral-50"
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <div className="grid h-10 w-10 place-items-center rounded-md bg-neutral-100 text-neutral-900">
+                    <Inbox className="h-5 w-5" />
+                  </div>
+                  <h2 className="mt-4 text-base font-semibold text-neutral-900">
+                    가입 신청·커피챗
+                  </h2>
+                  <p className="mt-2 text-sm leading-6 text-neutral-500">
+                    기업 서비스 가입 신청과 커피챗 예약을 확인합니다.
                   </p>
                 </div>
                 <ArrowRight className="mt-1 h-4 w-4 text-neutral-400 transition-colors group-hover:text-neutral-900" />
