@@ -267,7 +267,7 @@ function ToolbarButton({
       disabled={disabled}
       onMouseDown={(event) => event.preventDefault()}
       onClick={onClick}
-      className={`grid h-8 w-8 place-items-center rounded-md transition-colors ${
+      className={`grid h-7 w-7 place-items-center rounded-md transition-colors ${
         active
           ? "bg-neutral-200 text-neutral-950"
           : "text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900"
@@ -568,65 +568,65 @@ export function RichTextEditor({
       <p className="mb-2 text-xs font-medium text-neutral-700">{label}</p>
       <div className="rounded-md border border-neutral-300 bg-white focus-within:border-neutral-900 focus-within:ring-1 focus-within:ring-neutral-900">
         <div className="border-b border-neutral-200 bg-neutral-50">
-          <div className="grid gap-1 px-2 py-1">
+          <div className="grid gap-0 px-1.5 py-0.5">
             <div className="flex flex-wrap items-center gap-0.5">
               <ToolbarButton label="굵게" onClick={() => command("bold")}>
-                <Bold className="h-4 w-4" />
+                <Bold className="h-3.5 w-3.5" />
               </ToolbarButton>
               <ToolbarButton label="기울임" onClick={() => command("italic")}>
-                <Italic className="h-4 w-4" />
+                <Italic className="h-3.5 w-3.5" />
               </ToolbarButton>
               <ToolbarButton
                 label="밑줄"
                 active={isUnderlined}
                 onClick={() => command("underline")}
               >
-                <Underline className="h-4 w-4" />
+                <Underline className="h-3.5 w-3.5" />
               </ToolbarButton>
               <ToolbarButton
                 label="취소선"
                 active={isStruckThrough}
                 onClick={() => command("strikeThrough")}
               >
-                <Strikethrough className="h-4 w-4" />
+                <Strikethrough className="h-3.5 w-3.5" />
               </ToolbarButton>
-              <span className="mx-1 h-4 w-px bg-neutral-200" />
+              <span className="mx-0.5 h-3.5 w-px bg-neutral-200" />
               <ToolbarButton label="제목 1" onClick={() => command("formatBlock", "h1")}>
-                <span className="text-[11px] font-bold">H1</span>
+                <span className="text-[10px] font-bold">H1</span>
               </ToolbarButton>
               <ToolbarButton label="제목 2" onClick={() => command("formatBlock", "h2")}>
-                <span className="text-[11px] font-bold">H2</span>
+                <span className="text-[10px] font-bold">H2</span>
               </ToolbarButton>
               <ToolbarButton label="제목 3" onClick={() => command("formatBlock", "h3")}>
-                <span className="text-[11px] font-bold">H3</span>
+                <span className="text-[10px] font-bold">H3</span>
               </ToolbarButton>
               <ToolbarButton label="제목 4" onClick={() => command("formatBlock", "h4")}>
-                <span className="text-[11px] font-bold">H4</span>
+                <span className="text-[10px] font-bold">H4</span>
               </ToolbarButton>
               <ToolbarButton label="일반 텍스트" onClick={() => command("formatBlock", "p")}>
-                <span className="text-xs font-medium">T</span>
+                <span className="text-[10px] font-medium">T</span>
               </ToolbarButton>
-              <span className="mx-1 h-4 w-px bg-neutral-200" />
+              <span className="mx-0.5 h-3.5 w-px bg-neutral-200" />
               <ToolbarButton label="글머리 목록" onClick={() => command("insertUnorderedList")}>
-                <List className="h-4 w-4" />
+                <List className="h-3.5 w-3.5" />
               </ToolbarButton>
               <ToolbarButton label="번호 목록" onClick={() => command("insertOrderedList")}>
-                <ListOrdered className="h-4 w-4" />
+                <ListOrdered className="h-3.5 w-3.5" />
               </ToolbarButton>
             </div>
-            <div className="flex flex-wrap items-center gap-0.5 border-t border-neutral-200 pt-1">
+            <div className="flex flex-wrap items-center gap-0.5 border-t border-neutral-200 pt-0.5">
               <ToolbarButton label="인용" onClick={() => command("formatBlock", "blockquote")}>
-                <Quote className="h-4 w-4" />
+                <Quote className="h-3.5 w-3.5" />
               </ToolbarButton>
               <ToolbarButton label="인라인 코드" active={isInlineCode} onClick={toggleInlineCode}>
-                <Code2 className="h-4 w-4" />
+                <Code2 className="h-3.5 w-3.5" />
               </ToolbarButton>
               <ToolbarButton label="코드 블록" active={isCodeBlock} onClick={toggleCodeBlock}>
-                <span className="font-mono text-xs">&lt;/&gt;</span>
+                <span className="font-mono text-[10px]">&lt;/&gt;</span>
               </ToolbarButton>
               <div className="relative flex items-center">
                 <ToolbarButton label="기본 3 x 3 표 삽입" onClick={() => insertTable(3, 3)}>
-                  <Table2 className="h-4 w-4" />
+                  <Table2 className="h-3.5 w-3.5" />
                 </ToolbarButton>
                 <button
                   type="button"
@@ -637,12 +637,12 @@ export function RichTextEditor({
                   onClick={() =>
                     setActivePalette((current) => (current === "table" ? null : "table"))
                   }
-                  className="-ml-1 grid h-8 w-4 place-items-center rounded-r-md text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-neutral-900"
+                  className="-ml-1 grid h-7 w-3.5 place-items-center rounded-r-md text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-neutral-900"
                 >
-                  <ChevronDown className="h-3 w-3" />
+                  <ChevronDown className="h-2.5 w-2.5" />
                 </button>
                 {activePalette === "table" && (
-                  <div className="absolute left-0 top-10 z-20 w-48 rounded-md border border-neutral-200 bg-white p-2">
+                  <div className="absolute left-0 top-8 z-20 w-48 rounded-md border border-neutral-200 bg-white p-2">
                     <p className="mb-2 text-xs text-neutral-500">
                       {tableGridSize.rows} x {tableGridSize.columns} 표
                     </p>
@@ -676,26 +676,26 @@ export function RichTextEditor({
                 )}
               </div>
               <ToolbarButton label="행 추가" disabled={!activeTable} onClick={addTableRow}>
-                <Rows3 className="h-4 w-4" />
+                <Rows3 className="h-3.5 w-3.5" />
               </ToolbarButton>
               <ToolbarButton label="행 삭제" disabled={!activeTable} onClick={deleteTableRow}>
-                <span className="text-sm leading-none">−</span>
+                <span className="text-xs leading-none">−</span>
               </ToolbarButton>
               <ToolbarButton label="열 추가" disabled={!activeTable} onClick={addTableColumn}>
-                <Columns3 className="h-4 w-4" />
+                <Columns3 className="h-3.5 w-3.5" />
               </ToolbarButton>
               <ToolbarButton label="열 삭제" disabled={!activeTable} onClick={deleteTableColumn}>
-                <span className="text-sm leading-none">−</span>
+                <span className="text-xs leading-none">−</span>
               </ToolbarButton>
               <ToolbarButton label="표 삭제" disabled={!activeTable} onClick={deleteTable}>
-                <Trash2 className="h-4 w-4" />
+                <Trash2 className="h-3.5 w-3.5" />
               </ToolbarButton>
-              <span className="mx-1 h-4 w-px bg-neutral-200" />
+              <span className="mx-0.5 h-3.5 w-px bg-neutral-200" />
               <ToolbarButton label="실행 취소" onClick={() => command("undo")}>
-                <Undo2 className="h-4 w-4" />
+                <Undo2 className="h-3.5 w-3.5" />
               </ToolbarButton>
               <ToolbarButton label="다시 실행" onClick={() => command("redo")}>
-                <Redo2 className="h-4 w-4" />
+                <Redo2 className="h-3.5 w-3.5" />
               </ToolbarButton>
             </div>
           </div>
