@@ -70,12 +70,14 @@ function AnswerTextarea({
   onChange,
   className = "",
   containerClassName = "",
+  ariaLabelledby,
 }: {
   id?: string;
   value: string;
   onChange: (value: string) => void;
   className?: string;
   containerClassName?: string;
+  ariaLabelledby?: string;
 }) {
   return (
     <div className={`relative min-h-0 ${containerClassName}`}>
@@ -83,6 +85,7 @@ function AnswerTextarea({
         id={id}
         value={value}
         onChange={(event) => onChange(event.target.value)}
+        aria-labelledby={ariaLabelledby}
         maxLength={MAX_ANSWER_LENGTH}
         placeholder="여기에 답안을 작성해주세요"
         className={`min-h-40 resize-none pb-8 ${className}`}
@@ -802,15 +805,21 @@ function SimulationDetailPage() {
         {/* 오른쪽: 제출 관련 */}
         <div className="flex flex-col lg:sticky lg:top-20 lg:h-[calc(100vh-6rem)]">
           <div className="flex min-h-0 flex-1 flex-col">
-            <label htmlFor="response" className="text-sm font-medium text-zinc-700">
-              {sim.single_answer_question?.trim() || "답안 작성"}
-            </label>
+            <div id="response-question" className="shrink-0">
+              <p className="text-sm font-medium text-zinc-700">제출 질문</p>
+              <Card className="mt-2 max-h-64 overflow-y-auto p-4">
+                <div className="prose prose-sm prose-zinc max-w-none prose-table:text-sm">
+                  <RichTextContent value={sim.single_answer_question?.trim() || "답안 작성"} />
+                </div>
+              </Card>
+            </div>
             <AnswerTextarea
               id="response"
               value={responseText}
               onChange={setResponseText}
+              ariaLabelledby="response-question"
               className="h-full flex-1"
-              containerClassName="mt-2 flex min-h-40 flex-1 flex-col"
+              containerClassName="mt-4 flex min-h-40 flex-1 flex-col"
             />
           </div>
 

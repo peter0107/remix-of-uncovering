@@ -1383,12 +1383,12 @@ function AdminSimulations() {
                   placeholder="유저에게 보여줄 과제 내용과 자료를 작성하세요."
                   minHeight="20rem"
                 />
-                <InputField
+                <RichTextEditor
                   label="답변 질문"
                   value={form.singleAnswerQuestion}
                   onChange={(value) => updateForm("singleAnswerQuestion", value)}
-                  placeholder="예: 이 상황에서 제안할 실행 전략을 작성해주세요."
-                  required
+                  placeholder="유저가 답안을 작성할 때 참고할 질문과 제출 기준을 작성하세요."
+                  minHeight="14rem"
                 />
               </>
             ) : (
