@@ -1174,9 +1174,6 @@ function AdminSimulations() {
               <p className="mt-1 text-xs text-neutral-500">
                 {selectedCompany?.name ?? "기업 선택"} · {companySimulations.length}개
               </p>
-              <p className="mt-1 text-xs text-neutral-400">
-                카드 배경을 변경하면 이 기업의 모든 시뮬레이션에 함께 적용됩니다.
-              </p>
             </div>
             <ListChecks className="h-4 w-4 text-neutral-400" />
           </div>
