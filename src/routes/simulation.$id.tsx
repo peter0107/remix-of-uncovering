@@ -28,6 +28,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
+import { chatWithSimulationAssistant } from "@/lib/ai-chat.functions";
 import { toast } from "sonner";
 import {
   allAnswered,
@@ -165,21 +166,31 @@ function SimulationDetailPage() {
     if (!text || chatSending) return;
     const now = new Date().toISOString();
     const userMsg: ChatMessage = { role: "user", content: text, at: now };
-    setChatMessages((prev) => [...prev, userMsg]);
+    const history = [...chatMessages, userMsg];
+    setChatMessages(history);
     setChatInput("");
     setChatSending(true);
-    // TODO: 실제 AI API 연결. 현재는 목업 응답.
-    await new Promise((r) => setTimeout(r, 600));
-    setChatMessages((prev) => [
-      ...prev,
-      {
-        role: "assistant",
-        content:
-          "곧 AI가 이 자리에서 답을 드릴 거예요. 지금은 준비 중이라 임시로 응답만 남기고 있어요. 질문 자체는 기업 담당자 화면에 남아요.",
-        at: new Date().toISOString(),
-      },
-    ]);
-    setChatSending(false);
+    try {
+      const { reply } = await chatWithSimulationAssistant({
+        data: {
+          simulationId: id,
+          messages: history.map(({ role, content }) => ({ role, content })),
+        },
+      });
+      setChatMessages((prev) => [
+        ...prev,
+        { role: "assistant", content: reply, at: new Date().toISOString() },
+      ]);
+    } catch (error) {
+      // 실패 시 방금 추가한 질문을 되돌리고 입력값을 복원해 재시도할 수 있게 한다.
+      setChatMessages((prev) => prev.filter((m) => m !== userMsg));
+      setChatInput(text);
+      toast.error(
+        error instanceof Error ? error.message : "AI 응답을 받지 못했어요. 잠시 후 다시 시도해 주세요.",
+      );
+    } finally {
+      setChatSending(false);
+    }
   };
 
   // 시뮬레이션 진행 중(제출 전)일 때만 이탈을 차단

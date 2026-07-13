@@ -1,7 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Bookmark, Filter, Search, Sparkles, X } from "lucide-react";
+import { Bookmark, ChevronDown, Filter, MessageSquare, Search, Sparkles, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { z } from "zod";
+
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 
 import {
   advanceApplicantReviewStageByCompanyCode,
@@ -19,6 +25,7 @@ import {
   type CompanyApplicants,
 } from "@/lib/applicants.functions";
 import { WORK_REGIONS } from "@/lib/profile-fields";
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 const searchSchema = z.object({
@@ -1379,6 +1386,42 @@ function ApplicantDetail({
                 ))}
               </div>
             </InfoBlock>
+
+            {applicant.aiChatLog.length > 0 && (
+              <InfoBlock>
+                <Collapsible>
+                  <CollapsibleTrigger className="group flex w-full items-center justify-between rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-left transition-colors hover:bg-neutral-100">
+                    <span className="flex items-center gap-2 text-sm font-semibold text-neutral-900">
+                      <MessageSquare className="h-4 w-4 text-neutral-500" />
+                      AI 어시스트 대화 기록
+                      <span className="text-neutral-400">({applicant.aiChatLog.length})</span>
+                    </span>
+                    <ChevronDown className="h-4 w-4 text-neutral-400 transition-transform group-data-[state=open]:rotate-180" />
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <div className="mt-3 space-y-3">
+                      {applicant.aiChatLog.map((message, index) => (
+                        <div key={index} className="space-y-1">
+                          <p className="text-xs font-medium text-neutral-500">
+                            {message.role === "user" ? "구직자" : "AI"}
+                          </p>
+                          <p
+                            className={cn(
+                              "whitespace-pre-line rounded-xl px-3 py-2 text-sm leading-relaxed",
+                              message.role === "user"
+                                ? "bg-neutral-100 text-neutral-800"
+                                : "bg-white text-neutral-700 ring-1 ring-neutral-200",
+                            )}
+                          >
+                            {message.content}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
+              </InfoBlock>
+            )}
           </div>
         </section>
       </div>
