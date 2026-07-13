@@ -2,12 +2,22 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { LayoutGrid } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SimulationCardPreview } from "@/components/SimulationCardPreview";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
 import { isDomainCategory } from "@/lib/domain-categories";
+import { INITIAL_PROFILE_FORM, JobInterestFields } from "@/lib/profile-fields";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/simulations")({
   head: () => ({ meta: [{ title: "추천 시뮬레이션 — Beginner" }] }),
@@ -190,6 +200,9 @@ function SimulationsPage() {
   const [sims, setSims] = useState<Simulation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [jobInterestEditorOpen, setJobInterestEditorOpen] = useState(false);
+  const [draftJobInterests, setDraftJobInterests] = useState<string[]>([]);
+  const [savingJobInterests, setSavingJobInterests] = useState(false);
 
   useEffect(() => {
     if (authLoading) return;
@@ -234,6 +247,48 @@ function SimulationsPage() {
 
   const hasOnboarding = !!seeker?.job_interests?.length;
   const isGuest = !authLoading && !user;
+  const jobInterestForm = {
+    ...INITIAL_PROFILE_FORM,
+    job_interests: draftJobInterests,
+  };
+
+  function openJobInterestEditor() {
+    setDraftJobInterests(seeker?.job_interests ?? []);
+    setJobInterestEditorOpen(true);
+  }
+
+  async function saveJobInterests() {
+    if (!user) return;
+    if (draftJobInterests.length === 0) {
+      toast.error("관심 직무를 하나 이상 선택해주세요.");
+      return;
+    }
+
+    setSavingJobInterests(true);
+    const { error: updateError } = await supabase
+      .from("job_seekers")
+      .update({ job_interests: draftJobInterests })
+      .eq("id", user.id);
+    setSavingJobInterests(false);
+
+    if (updateError) {
+      toast.error("관심 직무 저장 중 오류가 발생했어요.");
+      return;
+    }
+
+    const updatedSeeker: JobSeeker = {
+      job_interests: draftJobInterests,
+      company_interests: seeker?.company_interests ?? null,
+    };
+    setSeeker(updatedSeeker);
+    try {
+      setSims(await fetchRecommended(updatedSeeker));
+    } catch {
+      // 저장은 완료됐으므로, 다음 방문 시 최신 관심 직무 기준으로 다시 불러온다.
+    }
+    setJobInterestEditorOpen(false);
+    toast.success("관심 직무를 수정했어요.");
+  }
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-12">
@@ -261,12 +316,13 @@ function SimulationsPage() {
               {j}
             </span>
           ))}
-          <Link
-            to="/onboarding"
+          <button
+            type="button"
+            onClick={openJobInterestEditor}
             className="rounded-lg bg-zinc-50 px-3 py-1.5 text-xs text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-700"
           >
             수정
-          </Link>
+          </button>
         </div>
       )}
 
@@ -313,6 +369,43 @@ function SimulationsPage() {
           </Link>
         </div>
       )}
+
+      <Dialog open={jobInterestEditorOpen} onOpenChange={setJobInterestEditorOpen}>
+        <DialogContent className="max-w-2xl rounded-md p-6 shadow-none">
+          <DialogHeader>
+            <DialogTitle>관심 직무 수정</DialogTitle>
+            <DialogDescription>추천에 반영할 관심 직무군을 선택하세요.</DialogDescription>
+          </DialogHeader>
+          <div className="max-h-[55vh] overflow-y-auto py-2">
+            <JobInterestFields
+              data={jobInterestForm}
+              setData={(partial) => {
+                if (partial.job_interests) setDraftJobInterests(partial.job_interests);
+              }}
+              showHeader={false}
+            />
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setJobInterestEditorOpen(false)}
+              disabled={savingJobInterests}
+              className="rounded-md"
+            >
+              취소
+            </Button>
+            <Button
+              type="button"
+              onClick={saveJobInterests}
+              disabled={savingJobInterests}
+              className="rounded-md bg-zinc-900 text-white hover:bg-zinc-700"
+            >
+              {savingJobInterests ? "저장 중..." : "저장"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
