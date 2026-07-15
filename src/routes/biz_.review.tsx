@@ -1211,7 +1211,7 @@ function ApplicantDetail({
         </div>
       </div>
 
-      <div className="grid gap-8 p-6 xl:grid-cols-[1fr_1fr]">
+      <div className="grid gap-8 p-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         <section>
           <h3 className="text-xl font-semibold tracking-tight text-neutral-900">
             이력서 / 포트폴리오
