@@ -11,7 +11,7 @@ function getPostHogConfig() {
     options: {
       api_host: import.meta.env.VITE_PUBLIC_POSTHOG_HOST || "https://us.i.posthog.com",
       ui_host: import.meta.env.VITE_PUBLIC_POSTHOG_UI_HOST || "https://us.posthog.com",
-      defaults: "2025-05-24",
+      defaults: "2025-05-24" as const,
       capture_exceptions: true,
       capture_pageview: false,
       debug: import.meta.env.DEV,
