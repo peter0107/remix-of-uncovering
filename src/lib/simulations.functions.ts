@@ -767,16 +767,21 @@ export const deleteCompanySimulation = createServerFn({ method: "POST" })
     await assertAdmin();
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
+    // 연결된 제출 데이터가 있으면 함께 삭제 (외래키 제약 회피)
+    const { error: subError } = await supabaseAdmin
+      .from("submissions")
+      .delete()
+      .eq("job_simulation_id", data.id);
+
+    if (subError) {
+      console.error("Failed to delete related submissions:", subError);
+      throw new Error("Failed to delete related submissions");
+    }
+
     const { error } = await supabaseAdmin
       .from("job_simulations")
-      .update({
-        deleted_at: new Date().toISOString(),
-        is_public: false,
-      })
-      .eq("id", data.id)
-      .is("deleted_at", null)
-      .select("id")
-      .single();
+      .delete()
+      .eq("id", data.id);
 
     if (error) {
       console.error("Failed to delete simulation:", error);
