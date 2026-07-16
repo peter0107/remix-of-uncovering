@@ -7,7 +7,6 @@ import {
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
-import { PostHogProvider } from "@posthog/react";
 
 import appCss from "../styles.css?url";
 import { Toaster } from "@/components/ui/sonner";
@@ -140,19 +139,7 @@ function RootShell({ children }: { children: React.ReactNode }) {
         <HeadContent />
       </head>
       <body>
-        <PostHogProvider
-          apiKey={import.meta.env.VITE_PUBLIC_POSTHOG_PROJECT_TOKEN!}
-          options={{
-            api_host: import.meta.env.VITE_PUBLIC_POSTHOG_HOST || "https://us.i.posthog.com",
-            ui_host: import.meta.env.VITE_PUBLIC_POSTHOG_UI_HOST || "https://us.posthog.com",
-            defaults: "2025-05-24",
-            capture_exceptions: true,
-            capture_pageview: false,
-            debug: import.meta.env.DEV,
-          }}
-        >
-          {children}
-        </PostHogProvider>
+        {children}
         <Scripts />
       </body>
     </html>

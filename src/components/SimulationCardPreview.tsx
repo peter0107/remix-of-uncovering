@@ -94,6 +94,8 @@ export function SimulationCardPreview({
     <img
       src={companyLogoUrl.trim()}
       alt={`${resolvedCompanyName} 로고`}
+      loading="lazy"
+      decoding="async"
       className="h-full w-full object-cover"
     />
   ) : (
@@ -125,9 +127,13 @@ export function SimulationCardPreview({
           onImageClick();
         }}
       >
-        <div
-          className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: `url("${imageUrl}")` }}
+        <img
+          src={imageUrl}
+          alt=""
+          aria-hidden="true"
+          loading="lazy"
+          decoding="async"
+          className="absolute inset-0 h-full w-full object-cover"
         />
         <div className="absolute inset-0 bg-black/45" />
         {onImageClick && (

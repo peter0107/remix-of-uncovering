@@ -10,8 +10,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
 import { useAuth } from "@/hooks/use-auth";
 import { getPostLoginPath } from "@/lib/admin";
+import { capturePostHogEvent } from "@/lib/posthog";
 import { toast } from "sonner";
-import { usePostHog } from "@posthog/react";
 
 export const Route = createFileRoute("/login")({
   head: () => ({ meta: [{ title: "로그인 — Beginner" }] }),
@@ -31,7 +31,6 @@ function LoginPage() {
   const [passwordConfirm, setPasswordConfirm] = useState("");
   const [agree, setAgree] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const posthog = usePostHog();
 
   const isSignup = mode === "signup";
   const valid =
@@ -60,8 +59,7 @@ function LoginPage() {
           toast.error(error.message);
           return;
         }
-        posthog.identify(email, { email });
-        posthog.capture("user_signed_up", { email, method: "email" });
+        void capturePostHogEvent("user_signed_up", { email, method: "email" }, email);
         toast.success("회원가입이 완료되었습니다. 메일함에서 인증을 완료해주세요.");
       } else {
         const { data, error } = await supabase.auth.signInWithPassword({ email, password });
@@ -70,8 +68,11 @@ function LoginPage() {
           return;
         }
         const signedInEmail = data.user?.email ?? email;
-        posthog.identify(signedInEmail, { email: signedInEmail });
-        posthog.capture("user_logged_in", { email: signedInEmail, method: "email" });
+        void capturePostHogEvent(
+          "user_logged_in",
+          { email: signedInEmail, method: "email" },
+          signedInEmail,
+        );
         navigate({ to: getPostLoginPath(signedInEmail, redirect), replace: true });
       }
     } finally {
@@ -182,7 +183,7 @@ function LoginPage() {
               toast.error("Google 로그인에 실패했습니다.");
               return;
             }
-            posthog.capture("user_logged_in", { method: "google" });
+            void capturePostHogEvent("user_logged_in", { method: "google" });
             if (result.redirected) return;
             navigate({ to: target, replace: true });
           }}
