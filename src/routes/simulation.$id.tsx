@@ -516,7 +516,6 @@ function SimulationDetailPage() {
       {sim.estimated_minutes && (
         <div className="mt-2 flex items-center gap-1 text-xs text-zinc-400">
           <Clock className="h-3.5 w-3.5" />약 {sim.estimated_minutes}분
-          {model && <span className="text-zinc-300">· 단계별로 나눠서 진행돼요</span>}
         </div>
       )}
     </div>
