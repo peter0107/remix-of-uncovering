@@ -99,7 +99,10 @@ export type AdminSimulationPreview = Pick<
   | "steps"
   | "estimatedMinutes"
   | "companyName"
->;
+> & {
+  simulationSource: "company" | "expert";
+  expertNickname: string;
+};
 
 const domainCategorySchema = z.enum(DOMAIN_CATEGORIES);
 const simulationFormatSchema = z.enum(["single", "selection"]);
@@ -362,6 +365,7 @@ export const getAdminCompanies = createServerFn({ method: "GET" }).handler(
     const { data, error } = await supabaseAdmin
       .from("companies")
       .select("id, code, unique_code, name, description, logo_url, role_label, created_at")
+      .neq("code", "EXPERT-SIMULATIONS-2026")
       .order("name", { ascending: true });
 
     if (error) {
@@ -381,8 +385,9 @@ export const getAdminCompanySimulations = createServerFn({ method: "GET" }).hand
     const { data, error } = await supabaseAdmin
       .from("job_simulations")
       .select(
-        "id, company_id, title, role_label, job_family, domain, estimated_minutes, card_image_url, description, simulation_format, single_answer_question, task_prompt, steps, is_public, deleted_at, created_at, companies(code, unique_code, name, description, logo_url)",
+        "id, company_id, title, role_label, job_family, domain, estimated_minutes, card_image_url, description, simulation_source, expert_nickname, simulation_format, single_answer_question, task_prompt, steps, is_public, deleted_at, created_at, companies(code, unique_code, name, description, logo_url)",
       )
+      .eq("simulation_source", "company")
       .is("deleted_at", null)
       .order("created_at", { ascending: false });
 
@@ -404,7 +409,7 @@ export const getAdminSimulationPreview = createServerFn({ method: "GET" })
     const { data: row, error } = await supabaseAdmin
       .from("job_simulations")
       .select(
-        "id, company_id, title, role_label, job_family, domain, estimated_minutes, card_image_url, description, simulation_format, single_answer_question, task_prompt, steps, is_public, deleted_at, created_at, companies(code, unique_code, name, description, logo_url)",
+        "id, company_id, title, role_label, job_family, domain, estimated_minutes, card_image_url, description, simulation_source, expert_nickname, simulation_format, single_answer_question, task_prompt, steps, is_public, deleted_at, created_at, companies(code, unique_code, name, description, logo_url)",
       )
       .eq("id", data.id)
       .is("deleted_at", null)
@@ -424,7 +429,13 @@ export const getAdminSimulationPreview = createServerFn({ method: "GET" })
       taskPrompt: simulation.taskPrompt,
       steps: simulation.steps,
       estimatedMinutes: simulation.estimatedMinutes,
-      companyName: simulation.companyName,
+      companyName:
+        (row as Record<string, unknown>).simulation_source === "expert"
+          ? String((row as Record<string, unknown>).expert_nickname ?? "현직자")
+          : simulation.companyName,
+      simulationSource:
+        (row as Record<string, unknown>).simulation_source === "expert" ? "expert" : "company",
+      expertNickname: String((row as Record<string, unknown>).expert_nickname ?? ""),
     };
   });
 

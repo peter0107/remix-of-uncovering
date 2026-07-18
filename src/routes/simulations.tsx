@@ -85,6 +85,7 @@ async function fetchRecommended(seeker: JobSeeker): Promise<Simulation[]> {
     .select(
       "id, title, role_label, description, job_family, domain, estimated_minutes, card_image_url, companies(name, description, logo_url)",
     )
+    .eq("simulation_source", "company")
     .eq("is_public", true)
     .is("deleted_at", null)
     .limit(20); // 클라이언트에서 필터·정렬 후 3개 추출
@@ -116,6 +117,7 @@ export async function fetchAll(): Promise<Simulation[]> {
     .select(
       "id, title, role_label, description, job_family, domain, estimated_minutes, card_image_url, companies(name, description, logo_url)",
     )
+    .eq("simulation_source", "company")
     .eq("is_public", true)
     .is("deleted_at", null)
     .order("created_at", { ascending: false });
@@ -357,7 +359,7 @@ function SimulationsPage() {
 
       {/* 전체 직무 보기 */}
       {!loading && (
-        <div className="mt-8 flex justify-center">
+        <div className="mt-8 flex flex-wrap justify-center gap-2">
           <Link to="/simulations/all">
             <Button
               variant="outline"
@@ -365,6 +367,14 @@ function SimulationsPage() {
             >
               <LayoutGrid className="mr-2 h-4 w-4" />
               전체 직무 보기
+            </Button>
+          </Link>
+          <Link to="/expert-simulations">
+            <Button
+              variant="outline"
+              className="rounded-md border-zinc-300 text-zinc-700 hover:border-zinc-900 hover:text-zinc-900"
+            >
+              현직자 제시 보기
             </Button>
           </Link>
         </div>

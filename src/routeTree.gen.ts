@@ -14,6 +14,7 @@ import { Route as SimulationsRouteImport } from './routes/simulations'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as MyRouteImport } from './routes/my'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as ExpertSimulationsRouteImport } from './routes/expert-simulations'
 import { Route as BizRouteImport } from './routes/biz'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
@@ -26,7 +27,9 @@ import { Route as BizApplyRouteImport } from './routes/biz_.apply'
 import { Route as AdminSubmissionsRouteImport } from './routes/admin.submissions'
 import { Route as AdminSimulationsRouteImport } from './routes/admin.simulations'
 import { Route as AdminInquiriesRouteImport } from './routes/admin.inquiries'
+import { Route as AdminExpertSimulationsRouteImport } from './routes/admin.expert-simulations'
 import { Route as AdminAiPromptsRouteImport } from './routes/admin.ai-prompts'
+import { Route as ExpertSimulationIdFeedbackRouteImport } from './routes/expert-simulation.$id.feedback'
 
 const StartRoute = StartRouteImport.update({
   id: '/start',
@@ -51,6 +54,11 @@ const MyRoute = MyRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ExpertSimulationsRoute = ExpertSimulationsRouteImport.update({
+  id: '/expert-simulations',
+  path: '/expert-simulations',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BizRoute = BizRouteImport.update({
@@ -113,22 +121,35 @@ const AdminInquiriesRoute = AdminInquiriesRouteImport.update({
   path: '/inquiries',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminExpertSimulationsRoute = AdminExpertSimulationsRouteImport.update({
+  id: '/expert-simulations',
+  path: '/expert-simulations',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminAiPromptsRoute = AdminAiPromptsRouteImport.update({
   id: '/ai-prompts',
   path: '/ai-prompts',
   getParentRoute: () => AdminRoute,
 } as any)
+const ExpertSimulationIdFeedbackRoute =
+  ExpertSimulationIdFeedbackRouteImport.update({
+    id: '/expert-simulation/$id/feedback',
+    path: '/expert-simulation/$id/feedback',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/biz': typeof BizRoute
+  '/expert-simulations': typeof ExpertSimulationsRoute
   '/login': typeof LoginRoute
   '/my': typeof MyRoute
   '/onboarding': typeof OnboardingRoute
   '/simulations': typeof SimulationsRoute
   '/start': typeof StartRoute
   '/admin/ai-prompts': typeof AdminAiPromptsRoute
+  '/admin/expert-simulations': typeof AdminExpertSimulationsRoute
   '/admin/inquiries': typeof AdminInquiriesRoute
   '/admin/simulations': typeof AdminSimulationsRoute
   '/admin/submissions': typeof AdminSubmissionsRoute
@@ -138,17 +159,20 @@ export interface FileRoutesByFullPath {
   '/biz/review': typeof BizReviewRoute
   '/simulation/$id': typeof SimulationIdRoute
   '/simulations/all': typeof SimulationsAllRoute
+  '/expert-simulation/$id/feedback': typeof ExpertSimulationIdFeedbackRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/biz': typeof BizRoute
+  '/expert-simulations': typeof ExpertSimulationsRoute
   '/login': typeof LoginRoute
   '/my': typeof MyRoute
   '/onboarding': typeof OnboardingRoute
   '/simulations': typeof SimulationsRoute
   '/start': typeof StartRoute
   '/admin/ai-prompts': typeof AdminAiPromptsRoute
+  '/admin/expert-simulations': typeof AdminExpertSimulationsRoute
   '/admin/inquiries': typeof AdminInquiriesRoute
   '/admin/simulations': typeof AdminSimulationsRoute
   '/admin/submissions': typeof AdminSubmissionsRoute
@@ -158,18 +182,21 @@ export interface FileRoutesByTo {
   '/biz/review': typeof BizReviewRoute
   '/simulation/$id': typeof SimulationIdRoute
   '/simulations/all': typeof SimulationsAllRoute
+  '/expert-simulation/$id/feedback': typeof ExpertSimulationIdFeedbackRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/biz': typeof BizRoute
+  '/expert-simulations': typeof ExpertSimulationsRoute
   '/login': typeof LoginRoute
   '/my': typeof MyRoute
   '/onboarding': typeof OnboardingRoute
   '/simulations': typeof SimulationsRoute
   '/start': typeof StartRoute
   '/admin/ai-prompts': typeof AdminAiPromptsRoute
+  '/admin/expert-simulations': typeof AdminExpertSimulationsRoute
   '/admin/inquiries': typeof AdminInquiriesRoute
   '/admin/simulations': typeof AdminSimulationsRoute
   '/admin/submissions': typeof AdminSubmissionsRoute
@@ -179,6 +206,7 @@ export interface FileRoutesById {
   '/biz_/review': typeof BizReviewRoute
   '/simulation/$id': typeof SimulationIdRoute
   '/simulations_/all': typeof SimulationsAllRoute
+  '/expert-simulation/$id/feedback': typeof ExpertSimulationIdFeedbackRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -186,12 +214,14 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/biz'
+    | '/expert-simulations'
     | '/login'
     | '/my'
     | '/onboarding'
     | '/simulations'
     | '/start'
     | '/admin/ai-prompts'
+    | '/admin/expert-simulations'
     | '/admin/inquiries'
     | '/admin/simulations'
     | '/admin/submissions'
@@ -201,17 +231,20 @@ export interface FileRouteTypes {
     | '/biz/review'
     | '/simulation/$id'
     | '/simulations/all'
+    | '/expert-simulation/$id/feedback'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/admin'
     | '/biz'
+    | '/expert-simulations'
     | '/login'
     | '/my'
     | '/onboarding'
     | '/simulations'
     | '/start'
     | '/admin/ai-prompts'
+    | '/admin/expert-simulations'
     | '/admin/inquiries'
     | '/admin/simulations'
     | '/admin/submissions'
@@ -221,17 +254,20 @@ export interface FileRouteTypes {
     | '/biz/review'
     | '/simulation/$id'
     | '/simulations/all'
+    | '/expert-simulation/$id/feedback'
   id:
     | '__root__'
     | '/'
     | '/admin'
     | '/biz'
+    | '/expert-simulations'
     | '/login'
     | '/my'
     | '/onboarding'
     | '/simulations'
     | '/start'
     | '/admin/ai-prompts'
+    | '/admin/expert-simulations'
     | '/admin/inquiries'
     | '/admin/simulations'
     | '/admin/submissions'
@@ -241,12 +277,14 @@ export interface FileRouteTypes {
     | '/biz_/review'
     | '/simulation/$id'
     | '/simulations_/all'
+    | '/expert-simulation/$id/feedback'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRouteWithChildren
   BizRoute: typeof BizRoute
+  ExpertSimulationsRoute: typeof ExpertSimulationsRoute
   LoginRoute: typeof LoginRoute
   MyRoute: typeof MyRoute
   OnboardingRoute: typeof OnboardingRoute
@@ -258,6 +296,7 @@ export interface RootRouteChildren {
   BizReviewRoute: typeof BizReviewRoute
   SimulationIdRoute: typeof SimulationIdRoute
   SimulationsAllRoute: typeof SimulationsAllRoute
+  ExpertSimulationIdFeedbackRoute: typeof ExpertSimulationIdFeedbackRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -295,6 +334,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/expert-simulations': {
+      id: '/expert-simulations'
+      path: '/expert-simulations'
+      fullPath: '/expert-simulations'
+      preLoaderRoute: typeof ExpertSimulationsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/biz': {
@@ -381,6 +427,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminInquiriesRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/expert-simulations': {
+      id: '/admin/expert-simulations'
+      path: '/expert-simulations'
+      fullPath: '/admin/expert-simulations'
+      preLoaderRoute: typeof AdminExpertSimulationsRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/ai-prompts': {
       id: '/admin/ai-prompts'
       path: '/ai-prompts'
@@ -388,11 +441,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAiPromptsRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/expert-simulation/$id/feedback': {
+      id: '/expert-simulation/$id/feedback'
+      path: '/expert-simulation/$id/feedback'
+      fullPath: '/expert-simulation/$id/feedback'
+      preLoaderRoute: typeof ExpertSimulationIdFeedbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 interface AdminRouteChildren {
   AdminAiPromptsRoute: typeof AdminAiPromptsRoute
+  AdminExpertSimulationsRoute: typeof AdminExpertSimulationsRoute
   AdminInquiriesRoute: typeof AdminInquiriesRoute
   AdminSimulationsRoute: typeof AdminSimulationsRoute
   AdminSubmissionsRoute: typeof AdminSubmissionsRoute
@@ -400,6 +461,7 @@ interface AdminRouteChildren {
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminAiPromptsRoute: AdminAiPromptsRoute,
+  AdminExpertSimulationsRoute: AdminExpertSimulationsRoute,
   AdminInquiriesRoute: AdminInquiriesRoute,
   AdminSimulationsRoute: AdminSimulationsRoute,
   AdminSubmissionsRoute: AdminSubmissionsRoute,
@@ -411,6 +473,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRouteWithChildren,
   BizRoute: BizRoute,
+  ExpertSimulationsRoute: ExpertSimulationsRoute,
   LoginRoute: LoginRoute,
   MyRoute: MyRoute,
   OnboardingRoute: OnboardingRoute,
@@ -422,6 +485,7 @@ const rootRouteChildren: RootRouteChildren = {
   BizReviewRoute: BizReviewRoute,
   SimulationIdRoute: SimulationIdRoute,
   SimulationsAllRoute: SimulationsAllRoute,
+  ExpertSimulationIdFeedbackRoute: ExpertSimulationIdFeedbackRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

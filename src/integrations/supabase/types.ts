@@ -502,54 +502,81 @@ export type Database = {
       }
       job_simulations: {
         Row: {
+          card_background_color: string
           card_image_url: string | null
+          card_text_color: string
           company_id: string
           created_at: string | null
           deleted_at: string | null
           description: string | null
           domain: string | null
           estimated_minutes: number | null
+          expert_ai_feedback: string | null
+          expert_company_type: string | null
+          expert_experience_band: string | null
+          expert_job_title: string | null
+          expert_model_answer: string | null
+          expert_nickname: string | null
           id: string
           is_public: boolean
           job_family: string | null
           role_label: string | null
           simulation_format: string
+          simulation_source: string
           single_answer_question: string | null
           steps: Json | null
           task_prompt: string | null
           title: string
         }
         Insert: {
+          card_background_color?: string
           card_image_url?: string | null
+          card_text_color?: string
           company_id: string
           created_at?: string | null
           deleted_at?: string | null
           description?: string | null
           domain?: string | null
           estimated_minutes?: number | null
+          expert_ai_feedback?: string | null
+          expert_company_type?: string | null
+          expert_experience_band?: string | null
+          expert_job_title?: string | null
+          expert_model_answer?: string | null
+          expert_nickname?: string | null
           id?: string
           is_public?: boolean
           job_family?: string | null
           role_label?: string | null
           simulation_format?: string
+          simulation_source?: string
           single_answer_question?: string | null
           steps?: Json | null
           task_prompt?: string | null
           title: string
         }
         Update: {
+          card_background_color?: string
           card_image_url?: string | null
+          card_text_color?: string
           company_id?: string
           created_at?: string | null
           deleted_at?: string | null
           description?: string | null
           domain?: string | null
           estimated_minutes?: number | null
+          expert_ai_feedback?: string | null
+          expert_company_type?: string | null
+          expert_experience_band?: string | null
+          expert_job_title?: string | null
+          expert_model_answer?: string | null
+          expert_nickname?: string | null
           id?: string
           is_public?: boolean
           job_family?: string | null
           role_label?: string | null
           simulation_format?: string
+          simulation_source?: string
           single_answer_question?: string | null
           steps?: Json | null
           task_prompt?: string | null

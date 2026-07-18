@@ -9,6 +9,7 @@ import {
   Send,
   X,
   MessageCircle,
+  UserRound,
 } from "lucide-react";
 import { RichTextContent } from "@/components/RichTextEditor";
 import { Card } from "@/components/ui/card";
@@ -55,6 +56,8 @@ export const Route = createFileRoute("/simulation/$id")({
 type SimulationDetail = {
   id: string;
   title: string;
+  simulation_source: "company" | "expert";
+  expert_nickname: string | null;
   simulation_format: "single" | "selection";
   single_answer_question: string | null;
   task_prompt: string | null;
@@ -222,6 +225,8 @@ function SimulationDetailPage() {
           setSim({
             id: data.id,
             title: data.title,
+            simulation_source: data.simulationSource,
+            expert_nickname: data.expertNickname || null,
             simulation_format: data.simulationFormat,
             single_answer_question: data.singleAnswerQuestion,
             task_prompt: data.taskPrompt,
@@ -235,7 +240,7 @@ function SimulationDetailPage() {
         const { data } = await supabase
           .from("job_simulations")
           .select(
-            "id, title, simulation_format, single_answer_question, task_prompt, steps, estimated_minutes, companies(name)",
+            "id, title, simulation_source, expert_nickname, simulation_format, single_answer_question, task_prompt, steps, estimated_minutes, companies(name)",
           )
           .eq("id", id)
           .eq("is_public", true)
@@ -246,6 +251,8 @@ function SimulationDetailPage() {
         const row = data as unknown as {
           id: string;
           title: string;
+          simulation_source: "company" | "expert" | null;
+          expert_nickname: string | null;
           simulation_format: "single" | "selection" | null;
           single_answer_question: string | null;
           task_prompt: string | null;
@@ -256,12 +263,17 @@ function SimulationDetailPage() {
         setSim({
           id: row.id,
           title: row.title,
+          simulation_source: row.simulation_source === "expert" ? "expert" : "company",
+          expert_nickname: row.expert_nickname,
           simulation_format: row.simulation_format === "selection" ? "selection" : "single",
           single_answer_question: row.single_answer_question,
           task_prompt: row.task_prompt,
           steps: row.steps,
           estimated_minutes: row.estimated_minutes,
-          company_name: row.companies?.name ?? "",
+          company_name:
+            row.simulation_source === "expert"
+              ? row.expert_nickname || "현직자"
+              : (row.companies?.name ?? ""),
         });
       } catch (error) {
         toast.error(error instanceof Error ? error.message : "시뮬레이션을 불러오지 못했습니다.");
@@ -446,23 +458,38 @@ function SimulationDetailPage() {
   }
 
   if (submittedAt) {
+    const isExpertSimulation = sim.simulation_source === "expert";
     return (
       <div className="mx-auto max-w-md px-4 py-20 text-center">
         <CheckCircle2 className="mx-auto h-12 w-12 text-zinc-900" />
         <h1 className="mt-4 text-xl font-bold text-zinc-900">제출이 완료됐어요</h1>
         <p className="mt-2 text-sm text-zinc-500">
-          {applicationSent
-            ? `${sim.company_name}에 답안이 전달돼요. 관심이 있으면 먼저 연락드릴 수 있어요.`
-            : "지원하기를 누르면 이력서와 시뮬레이션 답안이 기업 담당자 화면에 표시돼요."}
+          {isExpertSimulation
+            ? "현직자 모범답안과 AI 활용 기록을 확인할 수 있어요."
+            : applicationSent
+              ? `${sim.company_name}에 답안이 전달돼요. 관심이 있으면 먼저 연락드릴 수 있어요.`
+              : "지원하기를 누르면 이력서와 시뮬레이션 답안이 기업 담당자 화면에 표시돼요."}
         </p>
         <div className="mt-8 flex flex-col gap-2">
-          <Button
-            className="rounded-md bg-zinc-900 text-white hover:bg-zinc-700"
-            disabled={applying || applicationSent}
-            onClick={handleApply}
-          >
-            {applicationSent ? "지원 완료" : applying ? "지원 중..." : "지원하기"}
-          </Button>
+          {isExpertSimulation ? (
+            <Link
+              to="/expert-simulation/$id/feedback"
+              params={{ id: sim.id }}
+              search={submittedId ? { submission: submittedId } : {}}
+            >
+              <Button className="w-full rounded-md bg-zinc-900 text-white hover:bg-zinc-700">
+                현직자 피드백 보기
+              </Button>
+            </Link>
+          ) : (
+            <Button
+              className="rounded-md bg-zinc-900 text-white hover:bg-zinc-700"
+              disabled={applying || applicationSent}
+              onClick={handleApply}
+            >
+              {applicationSent ? "지원 완료" : applying ? "지원 중..." : "지원하기"}
+            </Button>
+          )}
           <Link to="/simulations">
             <Button variant="outline" className="w-full rounded-md">
               다른 시뮬레이션 더 보기
@@ -473,10 +500,15 @@ function SimulationDetailPage() {
     );
   }
 
+  const isExpertSimulation = sim.simulation_source === "expert";
   const header = (
     <div>
       <div className="flex items-center gap-1.5 text-xs text-zinc-400">
-        <Building2 className="h-3.5 w-3.5" />
+        {isExpertSimulation ? (
+          <UserRound className="h-3.5 w-3.5" />
+        ) : (
+          <Building2 className="h-3.5 w-3.5" />
+        )}
         {sim.company_name}
       </div>
       <h1 className="mt-1 text-2xl font-bold text-zinc-900">{sim.title}</h1>
@@ -492,12 +524,16 @@ function SimulationDetailPage() {
   const consentBlock = (
     <div className="mt-6 shrink-0 rounded-md border border-zinc-200 p-5">
       <p className="text-sm font-semibold text-zinc-900">
-        이 답안을 {sim.company_name}에 전송하는 것에 동의하시나요?
+        {isExpertSimulation
+          ? "이 답안과 AI 활용 기록을 피드백 화면에 저장할까요?"
+          : `이 답안을 ${sim.company_name}에 전송하는 것에 동의하시나요?`}
       </p>
-      <p className="mt-1 text-xs text-zinc-400">
-        동의하면 답안 원문이 기업 담당자에게 그대로 전달돼요. 동의하지 않아도 제출 자체는 되고,
-        마이페이지 이력에는 남아요.
-      </p>
+      {!isExpertSimulation && (
+        <p className="mt-1 text-xs text-zinc-400">
+          동의하면 답안 원문이 기업 담당자에게 그대로 전달돼요. 동의하지 않아도 제출 자체는 되고,
+          마이페이지 이력에는 남아요.
+        </p>
+      )}
       <div className="mt-4 flex flex-col gap-2 sm:flex-row">
         <button
           type="button"
