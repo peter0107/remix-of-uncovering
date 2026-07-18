@@ -466,6 +466,39 @@ export function RichTextEditor({
     window.requestAnimationFrame(refreshToolbarState);
   };
 
+  const removeEmptyHeadings = () => {
+    const editor = editorRef.current;
+    if (!editor) return;
+
+    Array.from(editor.querySelectorAll("h1, h2, h3, h4")).forEach((heading) => {
+      const hasText = heading.textContent?.replace(/\u00a0/g, " ").trim();
+      const hasNonTextContent = heading.querySelector("img, table, figure");
+      if (hasText || hasNonTextContent) return;
+
+      const nextBlock = heading.nextElementSibling as HTMLElement | null;
+      const previousBlock = heading.previousElementSibling as HTMLElement | null;
+      const selection = window.getSelection();
+      const anchor = selection?.anchorNode;
+      const wasEditingHeading = Boolean(anchor && heading.contains(anchor));
+      heading.remove();
+
+      if (!wasEditingHeading) return;
+      const destination = nextBlock ?? previousBlock;
+      if (!destination) return;
+
+      const range = document.createRange();
+      range.selectNodeContents(destination);
+      range.collapse(Boolean(nextBlock));
+      selection?.removeAllRanges();
+      selection?.addRange(range);
+    });
+  };
+
+  const handleEditorInput = () => {
+    removeEmptyHeadings();
+    commitChange();
+  };
+
   const command = (name: string, commandValue?: string) => {
     restoreSelection();
     document.execCommand(name, false, commandValue);
@@ -1085,7 +1118,7 @@ export function RichTextEditor({
           role="textbox"
           aria-multiline="true"
           data-placeholder={placeholder}
-          onInput={() => commitChange()}
+          onInput={handleEditorInput}
           onKeyDown={handleEditorKeyDown}
           onKeyUp={refreshToolbarState}
           onMouseUp={refreshToolbarState}
