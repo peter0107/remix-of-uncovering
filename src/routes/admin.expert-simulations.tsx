@@ -17,11 +17,7 @@ import {
   updateExpertSimulation,
   type AdminExpertSimulation,
 } from "@/lib/expert-simulations.functions";
-import type {
-  AdminSimulationPrompt,
-  AdminSimulationStep,
-  SimulationFormat,
-} from "@/lib/simulations.functions";
+import type { AdminSimulationStep, SimulationFormat } from "@/lib/simulations.functions";
 
 export const Route = createFileRoute("/admin/expert-simulations")({
   head: () => ({ meta: [{ title: "Beginner - 현직자 시뮬레이션 관리" }] }),
@@ -48,10 +44,6 @@ type ExpertSimulationForm = {
   aiFeedback: string;
 };
 
-function createPrompt(): AdminSimulationPrompt {
-  return { id: `prompt-${crypto.randomUUID()}`, label: "", body: "" };
-}
-
 function createStep(): AdminSimulationStep {
   return {
     id: `step-${crypto.randomUUID()}`,
@@ -62,7 +54,7 @@ function createStep(): AdminSimulationStep {
     materials: "",
     hint: "",
     completionMessage: "",
-    prompts: [createPrompt()],
+    prompts: [{ id: `prompt-${crypto.randomUUID()}`, label: "", body: "" }],
   };
 }
 
@@ -100,7 +92,13 @@ function formFromSimulation(simulation: AdminExpertSimulation): ExpertSimulation
     simulationFormat: simulation.simulationFormat,
     singleAnswerQuestion: simulation.singleAnswerQuestion,
     taskPrompt: simulation.taskPrompt,
-    steps: simulation.steps,
+    steps: simulation.steps.map((step) => ({
+      ...step,
+      prompts:
+        step.prompts.slice(0, 1).length > 0
+          ? step.prompts.slice(0, 1)
+          : [{ id: `prompt-${crypto.randomUUID()}`, label: "", body: "" }],
+    })),
     nickname: simulation.nickname,
     companyType: simulation.companyType,
     experienceBand: simulation.experienceBand,
@@ -116,10 +114,7 @@ function hasValidSteps(steps: AdminSimulationStep[]) {
   return (
     steps.length > 0 &&
     steps.every(
-      (step) =>
-        step.title.trim() &&
-        step.prompts.length > 0 &&
-        step.prompts.every((prompt) => prompt.label.trim()),
+      (step) => step.title.trim() && step.prompts.length === 1 && step.prompts[0]?.label.trim(),
     )
   );
 }
@@ -128,7 +123,7 @@ function prepareSteps(steps: AdminSimulationStep[]) {
   return steps.map((step) => ({
     ...step,
     title: step.title.trim(),
-    prompts: step.prompts.map((prompt) => ({
+    prompts: step.prompts.slice(0, 1).map((prompt) => ({
       ...prompt,
       label: prompt.label.trim(),
       body: prompt.body.trim(),
@@ -136,11 +131,14 @@ function prepareSteps(steps: AdminSimulationStep[]) {
   }));
 }
 
+type StepEditorPanel = "situation" | "materials" | "questions";
+
 function AdminExpertSimulations() {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const [simulations, setSimulations] = useState<AdminExpertSimulation[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [stepEditorPanel, setStepEditorPanel] = useState<StepEditorPanel>("situation");
   const [form, setForm] = useState<ExpertSimulationForm>(createEmptyForm);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -194,11 +192,13 @@ function AdminExpertSimulations() {
   const selectSimulation = (simulation: AdminExpertSimulation) => {
     setSelectedId(simulation.id);
     setForm(formFromSimulation(simulation));
+    setStepEditorPanel("situation");
   };
 
   const startNew = () => {
     setSelectedId(null);
     setForm(createEmptyForm());
+    setStepEditorPanel("situation");
   };
 
   const updateForm = <K extends keyof ExpertSimulationForm>(
@@ -514,7 +514,10 @@ function AdminExpertSimulations() {
                     <button
                       key={format}
                       type="button"
-                      onClick={() => updateForm("simulationFormat", format)}
+                      onClick={() => {
+                        updateForm("simulationFormat", format);
+                        if (format === "selection") setStepEditorPanel("situation");
+                      }}
                       className={`rounded-full px-3 py-1.5 text-xs font-semibold ${form.simulationFormat === format ? "bg-neutral-900 text-white" : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"}`}
                     >
                       {format === "single" ? "단일형" : "선택형"}
@@ -522,6 +525,32 @@ function AdminExpertSimulations() {
                   ))}
                 </div>
               </div>
+
+              {form.simulationFormat === "selection" && (
+                <div className="flex flex-wrap gap-2">
+                  {(
+                    [
+                      ["situation", "상황 안내"],
+                      ["materials", "제공 자료"],
+                      ["questions", "단계별 질문"],
+                    ] as const
+                  ).map(([panel, label]) => (
+                    <button
+                      key={panel}
+                      type="button"
+                      aria-pressed={stepEditorPanel === panel}
+                      onClick={() => setStepEditorPanel(panel)}
+                      className={`rounded-full px-3 py-1.5 text-xs font-semibold ${
+                        stepEditorPanel === panel
+                          ? "bg-neutral-900 text-white"
+                          : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              )}
 
               {form.simulationFormat === "single" ? (
                 <>
@@ -542,6 +571,7 @@ function AdminExpertSimulations() {
                 <ExpertStepEditor
                   steps={form.steps}
                   onChange={(steps) => updateForm("steps", steps)}
+                  activePanel={stepEditorPanel}
                 />
               )}
 
@@ -595,25 +625,21 @@ function AdminExpertSimulations() {
 function ExpertStepEditor({
   steps,
   onChange,
+  activePanel,
 }: {
   steps: AdminSimulationStep[];
   onChange: (steps: AdminSimulationStep[]) => void;
+  activePanel: StepEditorPanel;
 }) {
   const updateStep = (index: number, patch: Partial<AdminSimulationStep>) =>
     onChange(steps.map((step, current) => (current === index ? { ...step, ...patch } : step)));
-  const updatePrompt = (
-    stepIndex: number,
-    promptIndex: number,
-    patch: Partial<AdminSimulationPrompt>,
-  ) =>
+  const updatePrompt = (stepIndex: number, patch: { label?: string; body?: string }) =>
     onChange(
       steps.map((step, current) =>
         current === stepIndex
           ? {
               ...step,
-              prompts: step.prompts.map((prompt, promptCurrent) =>
-                promptCurrent === promptIndex ? { ...prompt, ...patch } : prompt,
-              ),
+              prompts: step.prompts.slice(0, 1).map((prompt) => ({ ...prompt, ...patch })),
             }
           : step,
       ),
@@ -688,87 +714,50 @@ function ExpertStepEditor({
                 options={["1", "2", "3", "4", "5"]}
               />
             </div>
-            <div className="mt-4 grid gap-4">
-              <RichTextEditor
-                label="상황 안내"
-                value={step.situation ?? ""}
-                onChange={(value) => updateStep(stepIndex, { situation: value })}
-              />
-              <RichTextEditor
-                label="제공 자료"
-                value={step.materials ?? ""}
-                onChange={(value) => updateStep(stepIndex, { materials: value })}
-                minHeight="12rem"
-              />
-              <RichTextEditor
-                label="힌트"
-                value={step.hint ?? ""}
-                onChange={(value) => updateStep(stepIndex, { hint: value })}
-              />
-            </div>
-            <div className="mt-4 border-t border-neutral-200 pt-4">
-              <div className="flex items-center justify-between gap-3">
+            {activePanel === "situation" && (
+              <div className="mt-4 grid gap-4">
+                <RichTextEditor
+                  label="상황 안내"
+                  value={step.situation ?? ""}
+                  onChange={(value) => updateStep(stepIndex, { situation: value })}
+                />
+                <RichTextEditor
+                  label="힌트"
+                  value={step.hint ?? ""}
+                  onChange={(value) => updateStep(stepIndex, { hint: value })}
+                />
+              </div>
+            )}
+            {activePanel === "materials" && (
+              <div className="mt-4">
+                <RichTextEditor
+                  label="제공 자료"
+                  value={step.materials ?? ""}
+                  onChange={(value) => updateStep(stepIndex, { materials: value })}
+                  minHeight="12rem"
+                />
+              </div>
+            )}
+            {activePanel === "questions" && (
+              <div className="mt-4 border-t border-neutral-200 pt-4">
                 <p className="text-xs font-semibold">답변 질문</p>
-                <button
-                  type="button"
-                  onClick={() =>
-                    updateStep(stepIndex, { prompts: [...step.prompts, createPrompt()] })
-                  }
-                  className="inline-flex h-8 items-center gap-1 rounded-md border border-neutral-300 px-3 text-xs font-medium hover:bg-neutral-50"
-                >
-                  <Plus className="h-3.5 w-3.5" /> 질문 추가
-                </button>
-              </div>
-              <div className="mt-3 space-y-3">
-                {step.prompts.map((prompt, promptIndex) => (
-                  <div key={prompt.id} className="rounded-md border border-neutral-200 p-3">
-                    <div className="flex justify-end gap-1">
-                      <IconButton
-                        label="질문 위로 이동"
-                        disabled={promptIndex === 0}
-                        onClick={() =>
-                          updateStep(stepIndex, { prompts: move(step.prompts, promptIndex, -1) })
-                        }
-                      >
-                        <ChevronUp className="h-4 w-4" />
-                      </IconButton>
-                      <IconButton
-                        label="질문 아래로 이동"
-                        disabled={promptIndex === step.prompts.length - 1}
-                        onClick={() =>
-                          updateStep(stepIndex, { prompts: move(step.prompts, promptIndex, 1) })
-                        }
-                      >
-                        <ChevronDown className="h-4 w-4" />
-                      </IconButton>
-                      <IconButton
-                        label="질문 삭제"
-                        onClick={() =>
-                          updateStep(stepIndex, {
-                            prompts: step.prompts.filter((_, index) => index !== promptIndex),
-                          })
-                        }
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </IconButton>
-                    </div>
-                    <div className="mt-2 grid gap-3">
-                      <Field
-                        label="질문 제목"
-                        value={prompt.label}
-                        onChange={(value) => updatePrompt(stepIndex, promptIndex, { label: value })}
-                        required
-                      />
-                      <RichTextEditor
-                        label="질문 설명"
-                        value={prompt.body}
-                        onChange={(value) => updatePrompt(stepIndex, promptIndex, { body: value })}
-                      />
-                    </div>
+                <div className="mt-3 rounded-md border border-neutral-200 p-3">
+                  <div className="grid gap-3">
+                    <Field
+                      label="질문 제목"
+                      value={step.prompts[0]?.label ?? ""}
+                      onChange={(value) => updatePrompt(stepIndex, { label: value })}
+                      required
+                    />
+                    <RichTextEditor
+                      label="질문 설명"
+                      value={step.prompts[0]?.body ?? ""}
+                      onChange={(value) => updatePrompt(stepIndex, { body: value })}
+                    />
                   </div>
-                ))}
+                </div>
               </div>
-            </div>
+            )}
           </div>
         ))}
       </div>
