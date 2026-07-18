@@ -1,7 +1,41 @@
-import { ArrowRight, Clock } from "lucide-react";
+import {
+  ArrowRight,
+  BriefcaseBusiness,
+  ChartColumn,
+  Clock,
+  Compass,
+  Laptop,
+  Lightbulb,
+  Palette,
+  PencilRuler,
+  Rocket,
+  Sparkles,
+  type LucideIcon,
+} from "lucide-react";
 import type { ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
+
+const EXPERT_PROFILE_ICONS: LucideIcon[] = [
+  BriefcaseBusiness,
+  Lightbulb,
+  Palette,
+  Rocket,
+  ChartColumn,
+  PencilRuler,
+  Laptop,
+  Compass,
+  Sparkles,
+];
+
+function getProfileIcon(seed: string) {
+  const value = Array.from(seed || "현직자").reduce(
+    (total, character) => total + (character.codePointAt(0) ?? 0),
+    0,
+  );
+
+  return EXPERT_PROFILE_ICONS[value % EXPERT_PROFILE_ICONS.length];
+}
 
 type ExpertSimulationCardProps = {
   nickname: string;
@@ -40,7 +74,7 @@ export function ExpertSimulationCard({
   const background = backgroundColor?.trim() || "#18181b";
   const meta = [companyType, experienceBand, jobTitle].filter(Boolean).join(" · ");
   const summary = (description?.trim() || title).replace(/\s+/g, " ");
-  const mark = nickname.trim().slice(0, 1) || "현";
+  const ProfileIcon = getProfileIcon(`${nickname}:${jobTitle}:${roleLabel}`);
 
   return (
     <article
@@ -64,7 +98,7 @@ export function ExpertSimulationCard({
               compact ? "h-9 w-9 text-sm" : "h-10 w-10 text-base",
             )}
           >
-            {mark}
+            <ProfileIcon className={compact ? "h-4 w-4" : "h-5 w-5"} strokeWidth={2} />
           </div>
           <div className="min-w-0 pb-0.5">
             <p
