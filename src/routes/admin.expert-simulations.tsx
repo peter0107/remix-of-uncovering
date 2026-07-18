@@ -335,63 +335,69 @@ function AdminExpertSimulations() {
               </button>
             </div>
             <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-3">
-              {simulations.map((simulation) => (
-                <div
-                  key={simulation.id}
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => selectSimulation(simulation)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter" || event.key === " ") selectSimulation(simulation);
-                  }}
-                  className={
-                    selectedId === simulation.id
-                      ? "rounded-md ring-2 ring-neutral-900"
-                      : "rounded-md"
-                  }
-                >
-                  <ExpertSimulationCard
-                    compact
-                    nickname={simulation.nickname}
-                    companyType={simulation.companyType}
-                    experienceBand={simulation.experienceBand}
-                    jobTitle={simulation.jobTitle}
-                    roleLabel={simulation.roleLabel}
-                    title={simulation.title}
-                    description={simulation.description}
-                    estimatedMinutes={simulation.estimatedMinutes}
-                    backgroundColor={simulation.cardBackgroundColor}
-                    textColor={simulation.cardTextColor}
-                    topRight={
-                      <button
-                        type="button"
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          void remove(simulation);
-                        }}
-                        disabled={actioningId === simulation.id}
-                        aria-label={`${simulation.title} 삭제`}
-                        className="grid h-7 w-7 place-items-center rounded-md border border-black/10 bg-white/70 text-current hover:bg-white disabled:opacity-40"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
-                    }
-                    bottomRight={
-                      <button
-                        type="button"
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          void toggleVisibility(simulation);
-                        }}
-                        disabled={actioningId === simulation.id}
-                        className="rounded-full border border-current/20 bg-white/60 px-2 py-1 text-[10px] font-semibold disabled:opacity-40"
-                      >
-                        {simulation.isPublic ? "공개" : "비공개"}
-                      </button>
-                    }
-                  />
-                </div>
-              ))}
+              {simulations.map((simulation) => {
+                const isSelected = selectedId === simulation.id;
+                const preview = isSelected ? form : simulation;
+                const previewMinutes = isSelected
+                  ? form.estimatedMinutes.trim()
+                    ? Number(form.estimatedMinutes) || null
+                    : null
+                  : simulation.estimatedMinutes;
+
+                return (
+                  <div
+                    key={simulation.id}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => selectSimulation(simulation)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") selectSimulation(simulation);
+                    }}
+                    className={isSelected ? "rounded-md ring-2 ring-neutral-900" : "rounded-md"}
+                  >
+                    <ExpertSimulationCard
+                      compact
+                      nickname={preview.nickname || "현직자"}
+                      companyType={preview.companyType}
+                      experienceBand={preview.experienceBand}
+                      jobTitle={preview.jobTitle || "직무명"}
+                      roleLabel={preview.roleLabel || "카드에 표시할 직무"}
+                      title={preview.title || "시뮬레이션 제목"}
+                      description={preview.description}
+                      estimatedMinutes={previewMinutes}
+                      backgroundColor={preview.cardBackgroundColor}
+                      textColor={preview.cardTextColor}
+                      topRight={
+                        <button
+                          type="button"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            void remove(simulation);
+                          }}
+                          disabled={actioningId === simulation.id}
+                          aria-label={`${simulation.title} 삭제`}
+                          className="grid h-7 w-7 place-items-center rounded-md border border-black/10 bg-white/70 text-current hover:bg-white disabled:opacity-40"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      }
+                      bottomRight={
+                        <button
+                          type="button"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            void toggleVisibility(simulation);
+                          }}
+                          disabled={actioningId === simulation.id}
+                          className="rounded-full border border-current/20 bg-white/60 px-2 py-1 text-[10px] font-semibold disabled:opacity-40"
+                        >
+                          {simulation.isPublic ? "공개" : "비공개"}
+                        </button>
+                      }
+                    />
+                  </div>
+                );
+              })}
               {simulations.length === 0 && (
                 <p className="px-2 py-8 text-center text-sm text-neutral-500">
                   등록된 시뮬레이션이 없습니다.
@@ -492,25 +498,6 @@ function AdminExpertSimulations() {
                   label="글자색"
                   value={form.cardTextColor}
                   onChange={(value) => updateForm("cardTextColor", value)}
-                />
-              </div>
-
-              <div className="max-w-sm">
-                <p className="text-xs font-medium text-neutral-600">카드 미리보기</p>
-                <ExpertSimulationCard
-                  nickname={form.nickname || "현직자"}
-                  companyType={form.companyType}
-                  experienceBand={form.experienceBand}
-                  jobTitle={form.jobTitle || "직무명"}
-                  roleLabel={form.roleLabel || "카드에 표시할 직무"}
-                  title={form.title || "시뮬레이션 제목"}
-                  description={form.description}
-                  estimatedMinutes={
-                    form.estimatedMinutes.trim() ? Number(form.estimatedMinutes) || null : null
-                  }
-                  backgroundColor={form.cardBackgroundColor}
-                  textColor={form.cardTextColor}
-                  className="mt-2"
                 />
               </div>
 

@@ -93,15 +93,7 @@ export function ExpertSimulationCard({
         </h3>
         <p
           className={cn(
-            "mt-1 line-clamp-2 font-semibold leading-snug text-zinc-900",
-            compact ? "text-xs" : "text-sm",
-          )}
-        >
-          {title}
-        </p>
-        <p
-          className={cn(
-            "mt-1.5 line-clamp-2 leading-relaxed text-zinc-500",
+            "mt-1.5 line-clamp-3 leading-relaxed text-zinc-500",
             compact ? "text-[11px]" : "text-xs",
           )}
         >
