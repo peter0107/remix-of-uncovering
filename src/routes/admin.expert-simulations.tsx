@@ -81,8 +81,8 @@ function createEmptyForm(): ExpertSimulationForm {
     companyType: EXPERT_COMPANY_TYPES[0],
     experienceBand: EXPERT_EXPERIENCE_BANDS[0],
     jobTitle: "",
-    cardBackgroundColor: "#ffffff",
-    cardTextColor: "#18181b",
+    cardBackgroundColor: "#18181b",
+    cardTextColor: "#ffffff",
     modelAnswer: "",
     aiFeedback: "",
   };
@@ -484,14 +484,33 @@ function AdminExpertSimulations() {
                   onChange={(value) => updateForm("estimatedMinutes", value)}
                 />
                 <ColorField
-                  label="카드 배경색"
+                  label="배경색"
                   value={form.cardBackgroundColor}
                   onChange={(value) => updateForm("cardBackgroundColor", value)}
                 />
                 <ColorField
-                  label="카드 글자색"
+                  label="글자색"
                   value={form.cardTextColor}
                   onChange={(value) => updateForm("cardTextColor", value)}
+                />
+              </div>
+
+              <div className="max-w-sm">
+                <p className="text-xs font-medium text-neutral-600">카드 미리보기</p>
+                <ExpertSimulationCard
+                  nickname={form.nickname || "현직자"}
+                  companyType={form.companyType}
+                  experienceBand={form.experienceBand}
+                  jobTitle={form.jobTitle || "직무명"}
+                  roleLabel={form.roleLabel || "카드에 표시할 직무"}
+                  title={form.title || "시뮬레이션 제목"}
+                  description={form.description}
+                  estimatedMinutes={
+                    form.estimatedMinutes.trim() ? Number(form.estimatedMinutes) || null : null
+                  }
+                  backgroundColor={form.cardBackgroundColor}
+                  textColor={form.cardTextColor}
+                  className="mt-2"
                 />
               </div>
 

@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, LayoutGrid } from "lucide-react";
 import { useEffect, useState } from "react";
 
-import { SimulationCardPreview } from "@/components/SimulationCardPreview";
+import { ExpertSimulationCard } from "@/components/ExpertSimulationCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -114,20 +114,17 @@ function ExpertSimulationsPage() {
                 params={{ id: simulation.id }}
                 className="block h-full"
               >
-                <SimulationCardPreview
-                  companyName={simulation.nickname}
-                  companyDescription={[
-                    simulation.companyType,
-                    simulation.experienceBand,
-                    simulation.jobTitle,
-                  ]
-                    .filter(Boolean)
-                    .join(" · ")}
+                <ExpertSimulationCard
+                  nickname={simulation.nickname}
+                  companyType={simulation.companyType}
+                  experienceBand={simulation.experienceBand}
+                  jobTitle={simulation.jobTitle}
                   roleLabel={simulation.roleLabel}
                   title={simulation.title}
                   description={simulation.description}
-                  domain={simulation.domain}
                   estimatedMinutes={simulation.estimatedMinutes}
+                  backgroundColor={simulation.backgroundColor}
+                  textColor={simulation.textColor}
                   className="h-full"
                 />
               </Link>
