@@ -1,8 +1,12 @@
 import {
+  AlignCenter,
+  AlignLeft,
+  AlignRight,
   Bold,
   ChevronDown,
   Code2,
   Columns3,
+  ImagePlus,
   Italic,
   List,
   ListOrdered,
@@ -14,12 +18,38 @@ import {
   Trash2,
   Underline,
   Undo2,
+  ZoomIn,
+  ZoomOut,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type DragEvent,
+  type PointerEvent as ReactPointerEvent,
+} from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { toast } from "sonner";
+
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Slider } from "@/components/ui/slider";
+import { supabase } from "@/integrations/supabase/client";
 
 const RICH_TEXT_PREFIX = "<!-- beginner-rich-text -->";
+const RICH_TEXT_IMAGE_DRAG_TYPE = "application/x-beginner-rich-text-image";
+const MAX_RICH_TEXT_IMAGE_BYTES = 5 * 1024 * 1024;
+const RICH_TEXT_IMAGE_WIDTHS = [35, 50, 65, 80, 100] as const;
+const RICH_TEXT_IMAGE_EXPORT_WIDTH = 1600;
+const RICH_TEXT_IMAGE_EXPORT_HEIGHT = 1000;
+const RICH_TEXT_IMAGE_DRAG_SENSITIVITY = 1.5;
 const ALLOWED_TAGS = new Set([
   "p",
   "br",
@@ -48,7 +78,27 @@ const ALLOWED_TAGS = new Set([
   "tr",
   "th",
   "td",
+  "figure",
+  "img",
 ]);
+
+type RichTextImageEditorState = {
+  previewUrl: string;
+  sourceWidth: number;
+  sourceHeight: number;
+  outputWidth: number;
+  outputHeight: number;
+};
+
+type ImageDragState = {
+  pointerId: number;
+  startX: number;
+  startY: number;
+  startOffsetX: number;
+  startOffsetY: number;
+  overflowX: number;
+  overflowY: number;
+};
 
 function escapeHtml(value: string) {
   return value
@@ -215,6 +265,81 @@ function sanitizeStyle(style: string) {
   return allowed.join(";");
 }
 
+function isSafeImageSource(value: string) {
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" || url.protocol === "http:";
+  } catch {
+    return false;
+  }
+}
+
+function clampImageOffset(value: number) {
+  return Math.max(-100, Math.min(100, value));
+}
+
+function getImageGeometry(
+  sourceWidth: number,
+  sourceHeight: number,
+  targetWidth: number,
+  targetHeight: number,
+  options: { zoom: number; offsetX: number; offsetY: number },
+) {
+  const baseScale = Math.max(targetWidth / sourceWidth, targetHeight / sourceHeight);
+  const drawWidth = sourceWidth * baseScale * options.zoom;
+  const drawHeight = sourceHeight * baseScale * options.zoom;
+  const overflowX = Math.max(0, drawWidth - targetWidth);
+  const overflowY = Math.max(0, drawHeight - targetHeight);
+
+  return {
+    drawWidth,
+    drawHeight,
+    drawX: (targetWidth - drawWidth) / 2 - (overflowX * options.offsetX) / 100,
+    drawY: (targetHeight - drawHeight) / 2 - (overflowY * options.offsetY) / 100,
+    overflowX,
+    overflowY,
+  };
+}
+
+function loadImage(source: string) {
+  return new Promise<HTMLImageElement>((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = reject;
+    image.src = source;
+  });
+}
+
+async function createRichTextImageBlob(
+  source: string,
+  options: { zoom: number; offsetX: number; offsetY: number },
+) {
+  const image = await loadImage(source);
+  const canvas = document.createElement("canvas");
+  canvas.width = RICH_TEXT_IMAGE_EXPORT_WIDTH;
+  canvas.height = RICH_TEXT_IMAGE_EXPORT_HEIGHT;
+
+  const context = canvas.getContext("2d");
+  if (!context) throw new Error("Canvas is not available");
+
+  const { drawWidth, drawHeight, drawX, drawY } = getImageGeometry(
+    image.naturalWidth,
+    image.naturalHeight,
+    canvas.width,
+    canvas.height,
+    options,
+  );
+  context.drawImage(image, drawX, drawY, drawWidth, drawHeight);
+
+  return new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob(
+      (blob) => (blob ? resolve(blob) : reject(new Error("Failed to create image"))),
+      "image/webp",
+      0.9,
+    );
+  });
+}
+
 function sanitizeRichHtml(html: string) {
   return html
     .replace(/<!--[\s\S]*?-->/g, "")
@@ -229,6 +354,22 @@ function sanitizeRichHtml(html: string) {
       if (name === "span") {
         const style = sanitizeStyle(getAttribute(tag, "style"));
         return style ? `<span style="${style}">` : "<span>";
+      }
+      if (name === "img") {
+        const source = getAttribute(tag, "src");
+        const alt = getAttribute(tag, "alt").slice(0, 250);
+        return isSafeImageSource(source)
+          ? `<img src="${escapeHtml(source)}" alt="${escapeHtml(alt)}">`
+          : "";
+      }
+      if (name === "figure") {
+        const id = getAttribute(tag, "data-rich-image-id");
+        const width = getAttribute(tag, "data-width");
+        const align = getAttribute(tag, "data-align");
+        const safeId = /^[a-z0-9-]{1,80}$/i.test(id) ? id : "image";
+        const safeWidth = RICH_TEXT_IMAGE_WIDTHS.map(String).includes(width) ? width : "100";
+        const safeAlign = ["left", "center", "right"].includes(align) ? align : "center";
+        return `<figure data-rich-image="true" data-rich-image-id="${safeId}" data-width="${safeWidth}" data-align="${safeAlign}" contenteditable="false" draggable="true">`;
       }
       return name === "br" ? "<br>" : `<${name}>`;
     });
@@ -292,6 +433,8 @@ export function RichTextEditor({
   minHeight?: string;
 }) {
   const editorRef = useRef<HTMLDivElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
+  const imageDragRef = useRef<ImageDragState | null>(null);
   const selectionRangeRef = useRef<Range | null>(null);
   const initialHtml = toEditorHtml(value);
   const [activePalette, setActivePalette] = useState<"table" | null>(null);
@@ -305,6 +448,12 @@ export function RichTextEditor({
     rowIndex: number;
     columnIndex: number;
   } | null>(null);
+  const [imageEditor, setImageEditor] = useState<RichTextImageEditorState | null>(null);
+  const [imageZoom, setImageZoom] = useState(1);
+  const [imageOffsetX, setImageOffsetX] = useState(0);
+  const [imageOffsetY, setImageOffsetY] = useState(0);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
 
   useEffect(() => {
     if (editorRef.current && editorRef.current.innerHTML !== initialHtml) {
@@ -330,6 +479,14 @@ export function RichTextEditor({
     const selection = window.getSelection();
     selection?.removeAllRanges();
     selection?.addRange(range);
+  };
+
+  const rememberDropSelection = (clientX: number, clientY: number) => {
+    const editor = editorRef.current;
+    const range = document.caretRangeFromPoint?.(clientX, clientY);
+    if (editor && range && editor.contains(range.commonAncestorContainer)) {
+      selectionRangeRef.current = range.cloneRange();
+    }
   };
 
   const getSelectionElement = () => {
@@ -534,6 +691,235 @@ export function RichTextEditor({
 
   const deleteTable = () => mutateActiveTable((table) => table.remove());
 
+  const clearImageEditor = () => {
+    if (imageEditor?.previewUrl) URL.revokeObjectURL(imageEditor.previewUrl);
+    setImageEditor(null);
+    setImageZoom(1);
+    setImageOffsetX(0);
+    setImageOffsetY(0);
+    imageDragRef.current = null;
+    if (imageInputRef.current) imageInputRef.current.value = "";
+  };
+
+  const prepareImageFile = async (file: File) => {
+    if (!file.type.startsWith("image/")) {
+      toast.error("이미지 파일만 넣을 수 있습니다.");
+      return;
+    }
+    if (file.size > MAX_RICH_TEXT_IMAGE_BYTES) {
+      toast.error("이미지는 5MB 이하만 넣을 수 있습니다.");
+      return;
+    }
+
+    const previewUrl = URL.createObjectURL(file);
+    try {
+      const image = await loadImage(previewUrl);
+      setImageEditor({
+        previewUrl,
+        sourceWidth: image.naturalWidth,
+        sourceHeight: image.naturalHeight,
+        outputWidth: RICH_TEXT_IMAGE_EXPORT_WIDTH,
+        outputHeight: RICH_TEXT_IMAGE_EXPORT_HEIGHT,
+      });
+      setImageZoom(1);
+      setImageOffsetX(0);
+      setImageOffsetY(0);
+    } catch {
+      URL.revokeObjectURL(previewUrl);
+      toast.error("이미지를 불러오지 못했습니다.");
+    }
+  };
+
+  const openImagePicker = () => {
+    rememberSelection();
+    imageInputRef.current?.click();
+  };
+
+  const onImageFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) void prepareImageFile(file);
+  };
+
+  const insertRichImage = (source: string) => {
+    restoreSelection();
+    const editor = editorRef.current;
+    if (!editor) return;
+
+    const imageId = crypto.randomUUID();
+    const markup = `<figure data-rich-image="true" data-rich-image-id="${imageId}" data-width="100" data-align="center" contenteditable="false" draggable="true"><img src="${escapeHtml(source)}" alt=""></figure><p><br></p>`;
+    const insertedWithHistory = document.execCommand("insertHTML", false, markup);
+    if (!insertedWithHistory) editor.insertAdjacentHTML("beforeend", markup);
+    setSelectedImageId(imageId);
+    commitChange();
+  };
+
+  const applyImage = async () => {
+    if (!imageEditor || isUploadingImage) return;
+    setIsUploadingImage(true);
+    try {
+      const { data, error } = await supabase.auth.getUser();
+      if (error || !data.user) throw new Error("로그인이 필요합니다.");
+
+      const imageBlob = await createRichTextImageBlob(imageEditor.previewUrl, {
+        zoom: imageZoom,
+        offsetX: imageOffsetX,
+        offsetY: imageOffsetY,
+      });
+      const objectPath = `${data.user.id}/rich-text/${crypto.randomUUID()}.webp`;
+      const { error: uploadError } = await supabase.storage
+        .from("simulation-card-assets")
+        .upload(objectPath, imageBlob, { contentType: "image/webp", upsert: false });
+      if (uploadError) throw uploadError;
+
+      const { data: publicUrl } = supabase.storage
+        .from("simulation-card-assets")
+        .getPublicUrl(objectPath);
+      insertRichImage(publicUrl.publicUrl);
+      clearImageEditor();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "이미지를 저장하지 못했습니다.");
+    } finally {
+      setIsUploadingImage(false);
+    }
+  };
+
+  const getSelectedImage = () => {
+    if (!editorRef.current || !selectedImageId) return null;
+    return editorRef.current.querySelector(
+      `figure[data-rich-image-id="${selectedImageId}"]`,
+    ) as HTMLElement | null;
+  };
+
+  const updateSelectedImage = (update: (figure: HTMLElement) => void) => {
+    const figure = getSelectedImage();
+    if (!figure) return;
+    update(figure);
+    commitChange();
+  };
+
+  const setSelectedImageAlign = (align: "left" | "center" | "right") => {
+    updateSelectedImage((figure) => figure.setAttribute("data-align", align));
+  };
+
+  const resizeSelectedImage = (direction: -1 | 1) => {
+    updateSelectedImage((figure) => {
+      const current = Number(figure.getAttribute("data-width")) || 100;
+      const index = RICH_TEXT_IMAGE_WIDTHS.indexOf(
+        current as (typeof RICH_TEXT_IMAGE_WIDTHS)[number],
+      );
+      const next =
+        RICH_TEXT_IMAGE_WIDTHS[
+          Math.max(0, Math.min(RICH_TEXT_IMAGE_WIDTHS.length - 1, index + direction))
+        ];
+      figure.setAttribute("data-width", String(next));
+    });
+  };
+
+  const deleteSelectedImage = () => {
+    const figure = getSelectedImage();
+    if (!figure) return;
+    figure.remove();
+    setSelectedImageId(null);
+    commitChange();
+  };
+
+  const beginImageDrag = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (!imageEditor || (event.pointerType === "mouse" && event.button !== 0)) return;
+    const geometry = getImageGeometry(
+      imageEditor.sourceWidth,
+      imageEditor.sourceHeight,
+      imageEditor.outputWidth,
+      imageEditor.outputHeight,
+      { zoom: imageZoom, offsetX: imageOffsetX, offsetY: imageOffsetY },
+    );
+    event.currentTarget.setPointerCapture(event.pointerId);
+    imageDragRef.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      startOffsetX: imageOffsetX,
+      startOffsetY: imageOffsetY,
+      overflowX: geometry.overflowX,
+      overflowY: geometry.overflowY,
+    };
+  };
+
+  const moveImageDrag = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const drag = imageDragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    event.preventDefault();
+    if (drag.overflowX > 0) {
+      setImageOffsetX(
+        clampImageOffset(
+          drag.startOffsetX -
+            ((event.clientX - drag.startX) * 100 * RICH_TEXT_IMAGE_DRAG_SENSITIVITY) /
+              drag.overflowX,
+        ),
+      );
+    }
+    if (drag.overflowY > 0) {
+      setImageOffsetY(
+        clampImageOffset(
+          drag.startOffsetY -
+            ((event.clientY - drag.startY) * 100 * RICH_TEXT_IMAGE_DRAG_SENSITIVITY) /
+              drag.overflowY,
+        ),
+      );
+    }
+  };
+
+  const endImageDrag = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (imageDragRef.current?.pointerId !== event.pointerId) return;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+    imageDragRef.current = null;
+  };
+
+  const handleEditorDrop = (event: DragEvent<HTMLDivElement>) => {
+    const imageFile = Array.from(event.dataTransfer.files).find((file) =>
+      file.type.startsWith("image/"),
+    );
+    if (imageFile) {
+      event.preventDefault();
+      rememberDropSelection(event.clientX, event.clientY);
+      void prepareImageFile(imageFile);
+      return;
+    }
+
+    const imageId = event.dataTransfer.getData(RICH_TEXT_IMAGE_DRAG_TYPE);
+    const editor = editorRef.current;
+    if (!imageId || !editor) return;
+    const figure = editor.querySelector(
+      `figure[data-rich-image-id="${imageId}"]`,
+    ) as HTMLElement | null;
+    if (!figure) return;
+
+    event.preventDefault();
+    const dropTarget = document.elementFromPoint(
+      event.clientX,
+      event.clientY,
+    ) as HTMLElement | null;
+    const block = dropTarget?.closest("figure, p, h1, h2, h3, h4, ul, ol, blockquote, pre");
+    if (block && editor.contains(block) && block !== figure && !figure.contains(block)) {
+      block.insertAdjacentElement("afterend", figure);
+    } else {
+      editor.append(figure);
+    }
+    setSelectedImageId(imageId);
+    commitChange();
+  };
+
+  const imagePreviewGeometry = imageEditor
+    ? getImageGeometry(
+        imageEditor.sourceWidth,
+        imageEditor.sourceHeight,
+        imageEditor.outputWidth,
+        imageEditor.outputHeight,
+        { zoom: imageZoom, offsetX: imageOffsetX, offsetY: imageOffsetY },
+      )
+    : null;
+
   const handleTableTab = (event: React.KeyboardEvent<HTMLDivElement>) => {
     if (event.key !== "Tab") return;
     const selection = getTableSelection();
@@ -565,6 +951,13 @@ export function RichTextEditor({
 
   return (
     <div className="min-w-0 max-w-full">
+      <input
+        ref={imageInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp,image/gif"
+        className="sr-only"
+        onChange={onImageFileChange}
+      />
       <p className="mb-2 text-xs font-medium text-neutral-700">{label}</p>
       <div className="rounded-md border border-neutral-300 bg-white focus-within:border-neutral-900 focus-within:ring-1 focus-within:ring-neutral-900">
         <div className="border-b border-neutral-200 bg-neutral-50">
@@ -624,6 +1017,41 @@ export function RichTextEditor({
               <ToolbarButton label="코드 블록" active={isCodeBlock} onClick={toggleCodeBlock}>
                 <span className="font-mono text-[10px]">&lt;/&gt;</span>
               </ToolbarButton>
+              <ToolbarButton label="사진 삽입" onClick={openImagePicker}>
+                <ImagePlus className="h-3.5 w-3.5" />
+              </ToolbarButton>
+              {selectedImageId && (
+                <>
+                  <span className="mx-0.5 h-3.5 w-px bg-neutral-200" />
+                  <ToolbarButton
+                    label="사진 왼쪽 정렬"
+                    onClick={() => setSelectedImageAlign("left")}
+                  >
+                    <AlignLeft className="h-3.5 w-3.5" />
+                  </ToolbarButton>
+                  <ToolbarButton
+                    label="사진 가운데 정렬"
+                    onClick={() => setSelectedImageAlign("center")}
+                  >
+                    <AlignCenter className="h-3.5 w-3.5" />
+                  </ToolbarButton>
+                  <ToolbarButton
+                    label="사진 오른쪽 정렬"
+                    onClick={() => setSelectedImageAlign("right")}
+                  >
+                    <AlignRight className="h-3.5 w-3.5" />
+                  </ToolbarButton>
+                  <ToolbarButton label="사진 축소" onClick={() => resizeSelectedImage(-1)}>
+                    <ZoomOut className="h-3.5 w-3.5" />
+                  </ToolbarButton>
+                  <ToolbarButton label="사진 확대" onClick={() => resizeSelectedImage(1)}>
+                    <ZoomIn className="h-3.5 w-3.5" />
+                  </ToolbarButton>
+                  <ToolbarButton label="사진 삭제" onClick={deleteSelectedImage}>
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </ToolbarButton>
+                </>
+              )}
               <div className="relative flex items-center">
                 <ToolbarButton label="기본 3 x 3 표 삽입" onClick={() => insertTable(3, 3)}>
                   <Table2 className="h-3.5 w-3.5" />
@@ -714,14 +1142,111 @@ export function RichTextEditor({
           onFocus={refreshToolbarState}
           onSelect={rememberSelection}
           onPaste={(event) => {
+            const imageFile = Array.from(event.clipboardData.files).find((file) =>
+              file.type.startsWith("image/"),
+            );
+            if (imageFile) {
+              event.preventDefault();
+              rememberSelection();
+              void prepareImageFile(imageFile);
+              return;
+            }
             event.preventDefault();
             const text = event.clipboardData.getData("text/plain");
             document.execCommand("insertText", false, text);
           }}
-          className="prose prose-sm prose-neutral min-w-0 max-w-none overflow-x-auto px-3 py-2 outline-none empty:before:pointer-events-none empty:before:content-[attr(data-placeholder)] empty:before:text-neutral-400 prose-code:rounded-sm prose-code:bg-neutral-100 prose-code:px-1 prose-code:py-0.5 prose-code:font-mono prose-code:before:content-none prose-code:after:content-none prose-pre:rounded-md prose-pre:bg-neutral-900 prose-pre:px-3 prose-pre:py-3 prose-pre:font-mono [&_pre_code]:!bg-transparent [&_pre_code]:!p-0 [&_pre_code]:!text-neutral-50 prose-table:border-collapse prose-th:border prose-th:border-neutral-300 prose-th:bg-neutral-50 prose-th:px-2 prose-th:py-1 prose-td:border prose-td:border-neutral-300 prose-td:px-2 prose-td:py-1"
+          onClick={(event) => {
+            const target = event.target as HTMLElement;
+            const figure = target.closest("figure[data-rich-image-id]");
+            setSelectedImageId(figure?.getAttribute("data-rich-image-id") ?? null);
+          }}
+          onDragStart={(event) => {
+            const target = event.target as HTMLElement;
+            const figure = target.closest("figure[data-rich-image-id]");
+            const imageId = figure?.getAttribute("data-rich-image-id");
+            if (!imageId) return;
+            event.dataTransfer.effectAllowed = "move";
+            event.dataTransfer.setData(RICH_TEXT_IMAGE_DRAG_TYPE, imageId);
+            setSelectedImageId(imageId);
+          }}
+          onDragOver={(event) => {
+            const hasImageFile = Array.from(event.dataTransfer.files).some((file) =>
+              file.type.startsWith("image/"),
+            );
+            if (
+              hasImageFile ||
+              Array.from(event.dataTransfer.types).includes(RICH_TEXT_IMAGE_DRAG_TYPE)
+            ) {
+              event.preventDefault();
+              event.dataTransfer.dropEffect = hasImageFile ? "copy" : "move";
+            }
+          }}
+          onDrop={handleEditorDrop}
+          className="rich-text-editor prose prose-sm prose-neutral min-w-0 max-w-none overflow-x-auto px-3 py-2 outline-none empty:before:pointer-events-none empty:before:content-[attr(data-placeholder)] empty:before:text-neutral-400 prose-code:rounded-sm prose-code:bg-neutral-100 prose-code:px-1 prose-code:py-0.5 prose-code:font-mono prose-code:before:content-none prose-code:after:content-none prose-pre:rounded-md prose-pre:bg-neutral-900 prose-pre:px-3 prose-pre:py-3 prose-pre:font-mono [&_pre_code]:!bg-transparent [&_pre_code]:!p-0 [&_pre_code]:!text-neutral-50 prose-table:border-collapse prose-th:border prose-th:border-neutral-300 prose-th:bg-neutral-50 prose-th:px-2 prose-th:py-1 prose-td:border prose-td:border-neutral-300 prose-td:px-2 prose-td:py-1"
           style={{ minHeight }}
         />
       </div>
+      <Dialog open={Boolean(imageEditor)} onOpenChange={(open) => !open && clearImageEditor()}>
+        <DialogContent className="max-w-xl rounded-md shadow-none">
+          <DialogHeader>
+            <DialogTitle>사진 편집</DialogTitle>
+          </DialogHeader>
+          {imageEditor && imagePreviewGeometry && (
+            <div
+              className="relative mx-auto w-full max-w-[32.5rem] touch-none overflow-hidden rounded-sm border border-neutral-200 bg-neutral-100 cursor-grab active:cursor-grabbing"
+              style={{ aspectRatio: `${imageEditor.outputWidth} / ${imageEditor.outputHeight}` }}
+              onPointerDown={beginImageDrag}
+              onPointerMove={moveImageDrag}
+              onPointerUp={endImageDrag}
+              onPointerCancel={endImageDrag}
+            >
+              <img
+                src={imageEditor.previewUrl}
+                alt=""
+                draggable={false}
+                className="pointer-events-none absolute max-w-none select-none"
+                style={{
+                  width: `${(imagePreviewGeometry.drawWidth / imageEditor.outputWidth) * 100}%`,
+                  height: `${(imagePreviewGeometry.drawHeight / imageEditor.outputHeight) * 100}%`,
+                  left: `${(imagePreviewGeometry.drawX / imageEditor.outputWidth) * 100}%`,
+                  top: `${(imagePreviewGeometry.drawY / imageEditor.outputHeight) * 100}%`,
+                }}
+              />
+            </div>
+          )}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-xs text-neutral-600">
+              <span>확대</span>
+              <span>{imageZoom.toFixed(2)}x</span>
+            </div>
+            <Slider
+              min={1}
+              max={3}
+              step={0.01}
+              value={[imageZoom]}
+              onValueChange={([nextZoom]) => setImageZoom(nextZoom ?? 1)}
+            />
+          </div>
+          <DialogFooter>
+            <button
+              type="button"
+              className="h-9 rounded-md border border-neutral-300 px-4 text-sm font-medium text-neutral-900"
+              onClick={clearImageEditor}
+              disabled={isUploadingImage}
+            >
+              취소
+            </button>
+            <button
+              type="button"
+              className="h-9 rounded-md bg-neutral-900 px-4 text-sm font-medium text-white disabled:opacity-50"
+              onClick={() => void applyImage()}
+              disabled={isUploadingImage}
+            >
+              적용
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -730,14 +1255,14 @@ export function RichTextContent({ value, className = "" }: { value: string; clas
   if (value.startsWith(RICH_TEXT_PREFIX)) {
     return (
       <div
-        className={`${className} [&_code]:rounded-sm [&_code]:bg-neutral-100 [&_code]:px-1 [&_code]:py-0.5 [&_code]:font-mono [&_pre]:overflow-x-auto [&_pre]:rounded-md [&_pre]:bg-neutral-900 [&_pre]:px-3 [&_pre]:py-3 [&_pre]:font-mono [&_pre]:text-neutral-50 [&_pre_code]:!bg-transparent [&_pre_code]:!p-0 [&_pre_code]:!text-neutral-50 [&_table]:border-collapse [&_th]:border [&_th]:border-neutral-300 [&_th]:bg-neutral-50 [&_th]:px-2 [&_th]:py-1 [&_td]:border [&_td]:border-neutral-300 [&_td]:px-2 [&_td]:py-1`}
+        className={`rich-text-content ${className} [&_code]:rounded-sm [&_code]:bg-neutral-100 [&_code]:px-1 [&_code]:py-0.5 [&_code]:font-mono [&_pre]:overflow-x-auto [&_pre]:rounded-md [&_pre]:bg-neutral-900 [&_pre]:px-3 [&_pre]:py-3 [&_pre]:font-mono [&_pre]:text-neutral-50 [&_pre_code]:!bg-transparent [&_pre_code]:!p-0 [&_pre_code]:!text-neutral-50 [&_table]:border-collapse [&_th]:border [&_th]:border-neutral-300 [&_th]:bg-neutral-50 [&_th]:px-2 [&_th]:py-1 [&_td]:border [&_td]:border-neutral-300 [&_td]:px-2 [&_td]:py-1`}
         dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(value.slice(RICH_TEXT_PREFIX.length)) }}
       />
     );
   }
 
   return (
-    <div className={className}>
+    <div className={`rich-text-content ${className}`}>
       <ReactMarkdown remarkPlugins={[remarkGfm]}>{value}</ReactMarkdown>
     </div>
   );
