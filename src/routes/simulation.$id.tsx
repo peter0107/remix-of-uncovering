@@ -106,10 +106,11 @@ function MaterialSection({ label, markdown }: { label: string; markdown: string 
   return (
     <div>
       <p className="text-xs font-semibold text-zinc-500">{label}</p>
-      <Card className="mt-2 p-5 pt-4">
-        <div className="prose prose-sm prose-zinc max-w-none prose-table:text-sm [&>:first-child]:!mt-0">
-          <RichTextContent value={markdown.trimStart()} />
-        </div>
+      <Card className="mt-2 p-5 pt-3">
+        <RichTextContent
+          value={markdown.trimStart()}
+          className="prose prose-sm prose-zinc max-w-none prose-table:text-sm [&>*:first-child]:!mt-0"
+        />
       </Card>
     </div>
   );
