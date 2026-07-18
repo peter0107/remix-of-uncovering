@@ -1135,22 +1135,27 @@
     position: relative;
   }
 
+  .rich-text-editor table,
   .rich-text-content table {
-    min-width: 100%;
-    width: max-content;
+    width: 100%;
+    max-width: 100%;
+    table-layout: fixed;
     border-collapse: collapse;
     overflow: hidden;
     border-radius: 0.5rem;
     border: 1px solid var(--color-border);
   }
 
+  .rich-text-editor th,
+  .rich-text-editor td,
   .rich-text-content th,
   .rich-text-content td {
+    position: relative;
     border: 1px solid var(--color-border);
     padding: 0.7rem 0.8rem;
     text-align: left;
     vertical-align: top;
-    word-break: keep-all;
+    overflow-wrap: anywhere;
   }
 
   .rich-text-content th {
@@ -1158,6 +1163,27 @@
     color: var(--color-primary);
     font-weight: 700;
     white-space: nowrap;
+  }
+
+  .rich-text-editor tr > th:not(:last-child)::after,
+  .rich-text-editor tr > td:not(:last-child)::after {
+    position: absolute;
+    top: 0;
+    right: -2px;
+    bottom: 0;
+    z-index: 2;
+    width: 3px;
+    content: "";
+    cursor: col-resize;
+    opacity: 0;
+  }
+
+  .rich-text-editor tr > th:not(:last-child):hover::after,
+  .rich-text-editor tr > td:not(:last-child):hover::after,
+  .rich-text-editor[data-table-resizing] tr > th:not(:last-child)::after,
+  .rich-text-editor[data-table-resizing] tr > td:not(:last-child)::after {
+    background: var(--color-foreground);
+    opacity: 0.45;
   }
 
   .rich-text-content .rich-text-table-resize-handle {

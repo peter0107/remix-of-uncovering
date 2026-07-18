@@ -21,7 +21,14 @@ import {
   ZoomIn,
   ZoomOut,
 } from "lucide-react";
-import { useEffect, useRef, useState, type ChangeEvent, type DragEvent } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type DragEvent,
+  type PointerEvent as ReactPointerEvent,
+} from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { toast } from "sonner";
@@ -60,9 +67,19 @@ const ALLOWED_TAGS = new Set([
   "tr",
   "th",
   "td",
+  "colgroup",
+  "col",
   "figure",
   "img",
 ]);
+
+type TableResizeState = {
+  pointerId: number;
+  columnIndex: number;
+  startX: number;
+  table: HTMLTableElement;
+  widths: number[];
+};
 
 function escapeHtml(value: string) {
   return value
@@ -229,6 +246,11 @@ function sanitizeStyle(style: string) {
   return allowed.join(";");
 }
 
+function sanitizeColumnStyle(style: string) {
+  const width = style.match(/width\s*:\s*(\d+(?:\.\d+)?)%/i)?.[1];
+  return width && Number(width) > 0 && Number(width) <= 100 ? `width:${width}%` : "";
+}
+
 function isSafeImageSource(value: string) {
   try {
     const url = new URL(value);
@@ -252,6 +274,10 @@ function sanitizeRichHtml(html: string) {
       if (name === "span") {
         const style = sanitizeStyle(getAttribute(tag, "style"));
         return style ? `<span style="${style}">` : "<span>";
+      }
+      if (name === "col") {
+        const style = sanitizeColumnStyle(getAttribute(tag, "style"));
+        return style ? `<col style="${style}">` : "<col>";
       }
       if (name === "img") {
         const source = getAttribute(tag, "src");
@@ -332,6 +358,7 @@ export function RichTextEditor({
 }) {
   const editorRef = useRef<HTMLDivElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
+  const tableResizeRef = useRef<TableResizeState | null>(null);
   const selectionRangeRef = useRef<Range | null>(null);
   const initialHtml = toEditorHtml(value);
   const [activePalette, setActivePalette] = useState<"table" | null>(null);
@@ -346,6 +373,7 @@ export function RichTextEditor({
     columnIndex: number;
   } | null>(null);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [isTableResizing, setIsTableResizing] = useState(false);
   const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -465,7 +493,43 @@ export function RichTextEditor({
 
   const buildTable = (rows: number, columns: number) => {
     const cells = Array.from({ length: columns }, () => "<td><br></td>").join("");
-    return `<table><tbody>${Array.from({ length: rows }, () => `<tr>${cells}</tr>`).join("")}</tbody></table><p><br></p>`;
+    const columnWidth = 100 / columns;
+    const columnGroup = `<colgroup>${Array.from(
+      { length: columns },
+      () => `<col style="width:${columnWidth}%">`,
+    ).join("")}</colgroup>`;
+    return `<table>${columnGroup}<tbody>${Array.from({ length: rows }, () => `<tr>${cells}</tr>`).join("")}</tbody></table><p><br></p>`;
+  };
+
+  const ensureColumnWidths = (table: HTMLTableElement) => {
+    const columnCount = Math.max(...Array.from(table.rows).map((row) => row.cells.length), 1);
+    let columnGroup = table.querySelector(":scope > colgroup") as HTMLTableColElement | null;
+    if (!columnGroup) {
+      columnGroup = document.createElement("colgroup") as unknown as HTMLTableColElement;
+      table.insertBefore(columnGroup, table.firstChild);
+    }
+
+    while (columnGroup.children.length < columnCount) {
+      columnGroup.append(document.createElement("col"));
+    }
+    while (columnGroup.children.length > columnCount) {
+      columnGroup.lastElementChild?.remove();
+    }
+
+    const columns = Array.from(columnGroup.children) as HTMLTableColElement[];
+    const fallbackWidth = 100 / columnCount;
+    columns.forEach((column) => {
+      if (!column.style.width.endsWith("%")) column.style.width = `${fallbackWidth}%`;
+    });
+    return columns;
+  };
+
+  const resetColumnWidths = (table: HTMLTableElement) => {
+    const columns = ensureColumnWidths(table);
+    const width = 100 / columns.length;
+    columns.forEach((column) => {
+      column.style.width = `${width}%`;
+    });
   };
 
   const insertTable = (rows: number, columns: number) => {
@@ -567,6 +631,7 @@ export function RichTextEditor({
           if (row.parentElement?.tagName === "THEAD") cell.outerHTML = "<th><br></th>";
           else cell.innerHTML = "<br>";
         });
+        resetColumnWidths(table);
       },
       { rowIndex: selection.rowIndex, columnIndex: selection.columnIndex + 1 },
     );
@@ -578,11 +643,76 @@ export function RichTextEditor({
     mutateActiveTable((table) => {
       const columnCount = Math.max(...Array.from(table.rows).map((row) => row.cells.length));
       if (columnCount <= 1) table.remove();
-      else Array.from(table.rows).forEach((row) => row.deleteCell(selection.columnIndex));
+      else {
+        Array.from(table.rows).forEach((row) => row.deleteCell(selection.columnIndex));
+        resetColumnWidths(table);
+      }
     });
   };
 
   const deleteTable = () => mutateActiveTable((table) => table.remove());
+
+  const beginTableResize = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (event.pointerType === "mouse" && event.button !== 0) return;
+    const editor = editorRef.current;
+    const target = event.target as HTMLElement;
+    const cell = target.closest("td, th");
+    const table = cell?.closest("table");
+    if (!editor || !cell || !table || !editor.contains(table)) return;
+
+    const row = cell.parentElement as HTMLTableRowElement | null;
+    const columnIndex = row ? Array.from(row.cells).indexOf(cell as HTMLTableCellElement) : -1;
+    const columnCount = Math.max(
+      ...Array.from(table.rows).map((currentRow) => currentRow.cells.length),
+    );
+    const cellRect = cell.getBoundingClientRect();
+    const nearRightBorder = Math.abs(event.clientX - cellRect.right) <= 7;
+    if (columnIndex < 0 || columnIndex >= columnCount - 1 || !nearRightBorder) return;
+
+    const columns = ensureColumnWidths(table);
+    event.preventDefault();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    tableResizeRef.current = {
+      pointerId: event.pointerId,
+      columnIndex,
+      startX: event.clientX,
+      table,
+      widths: columns.map(
+        (column) => Number.parseFloat(column.style.width) || 100 / columns.length,
+      ),
+    };
+    setIsTableResizing(true);
+  };
+
+  const moveTableResize = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const resize = tableResizeRef.current;
+    if (!resize || resize.pointerId !== event.pointerId) return;
+    const columns = ensureColumnWidths(resize.table);
+    const tableWidth = resize.table.getBoundingClientRect().width;
+    if (!tableWidth) return;
+
+    const minimumWidth = 8;
+    const delta = ((event.clientX - resize.startX) / tableWidth) * 100;
+    const currentWidth = resize.widths[resize.columnIndex] ?? minimumWidth;
+    const nextWidth = resize.widths[resize.columnIndex + 1] ?? minimumWidth;
+    const constrainedDelta = Math.max(
+      minimumWidth - currentWidth,
+      Math.min(nextWidth - minimumWidth, delta),
+    );
+
+    columns[resize.columnIndex].style.width = `${currentWidth + constrainedDelta}%`;
+    columns[resize.columnIndex + 1].style.width = `${nextWidth - constrainedDelta}%`;
+  };
+
+  const endTableResize = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (tableResizeRef.current?.pointerId !== event.pointerId) return;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+    tableResizeRef.current = null;
+    setIsTableResizing(false);
+    commitChange();
+  };
 
   const uploadImageFile = async (file: File) => {
     if (!file.type.startsWith("image/")) {
@@ -938,6 +1068,10 @@ export function RichTextEditor({
           onMouseUp={refreshToolbarState}
           onFocus={refreshToolbarState}
           onSelect={rememberSelection}
+          onPointerDown={beginTableResize}
+          onPointerMove={moveTableResize}
+          onPointerUp={endTableResize}
+          onPointerCancel={endTableResize}
           onPaste={(event) => {
             const imageFile = Array.from(event.clipboardData.files).find((file) =>
               file.type.startsWith("image/"),
@@ -979,6 +1113,7 @@ export function RichTextEditor({
             }
           }}
           onDrop={handleEditorDrop}
+          data-table-resizing={isTableResizing || undefined}
           className="rich-text-editor prose prose-sm prose-neutral min-w-0 max-w-none overflow-x-auto px-3 py-2 outline-none empty:before:pointer-events-none empty:before:content-[attr(data-placeholder)] empty:before:text-neutral-400 prose-code:rounded-sm prose-code:bg-neutral-100 prose-code:px-1 prose-code:py-0.5 prose-code:font-mono prose-code:before:content-none prose-code:after:content-none prose-pre:rounded-md prose-pre:bg-neutral-900 prose-pre:px-3 prose-pre:py-3 prose-pre:font-mono [&_pre_code]:!bg-transparent [&_pre_code]:!p-0 [&_pre_code]:!text-neutral-50 prose-table:border-collapse prose-th:border prose-th:border-neutral-300 prose-th:bg-neutral-50 prose-th:px-2 prose-th:py-1 prose-td:border prose-td:border-neutral-300 prose-td:px-2 prose-td:py-1"
           style={{ minHeight }}
         />
