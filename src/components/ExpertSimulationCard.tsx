@@ -101,9 +101,7 @@ export function ExpertSimulationCard({
             <ProfileIcon className={compact ? "h-3.5 w-3.5" : "h-4 w-4"} strokeWidth={2} />
           </span>
           <div className="min-w-0">
-            <p
-              className={cn("truncate font-bold leading-tight", compact ? "text-sm" : "text-base")}
-            >
+            <p className={cn("truncate font-bold leading-tight", compact ? "text-xs" : "text-sm")}>
               {nickname}
             </p>
             {meta && (
