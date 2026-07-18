@@ -360,6 +360,7 @@ export function RichTextEditor({
   const imageInputRef = useRef<HTMLInputElement>(null);
   const tableResizeRef = useRef<TableResizeState | null>(null);
   const selectionRangeRef = useRef<Range | null>(null);
+  const lastLocalValueRef = useRef<string | null>(null);
   const initialHtml = toEditorHtml(value);
   const [activePalette, setActivePalette] = useState<"table" | null>(null);
   const [tableGridSize, setTableGridSize] = useState({ rows: 3, columns: 3 });
@@ -377,10 +378,10 @@ export function RichTextEditor({
   const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (editorRef.current && editorRef.current.innerHTML !== initialHtml) {
-      editorRef.current.innerHTML = initialHtml;
-    }
-  }, [initialHtml]);
+    const editor = editorRef.current;
+    if (!editor || lastLocalValueRef.current === value) return;
+    if (editor.innerHTML !== initialHtml) editor.innerHTML = initialHtml;
+  }, [initialHtml, value]);
 
   const rememberSelection = () => {
     const editor = editorRef.current;
@@ -457,7 +458,11 @@ export function RichTextEditor({
   };
 
   const commitChange = () => {
-    if (editorRef.current) onChange(toStoredValue(editorRef.current.innerHTML));
+    if (editorRef.current) {
+      const nextValue = toStoredValue(editorRef.current.innerHTML);
+      lastLocalValueRef.current = nextValue;
+      onChange(nextValue);
+    }
     window.requestAnimationFrame(refreshToolbarState);
   };
 
