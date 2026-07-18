@@ -8,11 +8,11 @@ import { useAuth } from "@/hooks/use-auth";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Beginner - 직접 일해보고 확인하는 직무 시뮬레이션" },
+      { title: "Beginner - 직접 경험해보고 확인하는 직무 시뮬레이션" },
       {
         name: "description",
         content:
-          "관심 직무의 실제 업무 시뮬레이션을 체험하고, 답안을 기업에 전송해 채용 제안을 받아보세요.",
+          "내가 원하는 직무를 직접 경험해보세요. 나의 AI 활용 능력까지 평가 받아보세요.",
       },
     ],
   }),
@@ -152,9 +152,6 @@ function Index() {
             <Link to="/simulations" className="transition-colors hover:text-[#171C26]">
               시뮬레이션
             </Link>
-            <Link to="/expert-simulations" className="transition-colors hover:text-[#171C26]">
-              현직자 제시
-            </Link>
             <Link to="/biz" className="transition-colors hover:text-[#171C26]">
               기업용
             </Link>
@@ -210,13 +207,6 @@ function Index() {
                 className="rounded-md px-3 py-2.5 text-sm text-[#4B5563] hover:bg-[#F7F8FA]"
               >
                 시뮬레이션
-              </Link>
-              <Link
-                to="/expert-simulations"
-                onClick={() => setIsMenuOpen(false)}
-                className="rounded-md px-3 py-2.5 text-sm text-[#4B5563] hover:bg-[#F7F8FA]"
-              >
-                현직자 제시
               </Link>
               <Link
                 to="/biz"
