@@ -181,7 +181,7 @@ export function SimulationCardPreview({
         <div className="mt-auto flex items-end justify-between gap-3 pt-3">
           <div className="flex items-center gap-1 text-xs text-zinc-500">
             <Clock className="h-3.5 w-3.5" />
-            <span>약 {estimatedMinutes ?? 75}분 소요</span>
+            <span>약 {estimatedMinutes ?? 75}분</span>
           </div>
 
           {bottomRight ??

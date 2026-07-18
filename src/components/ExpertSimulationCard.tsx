@@ -134,7 +134,7 @@ export function ExpertSimulationCard({
         <div className="mt-auto flex items-end justify-between gap-3 pt-3">
           <div className="flex items-center gap-1 text-xs text-zinc-500">
             <Clock className="h-3.5 w-3.5" />
-            <span>약 {estimatedMinutes ?? 75}분 소요</span>
+            <span>약 {estimatedMinutes ?? 75}분</span>
           </div>
           {bottomRight ?? (
             <span className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 transition-colors group-hover:text-blue-700">
