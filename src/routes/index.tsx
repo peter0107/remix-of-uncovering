@@ -152,6 +152,9 @@ function Index() {
             <Link to="/simulations" className="transition-colors hover:text-[#171C26]">
               시뮬레이션
             </Link>
+            <Link to="/expert-simulations" className="transition-colors hover:text-[#171C26]">
+              현직자 제시
+            </Link>
             <Link to="/biz" className="transition-colors hover:text-[#171C26]">
               기업용
             </Link>
@@ -207,6 +210,13 @@ function Index() {
                 className="rounded-md px-3 py-2.5 text-sm text-[#4B5563] hover:bg-[#F7F8FA]"
               >
                 시뮬레이션
+              </Link>
+              <Link
+                to="/expert-simulations"
+                onClick={() => setIsMenuOpen(false)}
+                className="rounded-md px-3 py-2.5 text-sm text-[#4B5563] hover:bg-[#F7F8FA]"
+              >
+                현직자 제시
               </Link>
               <Link
                 to="/biz"
