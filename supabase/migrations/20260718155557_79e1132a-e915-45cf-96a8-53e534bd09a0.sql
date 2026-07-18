@@ -1,0 +1,1 @@
+UPDATE job_simulations SET selection_mode = 'common' WHERE id = '5fc2a516-48ff-4054-ad52-8254d3971a41';

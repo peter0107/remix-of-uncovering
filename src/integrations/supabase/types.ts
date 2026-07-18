@@ -522,11 +522,11 @@ export type Database = {
           job_family: string | null
           role_label: string | null
           selection_mode: string
+          shared_materials: string
+          shared_situation: string
           simulation_format: string
           simulation_source: string
           single_answer_question: string | null
-          shared_materials: string
-          shared_situation: string
           steps: Json | null
           task_prompt: string | null
           title: string
@@ -552,11 +552,11 @@ export type Database = {
           job_family?: string | null
           role_label?: string | null
           selection_mode?: string
+          shared_materials?: string
+          shared_situation?: string
           simulation_format?: string
           simulation_source?: string
           single_answer_question?: string | null
-          shared_materials?: string
-          shared_situation?: string
           steps?: Json | null
           task_prompt?: string | null
           title: string
@@ -582,11 +582,11 @@ export type Database = {
           job_family?: string | null
           role_label?: string | null
           selection_mode?: string
+          shared_materials?: string
+          shared_situation?: string
           simulation_format?: string
           simulation_source?: string
           single_answer_question?: string | null
-          shared_materials?: string
-          shared_situation?: string
           steps?: Json | null
           task_prompt?: string | null
           title?: string
