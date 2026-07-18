@@ -90,13 +90,13 @@ export function ExpertSimulationCard({
         )}
         style={{ backgroundColor: background, color: foreground }}
       >
-        <div className="flex min-w-0 flex-1 items-end gap-2.5">
+        <div className="flex min-w-0 flex-1 items-center gap-2.5">
           <ProfileIcon
             aria-hidden="true"
             className={cn("shrink-0", compact ? "h-4 w-4" : "h-5 w-5")}
             strokeWidth={2}
           />
-          <div className="min-w-0 pb-0.5">
+          <div className="min-w-0">
             <p
               className={cn("truncate font-bold leading-tight", compact ? "text-sm" : "text-base")}
             >
