@@ -108,6 +108,8 @@ type CropDragState = {
 
 type CompletedSimulation = {
   submissionId: string;
+  simulationId: string;
+  simulationSource: "company" | "expert";
   title: string;
   companyName: string;
   submittedAt: string | null;
@@ -1683,7 +1685,9 @@ function MyPage() {
 
       const { data: submissions } = await supabase
         .from("submissions")
-        .select("id, submitted_at, job_simulations(title, companies(name))")
+        .select(
+          "id, submitted_at, job_simulations(id, title, simulation_source, expert_nickname, companies(name))",
+        )
         .eq("job_seeker_id", user.id)
         .not("submitted_at", "is", null)
         .order("submitted_at", { ascending: false });
@@ -1691,13 +1695,25 @@ function MyPage() {
       type Row = {
         id: string;
         submitted_at: string | null;
-        job_simulations: { title: string; companies: { name: string } | null } | null;
+        job_simulations: {
+          id: string;
+          title: string;
+          simulation_source: string | null;
+          expert_nickname: string | null;
+          companies: { name: string } | null;
+        } | null;
       };
       const rows = (submissions ?? []) as unknown as Row[];
       const nextHistory = rows.map((r) => ({
         submissionId: r.id,
+        simulationId: r.job_simulations?.id ?? "",
+        simulationSource:
+          r.job_simulations?.simulation_source === "expert" ? ("expert" as const) : ("company" as const),
         title: r.job_simulations?.title ?? "",
-        companyName: r.job_simulations?.companies?.name ?? "",
+        companyName:
+          r.job_simulations?.simulation_source === "expert"
+            ? r.job_simulations.expert_nickname || "현직자 시뮬레이션"
+            : r.job_simulations?.companies?.name ?? "",
         submittedAt: r.submitted_at,
       }));
       setHistory(nextHistory);
@@ -3021,20 +3037,37 @@ function MyPage() {
           </Card>
         ) : (
           <ul className="mt-4 space-y-2">
-            {history.map((h) => (
-              <li key={h.submissionId}>
-                <Card className="flex items-center gap-3 rounded-[8px] p-4 shadow-none">
-                  <CheckCircle2 className="h-4 w-4 shrink-0 text-zinc-400" />
-                  <div>
-                    <p className="font-medium text-zinc-900">{h.title}</p>
-                    <p className="mt-0.5 text-xs text-zinc-400">
-                      {h.companyName}
-                      {h.submittedAt && ` · ${new Date(h.submittedAt).toLocaleDateString("ko-KR")}`}
-                    </p>
-                  </div>
-                </Card>
-              </li>
-            ))}
+            {history.map((h) => {
+              const destination =
+                h.simulationSource === "expert"
+                  ? {
+                      to: "/expert-simulation/$id/feedback" as const,
+                      params: { id: h.simulationId },
+                      search: { submission: h.submissionId },
+                    }
+                  : {
+                      to: "/simulation/$id/feedback" as const,
+                      params: { id: h.simulationId },
+                      search: { submission: h.submissionId },
+                    };
+
+              return (
+                <li key={h.submissionId}>
+                  <Link {...destination} className="block">
+                    <Card className="flex items-center gap-3 rounded-[8px] p-4 shadow-none transition-colors hover:bg-zinc-50">
+                      <CheckCircle2 className="h-4 w-4 shrink-0 text-zinc-400" />
+                      <div>
+                        <p className="font-medium text-zinc-900">{h.title}</p>
+                        <p className="mt-0.5 text-xs text-zinc-400">
+                          {h.companyName}
+                          {h.submittedAt && ` · ${new Date(h.submittedAt).toLocaleDateString("ko-KR")}`}
+                        </p>
+                      </div>
+                    </Card>
+                  </Link>
+                </li>
+              );
+            })}
           </ul>
         )}
       </div>

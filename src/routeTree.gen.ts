@@ -29,6 +29,7 @@ import { Route as AdminSimulationsRouteImport } from './routes/admin.simulations
 import { Route as AdminInquiriesRouteImport } from './routes/admin.inquiries'
 import { Route as AdminExpertSimulationsRouteImport } from './routes/admin.expert-simulations'
 import { Route as AdminAiPromptsRouteImport } from './routes/admin.ai-prompts'
+import { Route as SimulationIdFeedbackRouteImport } from './routes/simulation.$id.feedback'
 import { Route as ExpertSimulationIdFeedbackRouteImport } from './routes/expert-simulation.$id.feedback'
 
 const StartRoute = StartRouteImport.update({
@@ -131,6 +132,11 @@ const AdminAiPromptsRoute = AdminAiPromptsRouteImport.update({
   path: '/ai-prompts',
   getParentRoute: () => AdminRoute,
 } as any)
+const SimulationIdFeedbackRoute = SimulationIdFeedbackRouteImport.update({
+  id: '/feedback',
+  path: '/feedback',
+  getParentRoute: () => SimulationIdRoute,
+} as any)
 const ExpertSimulationIdFeedbackRoute =
   ExpertSimulationIdFeedbackRouteImport.update({
     id: '/expert-simulation/$id/feedback',
@@ -157,9 +163,10 @@ export interface FileRoutesByFullPath {
   '/biz/coffee-chat': typeof BizCoffeeChatRoute
   '/biz/contact': typeof BizContactRoute
   '/biz/review': typeof BizReviewRoute
-  '/simulation/$id': typeof SimulationIdRoute
+  '/simulation/$id': typeof SimulationIdRouteWithChildren
   '/simulations/all': typeof SimulationsAllRoute
   '/expert-simulation/$id/feedback': typeof ExpertSimulationIdFeedbackRoute
+  '/simulation/$id/feedback': typeof SimulationIdFeedbackRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -180,9 +187,10 @@ export interface FileRoutesByTo {
   '/biz/coffee-chat': typeof BizCoffeeChatRoute
   '/biz/contact': typeof BizContactRoute
   '/biz/review': typeof BizReviewRoute
-  '/simulation/$id': typeof SimulationIdRoute
+  '/simulation/$id': typeof SimulationIdRouteWithChildren
   '/simulations/all': typeof SimulationsAllRoute
   '/expert-simulation/$id/feedback': typeof ExpertSimulationIdFeedbackRoute
+  '/simulation/$id/feedback': typeof SimulationIdFeedbackRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -204,9 +212,10 @@ export interface FileRoutesById {
   '/biz_/coffee-chat': typeof BizCoffeeChatRoute
   '/biz_/contact': typeof BizContactRoute
   '/biz_/review': typeof BizReviewRoute
-  '/simulation/$id': typeof SimulationIdRoute
+  '/simulation/$id': typeof SimulationIdRouteWithChildren
   '/simulations_/all': typeof SimulationsAllRoute
   '/expert-simulation/$id/feedback': typeof ExpertSimulationIdFeedbackRoute
+  '/simulation/$id/feedback': typeof SimulationIdFeedbackRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -232,6 +241,7 @@ export interface FileRouteTypes {
     | '/simulation/$id'
     | '/simulations/all'
     | '/expert-simulation/$id/feedback'
+    | '/simulation/$id/feedback'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -255,6 +265,7 @@ export interface FileRouteTypes {
     | '/simulation/$id'
     | '/simulations/all'
     | '/expert-simulation/$id/feedback'
+    | '/simulation/$id/feedback'
   id:
     | '__root__'
     | '/'
@@ -278,6 +289,7 @@ export interface FileRouteTypes {
     | '/simulation/$id'
     | '/simulations_/all'
     | '/expert-simulation/$id/feedback'
+    | '/simulation/$id/feedback'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -294,7 +306,7 @@ export interface RootRouteChildren {
   BizCoffeeChatRoute: typeof BizCoffeeChatRoute
   BizContactRoute: typeof BizContactRoute
   BizReviewRoute: typeof BizReviewRoute
-  SimulationIdRoute: typeof SimulationIdRoute
+  SimulationIdRoute: typeof SimulationIdRouteWithChildren
   SimulationsAllRoute: typeof SimulationsAllRoute
   ExpertSimulationIdFeedbackRoute: typeof ExpertSimulationIdFeedbackRoute
 }
@@ -441,6 +453,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAiPromptsRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/simulation/$id/feedback': {
+      id: '/simulation/$id/feedback'
+      path: '/feedback'
+      fullPath: '/simulation/$id/feedback'
+      preLoaderRoute: typeof SimulationIdFeedbackRouteImport
+      parentRoute: typeof SimulationIdRoute
+    }
     '/expert-simulation/$id/feedback': {
       id: '/expert-simulation/$id/feedback'
       path: '/expert-simulation/$id/feedback'
@@ -469,6 +488,18 @@ const AdminRouteChildren: AdminRouteChildren = {
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
+interface SimulationIdRouteChildren {
+  SimulationIdFeedbackRoute: typeof SimulationIdFeedbackRoute
+}
+
+const SimulationIdRouteChildren: SimulationIdRouteChildren = {
+  SimulationIdFeedbackRoute: SimulationIdFeedbackRoute,
+}
+
+const SimulationIdRouteWithChildren = SimulationIdRoute._addFileChildren(
+  SimulationIdRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRouteWithChildren,
@@ -483,7 +514,7 @@ const rootRouteChildren: RootRouteChildren = {
   BizCoffeeChatRoute: BizCoffeeChatRoute,
   BizContactRoute: BizContactRoute,
   BizReviewRoute: BizReviewRoute,
-  SimulationIdRoute: SimulationIdRoute,
+  SimulationIdRoute: SimulationIdRouteWithChildren,
   SimulationsAllRoute: SimulationsAllRoute,
   ExpertSimulationIdFeedbackRoute: ExpertSimulationIdFeedbackRoute,
 }

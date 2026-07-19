@@ -112,6 +112,23 @@ export type AdminSubmissionAiReview = {
   updatedAt: string;
 };
 
+export type CompanySimulationFeedback = {
+  simulation: {
+    id: string;
+    title: string;
+    roleLabel: string;
+    companyName: string;
+  };
+  submission: {
+    id: string;
+    responseText: string;
+    responseAnswers: Array<{ id: string; label: string; answer: string }>;
+    aiChatLog: Array<{ role: "user" | "assistant"; content: string; at: string }>;
+    submittedAt: string | null;
+  };
+  aiReview: AdminSubmissionAiReview | null;
+};
+
 export type AdminAiPromptSetting = {
   key: CompanyAiPromptKey;
   label: string;
@@ -253,6 +270,10 @@ const adminSubmissionAiReviewSchema = z.object({
 const updateAdminSubmissionAiReviewInputSchema = adminSubmissionIdInputSchema.extend({
   analysis: adminSubmissionAiReviewSchema,
 });
+const companySimulationFeedbackInputSchema = z.object({
+  simulationId: z.string().uuid(),
+  submissionId: z.string().uuid().optional(),
+});
 
 function createPublicServerClient() {
   const supabaseUrl = process.env.SUPABASE_URL;
@@ -282,6 +303,14 @@ function getBearerToken(): string {
     throw new Error("로그인이 필요합니다.");
   }
   return token;
+}
+
+async function getCurrentUserId() {
+  const token = getBearerToken();
+  const supabase = createPublicServerClient();
+  const { data, error } = await supabase.auth.getUser(token);
+  if (error || !data.user) throw new Error("로그인이 필요합니다.");
+  return data.user.id;
 }
 
 async function assertAdmin() {
@@ -566,6 +595,67 @@ export const getAdminSubmissionAnswers = createServerFn({ method: "GET" }).handl
     return rows.map((row) => mapAdminSubmission(row, reviewBySubmission.get(String(row.id)) ?? null));
   },
 );
+
+export const getCompanySimulationFeedback = createServerFn({ method: "GET" })
+  .inputValidator(companySimulationFeedbackInputSchema)
+  .handler(async ({ data }): Promise<CompanySimulationFeedback> => {
+    const userId = await getCurrentUserId();
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { data: simulation, error: simulationError } = await supabaseAdmin
+      .from("job_simulations")
+      .select("id, company_id, title, role_label, job_family, companies(name)")
+      .eq("id", data.simulationId)
+      .eq("simulation_source", "company")
+      .is("deleted_at", null)
+      .maybeSingle();
+    if (simulationError || !simulation) throw new Error("시뮬레이션을 찾을 수 없습니다.");
+
+    let submissionQuery = supabaseAdmin
+      .from("submissions")
+      .select("id, response_text, response_json, ai_chat_log, submitted_at")
+      .eq("job_simulation_id", data.simulationId)
+      .eq("job_seeker_id", userId)
+      .not("submitted_at", "is", null)
+      .order("submitted_at", { ascending: false })
+      .limit(1);
+    if (data.submissionId) submissionQuery = submissionQuery.eq("id", data.submissionId);
+
+    const { data: submissions, error: submissionError } = await submissionQuery;
+    const submission = submissions?.[0];
+    if (submissionError || !submission) throw new Error("제출 기록을 찾을 수 없습니다.");
+
+    const { data: review, error: reviewError } = await supabaseAdmin
+      .from("company_simulation_ai_reviews")
+      .select("analysis, created_at, updated_at")
+      .eq("company_id", simulation.company_id)
+      .eq("applicant_id", submission.id)
+      .maybeSingle();
+    if (reviewError) throw new Error("AI 평가 결과를 불러오지 못했습니다.");
+
+    const company = firstRelation(simulation.companies);
+    return {
+      simulation: {
+        id: String(simulation.id),
+        title: String(simulation.title ?? ""),
+        roleLabel: String(simulation.role_label ?? simulation.job_family ?? simulation.title ?? ""),
+        companyName: String(company.name ?? ""),
+      },
+      submission: {
+        id: String(submission.id),
+        responseText: String(submission.response_text ?? ""),
+        responseAnswers: mapResponseAnswers(submission.response_json),
+        aiChatLog: mapAiChatLog(submission.ai_chat_log),
+        submittedAt: submission.submitted_at ? String(submission.submitted_at) : null,
+      },
+      aiReview: review
+        ? mapAdminSubmissionAiReview(
+            review.analysis,
+            String(review.updated_at ?? review.created_at ?? ""),
+          )
+        : null,
+    };
+  });
 
 export const evaluateAdminSubmissionWithAi = createServerFn({ method: "POST" })
   .inputValidator(adminSubmissionIdInputSchema)
