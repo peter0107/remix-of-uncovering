@@ -1317,24 +1317,38 @@ export function RichTextContent({ value, className = "" }: { value: string; clas
 
   return (
     <>
-      <div
-        ref={contentRef}
-        className={contentClassName}
-        onClick={(event) => {
-          const image = (event.target as HTMLElement).closest("img") as HTMLImageElement | null;
-          if (!image || !contentRef.current?.contains(image)) return;
-          setPreviewImage({ src: image.currentSrc || image.src, alt: image.alt });
-        }}
-        onPointerDown={beginTableResize}
-        onPointerMove={moveTableResize}
-        onPointerUp={endTableResize}
-        onPointerCancel={endTableResize}
-        {...(richValue
-          ? { dangerouslySetInnerHTML: { __html: sanitizeRichHtml(value.slice(RICH_TEXT_PREFIX.length)) } }
-          : {})}
-      >
-        {!richValue && <ReactMarkdown remarkPlugins={[remarkGfm]}>{value}</ReactMarkdown>}
-      </div>
+      {richValue ? (
+        <div
+          ref={contentRef}
+          className={contentClassName}
+          onClick={(event) => {
+            const image = (event.target as HTMLElement).closest("img") as HTMLImageElement | null;
+            if (!image || !contentRef.current?.contains(image)) return;
+            setPreviewImage({ src: image.currentSrc || image.src, alt: image.alt });
+          }}
+          onPointerDown={beginTableResize}
+          onPointerMove={moveTableResize}
+          onPointerUp={endTableResize}
+          onPointerCancel={endTableResize}
+          dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(value.slice(RICH_TEXT_PREFIX.length)) }}
+        />
+      ) : (
+        <div
+          ref={contentRef}
+          className={contentClassName}
+          onClick={(event) => {
+            const image = (event.target as HTMLElement).closest("img") as HTMLImageElement | null;
+            if (!image || !contentRef.current?.contains(image)) return;
+            setPreviewImage({ src: image.currentSrc || image.src, alt: image.alt });
+          }}
+          onPointerDown={beginTableResize}
+          onPointerMove={moveTableResize}
+          onPointerUp={endTableResize}
+          onPointerCancel={endTableResize}
+        >
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>{value}</ReactMarkdown>
+        </div>
+      )}
 
       {previewImage && (
         <div
