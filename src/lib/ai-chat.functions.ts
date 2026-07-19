@@ -3,6 +3,8 @@ import { getRequest } from "@tanstack/react-start/server";
 import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
 
+import { COMPANY_AI_PROMPT_DEFAULTS } from "@/lib/ai-prompt.defaults";
+
 function getBearerToken(): string {
   const request = getRequest();
   const authHeader = request?.headers.get("authorization") ?? "";
@@ -112,6 +114,21 @@ async function loadSimulationContext(simulationId: string): Promise<string> {
     .join("\n\n");
 }
 
+async function loadSimulationAssistantPrompt(): Promise<string> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data, error } = await supabaseAdmin
+    .from("ai_prompt_settings")
+    .select("prompt")
+    .eq("key", "company_simulation_assistant")
+    .maybeSingle();
+
+  if (error) {
+    console.error("Failed to load simulation assistant prompt:", error);
+  }
+
+  return data?.prompt?.trim() || COMPANY_AI_PROMPT_DEFAULTS.company_simulation_assistant.prompt;
+}
+
 export const chatWithSimulationAssistant = createServerFn({ method: "POST" })
   .inputValidator(chatInputSchema)
   .handler(async ({ data }): Promise<SimulationChatReply> => {
@@ -122,12 +139,12 @@ export const chatWithSimulationAssistant = createServerFn({ method: "POST" })
       throw new Error("AI 어시스트가 아직 준비 중이에요. 잠시 후 다시 시도해 주세요.");
     }
 
-    const context = await loadSimulationContext(data.simulationId);
+    const [context, assistantPrompt] = await Promise.all([
+      loadSimulationContext(data.simulationId),
+      loadSimulationAssistantPrompt(),
+    ]);
 
-    const systemPrompt = `당신은 구직자가 직무 시뮬레이션 과제를 수행하도록 돕는 AI 어시스트입니다.
-- 답안을 대신 작성하지 말고, 과제 이해와 접근 방법을 돕는 방향으로 답하세요.
-- 구직자가 스스로 사고하도록 힌트와 질문을 활용하세요.
-- 한국어 해요체로, 간결하고 친절하게 답하세요.
+    const systemPrompt = `${assistantPrompt}
 
 아래는 구직자가 현재 수행 중인 과제의 맥락입니다.
 ${context}`;

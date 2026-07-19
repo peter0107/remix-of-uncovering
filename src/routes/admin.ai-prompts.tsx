@@ -113,7 +113,7 @@ function AdminAiPrompts() {
         </div>
       ) : (
         <section className="mt-6 max-w-none">
-          <div className="grid gap-4 lg:grid-cols-3">
+          <div className="grid gap-x-8 gap-y-6 md:grid-cols-2">
             {settings.map((setting) => (
               <div key={setting.key} className="flex min-w-0 flex-col border-t border-neutral-200 pt-4">
                 <div className="pb-4">
@@ -133,7 +133,7 @@ function AdminAiPrompts() {
                     id={`ai-prompt-${setting.key}`}
                     value={setting.prompt}
                     onChange={(event) => updatePrompt(setting.key, event.target.value)}
-                    className="mt-2 min-h-[360px] w-full flex-1 resize-y rounded-md border border-neutral-300 bg-white p-4 font-mono text-sm leading-6 text-neutral-900 outline-none focus:border-neutral-900"
+                    className="mt-2 min-h-[300px] w-full flex-1 resize-y rounded-md border border-neutral-300 bg-white p-4 font-mono text-sm leading-6 text-neutral-900 outline-none focus:border-neutral-900"
                   />
                   <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
                     <p className="text-xs text-neutral-500">
