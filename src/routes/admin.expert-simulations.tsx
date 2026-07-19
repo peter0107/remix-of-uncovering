@@ -144,7 +144,7 @@ function prepareSteps(steps: AdminSimulationStep[]) {
   }));
 }
 
-type StepEditorPanel = "situation" | "materials" | "questions" | "modelAnswer" | "aiFeedback";
+type StepEditorPanel = "situation" | "materials" | "questions" | "modelAnswer";
 
 function AdminExpertSimulations() {
   const navigate = useNavigate();
@@ -573,7 +573,6 @@ function AdminExpertSimulations() {
                       ["materials", "제공 자료"],
                       ["questions", "단계별 질문"],
                       ["modelAnswer", "현직자 모범답안"],
-                      ["aiFeedback", "AI 활용 피드백"],
                     ] as const
                   ).map(([panel, label]) => (
                     <button
@@ -640,14 +639,6 @@ function AdminExpertSimulations() {
                       minHeight="16rem"
                     />
                   )}
-                  {stepEditorPanel === "aiFeedback" && (
-                    <RichTextEditor
-                      label="AI 활용 피드백"
-                      value={form.aiFeedback}
-                      onChange={(value) => updateForm("aiFeedback", value)}
-                      minHeight="12rem"
-                    />
-                  )}
                 </>
               ) : (
                 <ExpertStepEditor
@@ -655,24 +646,18 @@ function AdminExpertSimulations() {
                   onChange={(steps) => updateForm("steps", steps)}
                   activePanel="situation"
                   showAll
+                  modelAnswer={form.modelAnswer}
+                  onModelAnswerChange={(value) => updateForm("modelAnswer", value)}
                 />
               )}
 
-              {!(form.simulationFormat === "selection" && form.selectionMode === "common") && (
-                <>
-                  <RichTextEditor
-                    label="현직자 모범답안"
-                    value={form.modelAnswer}
-                    onChange={(value) => updateForm("modelAnswer", value)}
-                    minHeight="16rem"
-                  />
-                  <RichTextEditor
-                    label="AI 활용 피드백"
-                    value={form.aiFeedback}
-                    onChange={(value) => updateForm("aiFeedback", value)}
-                    minHeight="12rem"
-                  />
-                </>
+              {form.simulationFormat === "single" && (
+                <RichTextEditor
+                  label="현직자 모범답안"
+                  value={form.modelAnswer}
+                  onChange={(value) => updateForm("modelAnswer", value)}
+                  minHeight="16rem"
+                />
               )}
 
               <div className="flex justify-end gap-2">
@@ -714,15 +699,21 @@ function ExpertStepEditor({
   onChange,
   activePanel,
   showAll = false,
+  modelAnswer,
+  onModelAnswerChange,
 }: {
   steps: AdminSimulationStep[];
   onChange: (steps: AdminSimulationStep[]) => void;
   activePanel: StepEditorPanel;
   showAll?: boolean;
+  modelAnswer?: string;
+  onModelAnswerChange?: (value: string) => void;
 }) {
-  const [activeStepIndex, setActiveStepIndex] = useState(0);
+  const [activeStepIndex, setActiveStepIndex] = useState<number | "modelAnswer">(0);
   useEffect(() => {
-    setActiveStepIndex((current) => Math.min(current, Math.max(steps.length - 1, 0)));
+    setActiveStepIndex((current) =>
+      typeof current === "number" ? Math.min(current, Math.max(steps.length - 1, 0)) : current,
+    );
   }, [steps.length]);
   const updateStep = (index: number, patch: Partial<AdminSimulationStep>) =>
     onChange(steps.map((step, current) => (current === index ? { ...step, ...patch } : step)));
@@ -758,7 +749,7 @@ function ExpertStepEditor({
         </button>
       </div>
       <div className="mt-4 space-y-4">
-        {steps.length > 0 && (
+        {(steps.length > 0 || onModelAnswerChange) && (
           <div className="flex flex-wrap gap-2 border-b border-neutral-200 pb-4">
             {steps.map((_, index) => (
               <button
@@ -775,10 +766,32 @@ function ExpertStepEditor({
                 {index + 1}단계
               </button>
             ))}
+            {onModelAnswerChange && (
+              <button
+                type="button"
+                onClick={() => setActiveStepIndex("modelAnswer")}
+                aria-pressed={activeStepIndex === "modelAnswer"}
+                className={`rounded-md border px-3 py-1.5 text-xs font-semibold ${
+                  activeStepIndex === "modelAnswer"
+                    ? "border-neutral-900 bg-neutral-900 text-white"
+                    : "border-neutral-300 text-neutral-600 hover:bg-neutral-50"
+                }`}
+              >
+                현직자 모범답안
+              </button>
+            )}
           </div>
         )}
-        {steps.map((step, stepIndex) =>
-          stepIndex !== activeStepIndex ? null : (
+        {activeStepIndex === "modelAnswer" && onModelAnswerChange ? (
+          <RichTextEditor
+            label="현직자 모범답안"
+            value={modelAnswer ?? ""}
+            onChange={onModelAnswerChange}
+            minHeight="16rem"
+          />
+        ) : (
+          steps.map((step, stepIndex) =>
+            stepIndex !== activeStepIndex ? null : (
           <div key={step.id} className="border-t border-neutral-200 pt-4">
             <div className="flex items-center justify-between gap-3">
               <p className="text-sm font-semibold">{stepIndex + 1}단계</p>
@@ -872,7 +885,8 @@ function ExpertStepEditor({
               </div>
             )}
           </div>
-        ),
+            ),
+          )
         )}
       </div>
     </section>
