@@ -880,8 +880,8 @@ ${getPrompt("company_interview_question_recommendation")}
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: process.env.ANTHROPIC_MODEL || "claude-sonnet-4-6",
-      max_tokens: 2400,
+      model: process.env.ANTHROPIC_MODEL || "claude-sonnet-4-5",
+      max_tokens: 8000,
       tools: [COMPANY_AI_REVIEW_TOOL],
       tool_choice: { type: "tool", name: COMPANY_AI_REVIEW_TOOL_NAME },
       messages: [{ role: "user", content: prompt }],
@@ -897,6 +897,9 @@ ${getPrompt("company_interview_question_recommendation")}
         ? (payload.error as { message: string }).message
         : "AI 평가 요청에 실패했습니다.";
     throw new Error(message);
+  }
+  if (payload.stop_reason === "max_tokens") {
+    throw new Error("AI 평가 응답이 길이 제한을 초과했습니다. 다시 시도해주세요.");
   }
 
   return aiReviewAnalysisSchema.parse(getClaudeAiReviewInput(payload));
