@@ -18,6 +18,7 @@ import {
   Trash2,
   Underline,
   Undo2,
+  X,
   ZoomIn,
   ZoomOut,
 } from "lucide-react";
@@ -80,6 +81,8 @@ type TableResizeState = {
   table: HTMLTableElement;
   widths: number[];
 };
+
+type ContentTableResizeState = TableResizeState;
 
 function escapeHtml(value: string) {
   return value
@@ -1178,19 +1181,188 @@ export function RichTextEditor({
   );
 }
 
-export function RichTextContent({ value, className = "" }: { value: string; className?: string }) {
-  if (value.startsWith(RICH_TEXT_PREFIX)) {
-    return (
-      <div
-        className={`rich-text-content ${className} [&_code]:rounded-sm [&_code]:bg-neutral-100 [&_code]:px-1 [&_code]:py-0.5 [&_code]:font-mono [&_pre]:overflow-x-auto [&_pre]:rounded-md [&_pre]:bg-neutral-900 [&_pre]:px-3 [&_pre]:py-3 [&_pre]:font-mono [&_pre]:text-neutral-50 [&_pre_code]:!bg-transparent [&_pre_code]:!p-0 [&_pre_code]:!text-neutral-50 [&_table]:border-collapse [&_th]:border [&_th]:border-neutral-300 [&_th]:bg-neutral-50 [&_th]:px-2 [&_th]:py-1 [&_td]:border [&_td]:border-neutral-300 [&_td]:px-2 [&_td]:py-1`}
-        dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(value.slice(RICH_TEXT_PREFIX.length)) }}
-      />
-    );
+function ensureContentTableColumns(table: HTMLTableElement) {
+  const columnCount = Math.max(...Array.from(table.rows).map((row) => row.cells.length), 1);
+  let columnGroup = table.querySelector(":scope > colgroup");
+  if (!columnGroup) {
+    columnGroup = document.createElement("colgroup");
+    table.insertBefore(columnGroup, table.firstChild);
   }
 
+  while (columnGroup.children.length < columnCount) {
+    columnGroup.appendChild(document.createElement("col"));
+  }
+  while (columnGroup.children.length > columnCount) {
+    columnGroup.lastElementChild?.remove();
+  }
+
+  const columns = Array.from(columnGroup.children) as HTMLTableColElement[];
+  const hasWidths = columns.every((column) => Number.parseFloat(column.style.width) > 0);
+  if (!hasWidths) {
+    const width = 100 / columns.length;
+    columns.forEach((column) => {
+      column.style.width = `${width}%`;
+    });
+  }
+  return columns;
+}
+
+function prepareContentTables(container: HTMLElement) {
+  container.querySelectorAll("table").forEach((table) => {
+    const htmlTable = table as HTMLTableElement;
+    ensureContentTableColumns(htmlTable);
+
+    let wrapper = htmlTable.parentElement;
+    if (!wrapper?.classList.contains("rich-text-table-scroll")) {
+      wrapper = document.createElement("div");
+      wrapper.className = "rich-text-table-scroll rich-text-table-resizable";
+      htmlTable.parentNode?.insertBefore(wrapper, htmlTable);
+      wrapper.appendChild(htmlTable);
+    }
+
+    Array.from(htmlTable.rows).forEach((row) => {
+      Array.from(row.cells).forEach((cell, index) => {
+        if (index >= row.cells.length - 1 || cell.querySelector(":scope > .rich-text-table-resize-handle")) {
+          return;
+        }
+        const handle = document.createElement("span");
+        handle.className = "rich-text-table-resize-handle";
+        handle.setAttribute("aria-hidden", "true");
+        cell.appendChild(handle);
+      });
+    });
+  });
+}
+
+export function RichTextContent({ value, className = "" }: { value: string; className?: string }) {
+  const contentRef = useRef<HTMLDivElement>(null);
+  const tableResizeRef = useRef<ContentTableResizeState | null>(null);
+  const [previewImage, setPreviewImage] = useState<{ src: string; alt: string } | null>(null);
+  const richValue = value.startsWith(RICH_TEXT_PREFIX);
+
+  useEffect(() => {
+    if (!contentRef.current) return;
+    prepareContentTables(contentRef.current);
+  }, [value]);
+
+  useEffect(() => {
+    if (!previewImage) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setPreviewImage(null);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [previewImage]);
+
+  useEffect(
+    () => () => {
+      document.body.classList.remove("rich-text-table-resizing");
+    },
+    [],
+  );
+
+  const beginTableResize = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (event.pointerType === "mouse" && event.button !== 0) return;
+    const handle = (event.target as HTMLElement).closest(".rich-text-table-resize-handle");
+    const cell = handle?.parentElement as HTMLTableCellElement | null;
+    const table = cell?.closest("table");
+    const row = cell?.parentElement as HTMLTableRowElement | null;
+    if (!cell || !table || !row || !contentRef.current?.contains(table)) return;
+
+    const columnIndex = Array.from(row.cells).indexOf(cell);
+    const columns = ensureContentTableColumns(table);
+    if (columnIndex < 0 || columnIndex >= columns.length - 1) return;
+
+    event.preventDefault();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    tableResizeRef.current = {
+      pointerId: event.pointerId,
+      columnIndex,
+      startX: event.clientX,
+      table,
+      widths: columns.map((column) => Number.parseFloat(column.style.width) || 100 / columns.length),
+    };
+    document.body.classList.add("rich-text-table-resizing");
+  };
+
+  const moveTableResize = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const resize = tableResizeRef.current;
+    if (!resize || resize.pointerId !== event.pointerId) return;
+    const columns = ensureContentTableColumns(resize.table);
+    const tableWidth = resize.table.getBoundingClientRect().width;
+    if (!tableWidth) return;
+
+    const minimumWidth = 8;
+    const delta = ((event.clientX - resize.startX) / tableWidth) * 100;
+    const currentWidth = resize.widths[resize.columnIndex] ?? minimumWidth;
+    const nextWidth = resize.widths[resize.columnIndex + 1] ?? minimumWidth;
+    const constrainedDelta = Math.max(
+      minimumWidth - currentWidth,
+      Math.min(nextWidth - minimumWidth, delta),
+    );
+    columns[resize.columnIndex].style.width = `${currentWidth + constrainedDelta}%`;
+    columns[resize.columnIndex + 1].style.width = `${nextWidth - constrainedDelta}%`;
+  };
+
+  const endTableResize = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (tableResizeRef.current?.pointerId !== event.pointerId) return;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+    tableResizeRef.current = null;
+    document.body.classList.remove("rich-text-table-resizing");
+  };
+
+  const contentClassName = `rich-text-content ${className} [&_code]:rounded-sm [&_code]:bg-neutral-100 [&_code]:px-1 [&_code]:py-0.5 [&_code]:font-mono [&_pre]:overflow-x-auto [&_pre]:rounded-md [&_pre]:bg-neutral-900 [&_pre]:px-3 [&_pre]:py-3 [&_pre]:font-mono [&_pre]:text-neutral-50 [&_pre_code]:!bg-transparent [&_pre_code]:!p-0 [&_pre_code]:!text-neutral-50 [&_table]:border-collapse [&_th]:border [&_th]:border-neutral-300 [&_th]:bg-neutral-50 [&_th]:px-2 [&_th]:py-1 [&_td]:border [&_td]:border-neutral-300 [&_td]:px-2 [&_td]:py-1`;
+
   return (
-    <div className={`rich-text-content ${className}`}>
-      <ReactMarkdown remarkPlugins={[remarkGfm]}>{value}</ReactMarkdown>
-    </div>
+    <>
+      <div
+        ref={contentRef}
+        className={contentClassName}
+        onClick={(event) => {
+          const image = (event.target as HTMLElement).closest("img") as HTMLImageElement | null;
+          if (!image || !contentRef.current?.contains(image)) return;
+          setPreviewImage({ src: image.currentSrc || image.src, alt: image.alt });
+        }}
+        onPointerDown={beginTableResize}
+        onPointerMove={moveTableResize}
+        onPointerUp={endTableResize}
+        onPointerCancel={endTableResize}
+        {...(richValue
+          ? { dangerouslySetInnerHTML: { __html: sanitizeRichHtml(value.slice(RICH_TEXT_PREFIX.length)) } }
+          : {})}
+      >
+        {!richValue && <ReactMarkdown remarkPlugins={[remarkGfm]}>{value}</ReactMarkdown>}
+      </div>
+
+      {previewImage && (
+        <div
+          className="fixed inset-0 z-50 grid place-items-center bg-black/80 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-label="이미지 확대"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setPreviewImage(null);
+          }}
+        >
+          <div className="relative max-h-full max-w-full">
+            <button
+              type="button"
+              onClick={() => setPreviewImage(null)}
+              className="absolute right-2 top-2 z-10 grid h-8 w-8 place-items-center rounded-md bg-black/60 text-white hover:bg-black/80"
+              aria-label="이미지 확대 닫기"
+            >
+              <X className="h-4 w-4" />
+            </button>
+            <img
+              src={previewImage.src}
+              alt={previewImage.alt}
+              className="max-h-[calc(100vh-2rem)] max-w-full object-contain"
+            />
+          </div>
+        </div>
+      )}
+    </>
   );
 }
