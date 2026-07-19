@@ -8,6 +8,11 @@ import {
   COMPANY_AI_PROMPT_KEYS,
   type CompanyAiPromptKey,
 } from "@/lib/ai-prompt.defaults";
+import {
+  COMPANY_AI_REVIEW_TOOL,
+  COMPANY_AI_REVIEW_TOOL_NAME,
+  getClaudeAiReviewInput,
+} from "@/lib/ai-evaluation";
 import { DOMAIN_CATEGORIES } from "@/lib/domain-categories";
 
 export type AdminCompany = {
@@ -399,33 +404,6 @@ function mapAiChatLog(value: unknown): AdminSubmissionAnswer["aiChatLog"] {
   });
 }
 
-function extractJsonObject(value: string) {
-  const trimmed = value
-    .trim()
-    .replace(/^```json\s*/i, "")
-    .replace(/^```\s*/i, "")
-    .replace(/\s*```$/i, "");
-  const start = trimmed.indexOf("{");
-  const end = trimmed.lastIndexOf("}");
-  if (start < 0 || end < start) throw new Error("AI 응답에서 평가 데이터를 찾지 못했습니다.");
-  return JSON.parse(trimmed.slice(start, end + 1)) as unknown;
-}
-
-function getClaudeText(payload: Record<string, unknown>) {
-  const content = Array.isArray(payload.content) ? payload.content : [];
-  return content
-    .flatMap((part) =>
-      typeof part === "object" &&
-      part !== null &&
-      (part as { type?: unknown }).type === "text" &&
-      typeof (part as { text?: unknown }).text === "string"
-        ? [(part as { text: string }).text]
-        : [],
-    )
-    .join("\n")
-    .trim();
-}
-
 function mapAdminSubmissionAiReview(
   value: unknown,
   updatedAt: string,
@@ -639,10 +617,12 @@ export const evaluateAdminSubmissionWithAi = createServerFn({ method: "POST" })
       body: JSON.stringify({
         model: process.env.ANTHROPIC_MODEL || "claude-sonnet-4-6",
         max_tokens: 2200,
+        tools: [COMPANY_AI_REVIEW_TOOL],
+        tool_choice: { type: "tool", name: COMPANY_AI_REVIEW_TOOL_NAME },
         messages: [
           {
             role: "user",
-            content: `[1. 시뮬레이션 결과물 평가 프롬프트]\n${getPrompt("company_simulation_result_review")}\n\n[2. AI 활용 능력 평가 프롬프트]\n${getPrompt("company_ai_utilization_review")}\n\n[3. 면접 질문 추천 프롬프트]\n${getPrompt("company_interview_question_recommendation")}\n\n공통 규칙:\n- 제공된 결과물과 AI 대화 로그 안에서 확인되는 내용만 평가하세요.\n- 채용 합격/불합격을 판단하지 마세요.\n- 반드시 아래 JSON만 반환하세요.\n{ "simulation": { "score": 0, "summary": "", "strengths": [""], "concerns": [""] }, "aiUtilization": { "score": 0, "summary": "", "strengths": [""], "improvements": [""] }, "interviewQuestions": [{ "category": "시뮬레이션 결과물", "question": "", "intent": "" }] }\n\n평가 자료:\n${JSON.stringify(material).slice(0, 30000)}`,
+            content: `[1. 시뮬레이션 결과물 평가 프롬프트]\n${getPrompt("company_simulation_result_review")}\n\n[2. AI 활용 능력 평가 프롬프트]\n${getPrompt("company_ai_utilization_review")}\n\n[3. 면접 질문 추천 프롬프트]\n${getPrompt("company_interview_question_recommendation")}\n\n공통 규칙:\n- 제공된 결과물과 AI 대화 로그 안에서 확인되는 내용만 평가하세요.\n- 채용 합격/불합격을 판단하지 마세요.\n- 평가를 마치면 지정된 평가 기록 도구를 사용하세요.\n\n평가 자료:\n${JSON.stringify(material).slice(0, 30000)}`,
           },
         ],
       }),
@@ -658,9 +638,7 @@ export const evaluateAdminSubmissionWithAi = createServerFn({ method: "POST" })
       throw new Error(message);
     }
 
-    const output = getClaudeText(payload);
-    if (!output) throw new Error("AI 평가 결과를 받지 못했습니다.");
-    const analysis = adminSubmissionAiReviewSchema.parse(extractJsonObject(output));
+    const analysis = adminSubmissionAiReviewSchema.parse(getClaudeAiReviewInput(payload));
     const now = new Date().toISOString();
     const { data: saved, error: saveError } = await supabaseAdmin
       .from("company_simulation_ai_reviews")

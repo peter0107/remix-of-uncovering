@@ -6,6 +6,11 @@ import {
   COMPANY_AI_PROMPT_KEYS,
   type CompanyAiPromptKey,
 } from "@/lib/ai-prompt.defaults";
+import {
+  COMPANY_AI_REVIEW_TOOL,
+  COMPANY_AI_REVIEW_TOOL_NAME,
+  getClaudeAiReviewInput,
+} from "@/lib/ai-evaluation";
 
 export type Status = "submitted" | "in_review" | "completed";
 export type ApplicantReviewStage =
@@ -27,6 +32,21 @@ type JobPostingCandidate = {
   sourceUrl: string;
   content: string;
 };
+
+function getClaudeOutput(payload: Record<string, unknown>) {
+  const content = Array.isArray(payload.content) ? payload.content : [];
+  return content
+    .flatMap((part) =>
+      typeof part === "object" &&
+      part !== null &&
+      (part as { type?: unknown }).type === "text" &&
+      typeof (part as { text?: unknown }).text === "string"
+        ? [(part as { text: string }).text]
+        : [],
+    )
+    .join("\n")
+    .trim();
+}
 
 export type ApplicantAiReview = {
   applicantId: string;
@@ -801,34 +821,6 @@ function extractJobPostingCandidates(html: string, sourceUrl: URL): JobPostingCa
   ];
 }
 
-function extractJsonObject(value: string) {
-  const trimmed = value
-    .trim()
-    .replace(/^```json\s*/i, "")
-    .replace(/```$/i, "")
-    .trim();
-  const start = trimmed.indexOf("{");
-  const end = trimmed.lastIndexOf("}");
-  if (start === -1 || end === -1 || end <= start)
-    throw new Error("AI 응답 형식이 올바르지 않습니다.");
-  return JSON.parse(trimmed.slice(start, end + 1)) as unknown;
-}
-
-function getClaudeOutput(payload: Record<string, unknown>) {
-  const content = Array.isArray(payload.content) ? payload.content : [];
-  return content
-    .flatMap((part) =>
-      typeof part === "object" &&
-      part !== null &&
-      (part as { type?: unknown }).type === "text" &&
-      typeof (part as { text?: unknown }).text === "string"
-        ? [(part as { text: string }).text]
-        : [],
-    )
-    .join("\n")
-    .trim();
-}
-
 async function generateApplicantAiReview(applicant: Applicant) {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
@@ -866,7 +858,7 @@ async function generateApplicantAiReview(applicant: Applicant) {
 - 보호 특성(나이, 성별, 출신, 건강, 가족상태 등)을 추정하거나 판단 근거로 사용하지 마세요.
 - 채용 합격/불합격을 결정하지 말고, 근거 기반의 검토 포인트만 제시하세요.
 - 점수는 0~100 정수로 작성하고, 근거는 제공된 자료 안에서만 작성하세요.
-- 반드시 JSON만 반환하세요.
+- 평가를 마치면 지정된 평가 기록 도구를 사용하세요.
 
 [1. 시뮬레이션 결과물 평가 프롬프트]
 ${getPrompt("company_simulation_result_review")}
@@ -877,15 +869,7 @@ ${getPrompt("company_ai_utilization_review")}
 [3. 면접 질문 추천 프롬프트]
 ${getPrompt("company_interview_question_recommendation")}
 
-최종 반환 JSON 형식:
-{
-  "simulation": { "score": 0, "summary": "", "strengths": [""], "concerns": [""] },
-  "aiUtilization": { "score": 0, "summary": "", "strengths": [""], "improvements": [""] },
-  "interviewQuestions": [
-    { "category": "시뮬레이션 결과물", "question": "", "intent": "" },
-    { "category": "AI 활용", "question": "", "intent": "" }
-  ]
-}`;
+`;
   const prompt = `${promptInstructions}\n\n평가 자료:\n${JSON.stringify(evaluationMaterial).slice(0, 30000)}`;
 
   const response = await fetch("https://api.anthropic.com/v1/messages", {
@@ -898,6 +882,8 @@ ${getPrompt("company_interview_question_recommendation")}
     body: JSON.stringify({
       model: process.env.ANTHROPIC_MODEL || "claude-sonnet-4-6",
       max_tokens: 2400,
+      tools: [COMPANY_AI_REVIEW_TOOL],
+      tool_choice: { type: "tool", name: COMPANY_AI_REVIEW_TOOL_NAME },
       messages: [{ role: "user", content: prompt }],
     }),
   });
@@ -913,9 +899,7 @@ ${getPrompt("company_interview_question_recommendation")}
     throw new Error(message);
   }
 
-  const output = getClaudeOutput(payload);
-  if (!output) throw new Error("AI 평가 결과를 받지 못했습니다.");
-  return aiReviewAnalysisSchema.parse(extractJsonObject(output));
+  return aiReviewAnalysisSchema.parse(getClaudeAiReviewInput(payload));
 }
 
 async function assertCompanyApplicant(

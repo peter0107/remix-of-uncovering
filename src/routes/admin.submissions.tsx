@@ -187,6 +187,12 @@ function SubmissionDetail({
   const duration = submission.durationSeconds
     ? `${Math.max(1, Math.round(submission.durationSeconds / 60))}분`
     : "-";
+  const [isAiReviewOpen, setIsAiReviewOpen] = useState(false);
+
+  const openAiReview = () => {
+    setIsAiReviewOpen(true);
+    if (!submission.aiReview) void onEvaluate(submission.id);
+  };
 
   return (
     <section className="min-w-0 rounded-md border border-neutral-200">
@@ -203,11 +209,22 @@ function SubmissionDetail({
               {submission.applicantEmail || "이메일 미입력"}
             </p>
           </div>
-          <span
-            className={`rounded-full px-2.5 py-1 text-xs font-medium ${submission.isSharedWithCompany ? "bg-emerald-50 text-emerald-700" : "bg-neutral-100 text-neutral-500"}`}
-          >
-            {submission.isSharedWithCompany ? "기업 공유" : "개인 제출"}
-          </span>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={openAiReview}
+              disabled={isEvaluating}
+              className="inline-flex h-8 items-center gap-1.5 rounded-md border border-neutral-300 bg-white px-2.5 text-xs font-medium text-neutral-800 hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <Sparkles className="h-3.5 w-3.5" />
+              {isEvaluating ? "AI 평가 중" : submission.aiReview ? "AI 평가 보기" : "AI 평가"}
+            </button>
+            <span
+              className={`rounded-full px-2.5 py-1 text-xs font-medium ${submission.isSharedWithCompany ? "bg-emerald-50 text-emerald-700" : "bg-neutral-100 text-neutral-500"}`}
+            >
+              {submission.isSharedWithCompany ? "기업 공유" : "개인 제출"}
+            </span>
+          </div>
         </div>
         <dl className="mt-5 grid gap-3 text-sm sm:grid-cols-3">
           <div>
@@ -282,11 +299,13 @@ function SubmissionDetail({
         </section>
       </div>
 
-      <AiReviewSection
+      <AiReviewDialog
         submission={submission}
         isEvaluating={isEvaluating}
         onEvaluate={onEvaluate}
         onSave={onSaveReview}
+        isOpen={isAiReviewOpen}
+        onClose={() => setIsAiReviewOpen(false)}
       />
     </section>
   );
@@ -302,18 +321,21 @@ function reviewToForm(review: AdminSubmissionAiReview): EditableReview {
   };
 }
 
-function AiReviewSection({
+function AiReviewDialog({
   submission,
   isEvaluating,
   onEvaluate,
   onSave,
+  isOpen,
+  onClose,
 }: {
   submission: AdminSubmissionAnswer;
   isEvaluating: boolean;
   onEvaluate: (submissionId: string) => Promise<void>;
   onSave: (submissionId: string, analysis: EditableReview) => Promise<void>;
+  isOpen: boolean;
+  onClose: () => void;
 }) {
-  const [isOpen, setIsOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [draft, setDraft] = useState<EditableReview | null>(
@@ -321,13 +343,11 @@ function AiReviewSection({
   );
 
   useEffect(() => {
-    setIsOpen(false);
     setIsEditing(false);
     setDraft(submission.aiReview ? reviewToForm(submission.aiReview) : null);
   }, [submission.id, submission.aiReview]);
 
   const startEvaluation = async () => {
-    setIsOpen(true);
     await onEvaluate(submission.id);
   };
 
@@ -348,21 +368,24 @@ function AiReviewSection({
   const review = submission.aiReview;
   const changeDraft = (next: EditableReview) => setDraft(next);
 
+  if (!isOpen) return null;
+
   return (
-    <section className="border-t border-neutral-200 p-5">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h3 className="text-sm font-semibold">AI 평가</h3>
-        <div className="flex items-center gap-2">
-          {review ? (
-            <>
-              <button
-                type="button"
-                onClick={() => setIsOpen((current) => !current)}
-                className="inline-flex h-8 items-center gap-1.5 rounded-md border border-neutral-300 px-2.5 text-xs font-medium text-neutral-800 hover:bg-neutral-50"
-              >
-                <Sparkles className="h-3.5 w-3.5" />
-                {isOpen ? "닫기" : "AI 평가 보기"}
-              </button>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+    >
+      <section
+        className="max-h-[calc(100vh-2rem)] w-full max-w-4xl overflow-y-auto rounded-md border border-neutral-200 bg-white p-5"
+        onMouseDown={(event) => event.stopPropagation()}
+      >
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h3 className="text-sm font-semibold">AI 평가</h3>
+          <div className="flex items-center gap-2">
+            {review ? (
+              <>
               <button
                 type="button"
                 onClick={() => void startEvaluation()}
@@ -372,9 +395,9 @@ function AiReviewSection({
                 <RefreshCw className={`h-3.5 w-3.5 ${isEvaluating ? "animate-spin" : ""}`} />
                 {isEvaluating ? "평가 중..." : "다시 평가"}
               </button>
-            </>
-          ) : (
-            <button
+              </>
+            ) : (
+              <button
               type="button"
               onClick={() => void startEvaluation()}
               disabled={isEvaluating}
@@ -382,12 +405,19 @@ function AiReviewSection({
             >
               <Sparkles className="h-3.5 w-3.5" />
               {isEvaluating ? "평가 중..." : "AI 평가하기"}
+              </button>
+            )}
+            <button
+            type="button"
+            onClick={onClose}
+            className="grid h-8 w-8 place-items-center rounded-md text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900"
+            aria-label="AI 평가 닫기"
+            >
+              <X className="h-4 w-4" />
             </button>
-          )}
+          </div>
         </div>
-      </div>
 
-      {isOpen && (
         <div className="mt-5 border-t border-neutral-200 pt-5">
           {isEvaluating ? (
             <p className="py-8 text-center text-sm text-neutral-500">AI 평가를 생성하고 있습니다.</p>
@@ -484,8 +514,8 @@ function AiReviewSection({
             <p className="py-8 text-center text-sm text-neutral-500">AI 평가 결과가 없습니다.</p>
           )}
         </div>
-      )}
-    </section>
+      </section>
+    </div>
   );
 }
 
