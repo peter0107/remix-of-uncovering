@@ -1270,8 +1270,10 @@ export const RichTextContent = memo(function RichTextContent({
 
   useLayoutEffect(() => {
     if (!contentRef.current) return;
+    if (!richValue) return;
     prepareContentTables(contentRef.current, tableWidths);
-  }, [tableWidths, value]);
+  }, [tableWidths, value, richValue]);
+
 
   useEffect(() => {
     if (!previewImage) return;
@@ -1363,6 +1365,7 @@ export const RichTextContent = memo(function RichTextContent({
     <>
       {richValue ? (
         <div
+          key={value}
           ref={contentRef}
           className={contentClassName}
           onClick={(event) => {
@@ -1376,8 +1379,10 @@ export const RichTextContent = memo(function RichTextContent({
           onPointerCancel={endTableResize}
           dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(value.slice(RICH_TEXT_PREFIX.length)) }}
         />
+
       ) : (
         <div
+          key={value}
           ref={contentRef}
           className={contentClassName}
           onClick={(event) => {
@@ -1393,6 +1398,7 @@ export const RichTextContent = memo(function RichTextContent({
           <ReactMarkdown remarkPlugins={[remarkGfm]}>{value}</ReactMarkdown>
         </div>
       )}
+
 
       {previewImage &&
         createPortal(
