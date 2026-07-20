@@ -1380,6 +1380,7 @@ export const RichTextContent = memo(function RichTextContent({
         />
       ) : (
         <div
+          key={value}
           ref={contentRef}
           className={contentClassName}
           onClick={(event) => {
@@ -1395,6 +1396,7 @@ export const RichTextContent = memo(function RichTextContent({
           <ReactMarkdown remarkPlugins={[remarkGfm]}>{value}</ReactMarkdown>
         </div>
       )}
+
 
       {previewImage &&
         createPortal(
