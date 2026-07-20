@@ -1544,7 +1544,6 @@
   .reference-logo-strip > div {
     display: flex;
     width: max-content;
-    gap: 3.5rem;
     align-items: center;
     animation: reference-logo-scroll 25s linear infinite;
   }
@@ -1555,6 +1554,7 @@
     font-weight: 800;
     line-height: 1;
     white-space: nowrap;
+    margin-right: 3.5rem;
   }
 
   .reference-flow {
