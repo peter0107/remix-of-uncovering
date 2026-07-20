@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowRight, ArrowUpRight, Check, Clock3, Menu, X } from "lucide-react";
+import { ArrowRight, Check, Clock3, Menu, X } from "lucide-react";
 import { useState } from "react";
 
 import { AccountMenu } from "@/components/AccountMenu";
@@ -21,8 +21,8 @@ export const Route = createFileRoute("/")({
 
 function Brand() {
   return (
-    <span className="home-brand" aria-label="Beginner 홈">
-      <span className="home-brand-mark" aria-hidden="true">
+    <span className="landing-brand" aria-label="Beginner 홈">
+      <span className="landing-brand-mark" aria-hidden="true">
         <span>B</span>
       </span>
       <span>Beginner</span>
@@ -30,56 +30,60 @@ function Brand() {
   );
 }
 
-function ExpertPreview() {
+function AssignmentPreview() {
   return (
-    <figure className="home-expert-preview" aria-label="현직자 제시 시뮬레이션 예시">
-      <div className="home-expert-preview-head">
-        <div>
-          <p className="home-expert-name">소영</p>
-          <p className="home-expert-meta">스타트업 · 6~10년차 · 브랜드 디자이너</p>
-        </div>
-      </div>
-      <div className="home-expert-preview-body">
+    <figure className="landing-assignment" aria-label="현직자 제시 시뮬레이션 예시">
+      <figcaption className="landing-assignment-meta">
+        <span>브랜드 디자이너</span>
+        <span>스타트업 · 6~10년차</span>
+      </figcaption>
+      <div className="landing-assignment-body">
+        <p className="landing-assignment-label">현직자 제시 업무</p>
         <h2>브랜드 첫 화면의 방향을 제안해보세요.</h2>
-        <p>업무의 맥락을 읽고, 실제로 어떤 판단을 할지 답안으로 정리합니다.</p>
-        <div className="home-expert-preview-foot">
+        <p>
+          업무의 맥락을 읽고, 어떤 기준으로 판단할지 답안으로 정리합니다.
+        </p>
+        <div className="landing-assignment-foot">
           <span>
             <Clock3 aria-hidden="true" /> 약 25분
           </span>
-          <ArrowUpRight aria-hidden="true" />
+          <Link to="/expert-simulations">
+            과제 보기 <ArrowRight aria-hidden="true" />
+          </Link>
         </div>
       </div>
     </figure>
   );
 }
 
-function InterestPreview() {
+function RolePreview() {
   return (
-    <div className="home-process-visual" aria-label="관심 직무 선택 예시">
-      <p className="home-visual-title">관심 직무</p>
-      <div className="home-role-list">
-        <span>기획·전략</span>
-        <span className="is-selected">
+    <div className="landing-proof" aria-label="관심 직무 선택 예시">
+      <p>관심 직무</p>
+      <ul>
+        <li>기획·전략</li>
+        <li className="is-selected">
           디자인 <Check aria-hidden="true" />
-        </span>
-        <span>AI·개발·데이터</span>
-      </div>
-      <p className="home-visual-note">현직자 제시 업무를 먼저 찾아볼 수 있어요.</p>
+        </li>
+        <li>AI·개발·데이터</li>
+      </ul>
     </div>
   );
 }
 
 function TaskPreview() {
   return (
-    <div className="home-process-visual" aria-label="시뮬레이션 답안 작성 예시">
-      <div className="home-task-visual-head">
+    <div className="landing-proof" aria-label="시뮬레이션 답안 작성 예시">
+      <div className="landing-proof-meta">
         <span>브랜드 디자이너</span>
         <span>
           <Clock3 aria-hidden="true" /> 25분
         </span>
       </div>
-      <p className="home-task-question">첫 화면에서 가장 먼저 보여줄 메시지를 정리해 주세요.</p>
-      <div className="home-answer-lines" aria-hidden="true">
+      <p className="landing-proof-question">
+        첫 화면에서 가장 먼저 보여줄 메시지를 정리해 주세요.
+      </p>
+      <div className="landing-answer-lines" aria-hidden="true">
         <span />
         <span />
         <span />
@@ -90,23 +94,19 @@ function TaskPreview() {
 
 function ResultPreview() {
   return (
-    <div className="home-process-visual" aria-label="답안 저장 예시">
-      <p className="home-visual-title">내 이력</p>
-      <div className="home-result-row">
-        <span className="home-result-check" aria-hidden="true">
-          <Check />
-        </span>
+    <div className="landing-proof" aria-label="작성 결과 저장 예시">
+      <p>완료한 시뮬레이션</p>
+      <div className="landing-result-row">
+        <Check aria-hidden="true" />
         <div>
-          <p>현직자 제시 시뮬레이션</p>
+          <strong>브랜드 디자이너</strong>
           <span>작성한 답안을 다시 확인할 수 있어요.</span>
         </div>
       </div>
-      <div className="home-result-row is-muted">
-        <span className="home-result-check" aria-hidden="true">
-          <Check />
-        </span>
+      <div className="landing-result-row">
+        <Check aria-hidden="true" />
         <div>
-          <p>채용 제안 받아보기</p>
+          <strong>채용 제안 받아보기</strong>
           <span>동의한 경우에만 기업에 공유돼요.</span>
         </div>
       </div>
@@ -114,23 +114,23 @@ function ResultPreview() {
   );
 }
 
-const STEPS = [
+const FLOW = [
   {
-    title: "직무를 고릅니다.",
+    title: "관심 있는 일을 찾습니다.",
     description:
-      "직무군을 선택하면, 그 일을 실제로 하고 있는 현직자가 제시한 시뮬레이션을 찾아볼 수 있어요.",
-    preview: <InterestPreview />,
+      "직무군과 직무명을 기준으로, 현직자가 제시한 업무를 찾아봅니다.",
+    preview: <RolePreview />,
   },
   {
-    title: "업무를 풀어봅니다.",
+    title: "실제 업무를 풀어봅니다.",
     description:
-      "문제를 푸는 순서와 판단의 기준이 담긴 과제를 따라가며, 내가 이 일을 어떻게 풀어가는지 확인합니다.",
+      "문제를 푸는 순서와 판단의 기준을 따라가며, 내가 이 일을 어떻게 풀어가는지 확인합니다.",
     preview: <TaskPreview />,
   },
   {
-    title: "답안을 남깁니다.",
+    title: "결과를 남깁니다.",
     description:
-      "제출한 결과물은 이력과 함께 저장됩니다. 공유에 동의한 경우에는 채용 제안을 받는 데에도 활용할 수 있어요.",
+      "제출한 답안은 내 이력에 저장됩니다. 공유에 동의한 경우에는 채용 제안에도 활용할 수 있어요.",
     preview: <ResultPreview />,
   },
 ];
@@ -140,50 +140,50 @@ function Index() {
   const { user } = useAuth();
 
   return (
-    <div className="home-page">
-      <header className="home-header">
-        <div className="home-header-inner">
+    <div className="landing-page">
+      <header className="landing-header">
+        <div className="landing-shell landing-header-inner">
           <Link to="/" aria-label="Beginner 홈">
             <Brand />
           </Link>
 
-          <nav className="home-desktop-nav" aria-label="주요 메뉴">
+          <nav className="landing-desktop-nav" aria-label="주요 메뉴">
             <a href="#how-it-works">서비스 소개</a>
             <Link to="/simulations">기업 시뮬레이션</Link>
             <Link to="/expert-simulations">현직자 제시</Link>
             <Link to="/biz">기업용</Link>
           </nav>
 
-          <div className="home-desktop-actions">
+          <div className="landing-desktop-actions">
             {user ? (
               <AccountMenu />
             ) : (
               <>
-                <Link to="/login" search={{ redirect: "/" }} className="home-login-link">
+                <Link to="/login" search={{ redirect: "/" }} className="landing-login-link">
                   로그인
                 </Link>
-                <Link to="/start" className="home-header-action">
+                <Link to="/start" className="landing-start-link">
                   시작하기
                 </Link>
               </>
             )}
           </div>
 
-          <div className="home-mobile-actions">
+          <div className="landing-mobile-actions">
             {user && <AccountMenu />}
             <button
               type="button"
               onClick={() => setIsMenuOpen((current) => !current)}
               aria-label={isMenuOpen ? "메뉴 닫기" : "메뉴 열기"}
               aria-expanded={isMenuOpen}
-              className="home-mobile-menu-button"
+              className="landing-mobile-menu-button"
             >
               {isMenuOpen ? <X /> : <Menu />}
             </button>
           </div>
         </div>
         {isMenuOpen && (
-          <nav className="home-mobile-nav" aria-label="모바일 주요 메뉴">
+          <nav className="landing-mobile-nav" aria-label="모바일 주요 메뉴">
             <a href="#how-it-works" onClick={() => setIsMenuOpen(false)}>
               서비스 소개
             </a>
@@ -197,7 +197,7 @@ function Index() {
               기업용
             </Link>
             {!user && (
-              <div className="home-mobile-auth">
+              <div className="landing-mobile-auth">
                 <Link to="/login" search={{ redirect: "/" }} onClick={() => setIsMenuOpen(false)}>
                   로그인
                 </Link>
@@ -211,61 +211,66 @@ function Index() {
       </header>
 
       <main>
-        <section className="home-hero">
-          <div className="home-hero-copy">
-            <h1>
-              <span>일을 직접</span>
-              <span>해봅니다.</span>
-            </h1>
-            <p className="home-hero-description">
-              현직자가 제시한 실제 업무와 판단 기준을 따라가며,
-              <br className="home-desktop-break" /> 나에게 맞는 일을 확인해보세요.
-            </p>
-            <div className="home-hero-actions">
-              <Link to="/expert-simulations" className="home-action home-action-primary">
-                현직자 제시 보기 <ArrowRight aria-hidden="true" />
-              </Link>
-              <Link to="/simulations" className="home-action home-action-secondary">
-                기업 시뮬레이션 보기
-              </Link>
+        <section className="landing-hero">
+          <div className="landing-shell landing-hero-layout">
+            <div className="landing-hero-copy">
+              <h1>
+                지원 전에,
+                <br />
+                그 일을 풀어봅니다.
+              </h1>
+              <p>
+                현직자가 제시한 업무를 직접 경험하고, 내가 어떤 방식으로 판단하는지 확인해보세요.
+              </p>
+              <div className="landing-hero-actions">
+                <Link to="/expert-simulations" className="landing-primary-action">
+                  현직자 제시 보기 <ArrowRight aria-hidden="true" />
+                </Link>
+                <Link to="/simulations" className="landing-secondary-action">
+                  기업 시뮬레이션 보기
+                </Link>
+              </div>
             </div>
+            <AssignmentPreview />
           </div>
-          <ExpertPreview />
         </section>
 
-        <section id="how-it-works" className="home-workflow">
-          <header className="home-section-heading">
-            <h2>
-              현직자의 업무를 고르고,
-              <br />
-              직접 풀어봅니다.
-            </h2>
-          </header>
+        <section id="how-it-works" className="landing-workflow">
+          <div className="landing-shell">
+            <header className="landing-section-heading">
+              <h2>직무가 아니라, 실제 업무를 먼저 봅니다.</h2>
+              <p>
+                관심 직무를 고르고, 현직자가 제시한 과제를 풀고, 결과를 내 이력에 남깁니다.
+              </p>
+            </header>
 
-          <ol className="home-steps">
-            {STEPS.map((step) => (
-              <li key={step.title} className="home-step">
-                <div className="home-step-copy">
-                  <div>
+            <ol className="landing-flow-list">
+              {FLOW.map((step, index) => (
+                <li key={step.title} className="landing-flow-row">
+                  <div className="landing-flow-copy">
+                    <span aria-hidden="true">0{index + 1}</span>
                     <h3>{step.title}</h3>
                     <p>{step.description}</p>
                   </div>
-                </div>
-                {step.preview}
-              </li>
-            ))}
-          </ol>
+                  {step.preview}
+                </li>
+              ))}
+            </ol>
+          </div>
         </section>
 
-        <div className="home-next">
-          <Link to="/expert-simulations" className="home-closing-link">
-            현직자 제시 업무 보기 <ArrowRight aria-hidden="true" />
-          </Link>
-        </div>
+        <section className="landing-closing">
+          <div className="landing-shell landing-closing-inner">
+            <p>관심 있는 직무부터 살펴보세요.</p>
+            <Link to="/expert-simulations">
+              현직자 제시 업무 보기 <ArrowRight aria-hidden="true" />
+            </Link>
+          </div>
+        </section>
       </main>
 
-      <footer className="home-footer">
-        <div>
+      <footer className="landing-footer">
+        <div className="landing-shell landing-footer-inner">
           <span>© 2026 Beginner. All rights reserved.</span>
           <nav aria-label="하단 메뉴">
             <a href="#faq">자주 묻는 질문</a>
