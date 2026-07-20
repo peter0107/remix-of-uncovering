@@ -802,18 +802,18 @@ function SimulationDetailPage() {
             )}
 
             {/* 질문들 */}
-            <div className="mt-3 flex flex-col gap-8">
+            <div className="mt-3 flex flex-col gap-6">
               {step.prompts.map((p) => (
                 <div key={p.id}>
                   {p.bodyMarkdown && (
                     <div className="prose prose-sm prose-zinc max-w-none prose-table:text-sm prose-headings:text-sm prose-headings:font-semibold">
-                      <RichTextContent value={p.bodyMarkdown} />
+                      <RichTextContent value={p.bodyMarkdown} compact />
                     </div>
                   )}
                   <AnswerTextarea
                     value={answers[p.id] ?? ""}
                     onChange={(value) => setAnswer(p.id, value)}
-                    containerClassName="mt-3"
+                    containerClassName="mt-2"
                   />
                 </div>
               ))}
