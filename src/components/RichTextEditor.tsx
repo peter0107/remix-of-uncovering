@@ -1252,9 +1252,11 @@ function prepareContentTables(container: HTMLElement, savedWidths: ContentTableW
 export const RichTextContent = memo(function RichTextContent({
   value,
   className = "",
+  compact = false,
 }: {
   value: string;
   className?: string;
+  compact?: boolean;
 }) {
   const contentRef = useRef<HTMLDivElement>(null);
   const tableResizeRef = useRef<ContentTableResizeState | null>(null);
@@ -1359,7 +1361,10 @@ export const RichTextContent = memo(function RichTextContent({
     });
   };
 
-  const contentClassName = `rich-text-content ${className} [&_code]:rounded-sm [&_code]:bg-neutral-100 [&_code]:px-1 [&_code]:py-0.5 [&_code]:font-mono [&_pre]:overflow-x-auto [&_pre]:rounded-md [&_pre]:bg-neutral-900 [&_pre]:px-3 [&_pre]:py-3 [&_pre]:font-mono [&_pre]:text-neutral-50 [&_pre_code]:!bg-transparent [&_pre_code]:!p-0 [&_pre_code]:!text-neutral-50 [&_table]:border-collapse [&_th]:border [&_th]:border-neutral-300 [&_th]:bg-neutral-50 [&_th]:px-2 [&_th]:py-1 [&_td]:border [&_td]:border-neutral-300 [&_td]:px-2 [&_td]:py-1`;
+  const compactSpacing = compact
+    ? "[&_p]:!my-1.5 [&_ul]:!my-1.5 [&_ol]:!my-1.5 [&_blockquote]:!my-1.5 [&_table]:!my-1.5 [&_figure]:!my-1.5 [&_h1]:!my-1.5 [&_h2]:!my-1.5 [&_h3]:!my-1.5 [&_h4]:!my-1.5 [&_pre]:!my-1.5 [&_img]:!my-1.5 [&>*:first-child]:!mt-0 [&>*:last-child]:!mb-0"
+    : "";
+  const contentClassName = `rich-text-content ${className} ${compactSpacing} [&_code]:rounded-sm [&_code]:bg-neutral-100 [&_code]:px-1 [&_code]:py-0.5 [&_code]:font-mono [&_pre]:overflow-x-auto [&_pre]:rounded-md [&_pre]:bg-neutral-900 [&_pre]:px-3 [&_pre]:py-3 [&_pre]:font-mono [&_pre]:text-neutral-50 [&_pre_code]:!bg-transparent [&_pre_code]:!p-0 [&_pre_code]:!text-neutral-50 [&_table]:border-collapse [&_th]:border [&_th]:border-neutral-300 [&_th]:bg-neutral-50 [&_th]:px-2 [&_th]:py-1 [&_td]:border [&_td]:border-neutral-300 [&_td]:px-2 [&_td]:py-1`;
 
   return (
     <>

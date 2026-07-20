@@ -111,10 +111,11 @@ function MaterialSection({ label, markdown }: { label: string; markdown: string 
   return (
     <div>
       <p className="text-xs font-semibold text-zinc-500">{label}</p>
-      <Card className="mt-2 p-5">
+      <Card className="mt-1 p-3">
         <RichTextContent
           value={markdown.trimStart()}
-          className="prose prose-sm prose-zinc max-w-none prose-table:text-sm [&>*:first-child]:!mt-0"
+          compact
+          className="prose prose-sm prose-zinc max-w-none prose-table:text-sm"
         />
       </Card>
     </div>
@@ -747,7 +748,7 @@ function SimulationDetailPage() {
         <div className="mt-8 grid gap-8 md:grid-cols-2">
           {/* 왼쪽: 이 단계의 자료 (단계마다 다름) */}
           <div className="md:sticky md:top-20 md:max-h-[calc(100vh-6rem)] md:self-start md:overflow-y-auto">
-            <div className="flex flex-col gap-5">
+            <div className="flex flex-col gap-3">
               {model.selectionMode === "common" ? (
                 <>
                   {model.sharedSituation && (
@@ -801,18 +802,18 @@ function SimulationDetailPage() {
             )}
 
             {/* 질문들 */}
-            <div className="mt-3 flex flex-col gap-8">
+            <div className="mt-3 flex flex-col gap-6">
               {step.prompts.map((p) => (
                 <div key={p.id}>
                   {p.bodyMarkdown && (
                     <div className="prose prose-sm prose-zinc max-w-none prose-table:text-sm prose-headings:text-sm prose-headings:font-semibold">
-                      <RichTextContent value={p.bodyMarkdown} />
+                      <RichTextContent value={p.bodyMarkdown} compact />
                     </div>
                   )}
                   <AnswerTextarea
                     value={answers[p.id] ?? ""}
                     onChange={(value) => setAnswer(p.id, value)}
-                    containerClassName="mt-3"
+                    containerClassName="mt-2"
                   />
                 </div>
               ))}
@@ -820,21 +821,21 @@ function SimulationDetailPage() {
 
             {/* 초심자용 힌트 */}
             {step.hint && (
-              <details className="mt-6 rounded-md border border-zinc-200 bg-zinc-50 p-4">
+              <details className="mt-5 rounded-md border border-zinc-200 bg-zinc-50 p-4">
                 <summary className="cursor-pointer list-none text-sm font-semibold text-zinc-700">
                   초심자용 힌트 보기
                 </summary>
-                <div className="prose prose-sm prose-zinc mt-3 max-w-none prose-table:text-sm">
-                  <RichTextContent value={step.hint} />
+                <div className="prose prose-sm prose-zinc mt-2 max-w-none prose-table:text-sm">
+                  <RichTextContent value={step.hint} compact />
                 </div>
               </details>
             )}
 
             {/* 단계 완료 메시지 */}
             {showCompletion && (
-              <div className="mt-6 rounded-md border border-emerald-200 bg-emerald-50 p-4">
+              <div className="mt-5 rounded-md border border-emerald-200 bg-emerald-50 p-4">
                 <div className="prose prose-sm prose-emerald max-w-none">
-                  <RichTextContent value={step.completionMessage as string} />
+                  <RichTextContent value={step.completionMessage as string} compact />
                 </div>
               </div>
             )}
@@ -895,13 +896,13 @@ function SimulationDetailPage() {
       {blockerDialog}
       {aiPanel}
 
-      <div className="grid gap-8 lg:grid-cols-2">
+      <div className="grid gap-6 lg:grid-cols-2">
         {/* 왼쪽: 과제 내용 */}
         <div>
           {header}
-          <Card className="mt-6 p-6">
+          <Card className="mt-4 p-4">
             <div className="prose prose-sm sm:prose-base prose-zinc max-w-none prose-table:text-sm">
-              <RichTextContent value={sim.task_prompt ?? ""} />
+              <RichTextContent value={sim.task_prompt ?? ""} compact />
             </div>
           </Card>
         </div>
@@ -911,9 +912,9 @@ function SimulationDetailPage() {
           <div className="flex flex-col">
             <div id="response-question" className="shrink-0">
               <p className="text-sm font-medium text-zinc-700">제출 질문</p>
-              <Card className="mt-2 p-4">
+              <Card className="mt-1 p-3">
                 <div className="prose prose-sm prose-zinc max-w-none prose-table:text-sm">
-                  <RichTextContent value={sim.single_answer_question?.trim() || "답안 작성"} />
+                  <RichTextContent value={sim.single_answer_question?.trim() || "답안 작성"} compact />
                 </div>
               </Card>
             </div>
@@ -923,7 +924,7 @@ function SimulationDetailPage() {
               onChange={setResponseText}
               ariaLabelledby="response-question"
               className="min-h-64"
-              containerClassName="mt-4"
+              containerClassName="mt-2"
             />
           </div>
 
