@@ -801,7 +801,7 @@ function SimulationDetailPage() {
             )}
 
             {/* 질문들 */}
-            <div className="mt-5 flex flex-col gap-8">
+            <div className="mt-3 flex flex-col gap-8">
               {step.prompts.map((p) => (
                 <div key={p.id}>
                   {p.bodyMarkdown && (
