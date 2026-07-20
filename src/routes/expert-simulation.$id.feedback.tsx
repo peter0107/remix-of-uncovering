@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { BotMessageSquare, ChevronLeft, FileCheck2 } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
 import { useEffect, useState } from "react";
 import { z } from "zod";
 
@@ -87,10 +87,7 @@ function ExpertSimulationFeedbackPage() {
 
       <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1.25fr)_minmax(280px,0.75fr)]">
         <section className="min-w-0">
-          <div className="flex items-center gap-2">
-            <FileCheck2 className="h-5 w-5 text-zinc-700" />
-            <h2 className="text-lg font-semibold">현직자 모범답안</h2>
-          </div>
+          <h2 className="text-lg font-semibold">현직자 모범답안</h2>
           {feedback.simulation.modelAnswer ? (
             <div className="prose prose-zinc mt-4 max-w-none text-sm prose-headings:tracking-tight prose-table:text-sm">
               <RichTextContent value={feedback.simulation.modelAnswer} />
@@ -101,10 +98,7 @@ function ExpertSimulationFeedbackPage() {
         </section>
 
         <section className="min-w-0 border-l border-zinc-200 pl-0 lg:pl-8">
-          <div className="flex items-center gap-2">
-            <BotMessageSquare className="h-5 w-5 text-zinc-700" />
-            <h2 className="text-lg font-semibold">AI 활용 능력</h2>
-          </div>
+          <h2 className="text-lg font-semibold">AI 활용 능력</h2>
           <p className="mt-3 text-sm text-zinc-600">AI 질문 {userQuestions}회</p>
           {feedback.aiReview && (
             <div className="mt-5 border-l-2 border-zinc-900 pl-3">
