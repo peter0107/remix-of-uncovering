@@ -23,6 +23,7 @@ import {
   ZoomOut,
 } from "lucide-react";
 import {
+  memo,
   useEffect,
   useLayoutEffect,
   useRef,
