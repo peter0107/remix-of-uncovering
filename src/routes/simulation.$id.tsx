@@ -748,7 +748,7 @@ function SimulationDetailPage() {
         <div className="mt-8 grid gap-8 md:grid-cols-2">
           {/* 왼쪽: 이 단계의 자료 (단계마다 다름) */}
           <div className="md:sticky md:top-20 md:max-h-[calc(100vh-6rem)] md:self-start md:overflow-y-auto">
-            <div className="flex flex-col gap-5">
+            <div className="flex flex-col gap-3">
               {model.selectionMode === "common" ? (
                 <>
                   {model.sharedSituation && (
