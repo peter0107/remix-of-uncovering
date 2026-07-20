@@ -211,34 +211,44 @@ function Index() {
       </header>
 
       <main>
-        <section className="landing-hero">
-          <div className="landing-shell landing-hero-layout">
-            <div className="landing-hero-copy">
-              <h1>
-                지원 전에,
-                <br />
-                그 일을 풀어봅니다.
-              </h1>
-              <p>
-                현직자가 제시한 업무를 직접 경험하고, 내가 어떤 방식으로 판단하는지 확인해보세요.
-              </p>
-              <div className="landing-hero-actions">
-                <Link to="/expert-simulations" className="landing-primary-action">
-                  현직자 제시 보기 <ArrowRight aria-hidden="true" />
-                </Link>
-                <Link to="/simulations" className="landing-secondary-action">
-                  기업 시뮬레이션 보기
-                </Link>
-              </div>
-            </div>
-            <AssignmentPreview />
+        <section className="landing-marquee" aria-labelledby="landing-title">
+          <div className="landing-shell landing-marquee-inner">
+            <h1 id="landing-title">
+              지원 전에,
+              <br />
+              그 일을 먼저
+              <br />
+              풀어봅니다.
+            </h1>
           </div>
         </section>
 
-        <section id="how-it-works" className="landing-workflow">
+        <section id="how-it-works" className="landing-introduction">
+          <div className="landing-shell">
+            <div className="landing-introduction-layout">
+              <header className="landing-introduction-copy">
+                <h2>직무가 아니라,<br />실제 업무를 먼저 봅니다.</h2>
+                <p>
+                  현직자가 만든 과제를 통해, 관심 있는 일이 나와 맞는지 직접 확인합니다.
+                </p>
+                <div className="landing-hero-actions">
+                  <Link to="/expert-simulations" className="landing-primary-action">
+                    현직자 제시 보기 <ArrowRight aria-hidden="true" />
+                  </Link>
+                  <Link to="/simulations" className="landing-secondary-action">
+                    기업 시뮬레이션 보기
+                  </Link>
+                </div>
+              </header>
+              <AssignmentPreview />
+            </div>
+          </div>
+        </section>
+
+        <section className="landing-workflow">
           <div className="landing-shell">
             <header className="landing-section-heading">
-              <h2>직무가 아니라, 실제 업무를 먼저 봅니다.</h2>
+              <h2>관심 있는 일을 고르고, 답안을 남깁니다.</h2>
               <p>
                 관심 직무를 고르고, 현직자가 제시한 과제를 풀고, 결과를 내 이력에 남깁니다.
               </p>

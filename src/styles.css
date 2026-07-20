@@ -1,5 +1,5 @@
 /* Hallmark · pre-emit critique: P5 H5 E5 S5 R5 V5
- * genre: modern-minimal · macrostructure: Split Studio · theme: studied-DNA (source: local HTML)
+ * genre: modern-minimal · macrostructure: Marquee Hero · theme: Cobalt (source: local HTML)
  * nav: centered product navigation · footer: inline links · contrast: pass (40–41)
  * honest: pass (46) · chrome: pass (47) · tokens: pass (48) · mobile: pass (34, 49, 50–57)
  */
@@ -107,9 +107,6 @@
   --home-space-16: 4rem;
   --home-space-20: 5rem;
   --home-space-24: 6rem;
-  --landing-hero: oklch(0.22 0.05 265);
-  --landing-hero-muted: oklch(0.78 0.02 265);
-  --landing-hero-rule: oklch(0.38 0.04 265);
 }
 
 .dark {
@@ -1462,46 +1459,70 @@
     height: 1.125rem;
   }
 
-  .landing-hero {
-    background: var(--landing-hero);
+  .landing-marquee {
+    display: grid;
+    min-height: calc(100svh - 3.5rem);
+    align-items: end;
+    border-bottom: var(--home-space-2) solid var(--home-accent);
+    background: var(--home-ink);
     color: var(--primary-foreground);
   }
 
-  .landing-hero-layout {
+  .landing-marquee-inner {
     display: grid;
-    grid-template-columns: minmax(0, 0.96fr) minmax(19rem, 0.84fr);
-    gap: clamp(var(--home-space-10), 7vw, var(--home-space-24));
-    align-items: center;
-    padding-top: clamp(var(--home-space-12), 7vw, var(--home-space-20));
-    padding-bottom: clamp(var(--home-space-16), 9vw, var(--home-space-24));
+    min-height: inherit;
+    align-content: end;
+    padding-top: var(--home-space-12);
+    padding-bottom: clamp(var(--home-space-12), 8vw, var(--home-space-24));
   }
 
-  .landing-hero-copy {
-    max-width: 42rem;
-  }
-
-  .landing-hero h1,
+  .landing-marquee h1,
   .landing-section-heading h2,
+  .landing-introduction-copy h2,
   .landing-flow-copy h3,
   .landing-assignment h2 {
     overflow-wrap: anywhere;
   }
 
-  .landing-hero h1 {
+  .landing-marquee h1 {
     margin: 0;
     color: var(--primary-foreground);
-    font-size: clamp(2.6rem, 5.2vw, 4.45rem);
+    font-size: clamp(3.5rem, 9.6vw, 8.75rem);
     font-weight: 850;
-    letter-spacing: -0.05em;
+    letter-spacing: -0.065em;
+    line-height: 0.91;
+  }
+
+  .landing-introduction {
+    padding: clamp(var(--home-space-16), 10vw, var(--home-space-24)) 0;
+  }
+
+  .landing-introduction-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(19rem, 0.78fr);
+    gap: clamp(var(--home-space-10), 8vw, var(--home-space-24));
+    align-items: center;
+  }
+
+  .landing-introduction-copy {
+    max-width: 39rem;
+  }
+
+  .landing-introduction-copy h2 {
+    margin: 0;
+    color: var(--home-ink);
+    font-size: clamp(2.25rem, 4.9vw, 4.2rem);
+    font-weight: 850;
+    letter-spacing: -0.055em;
     line-height: 1.04;
   }
 
-  .landing-hero-copy > p {
-    max-width: 48ch;
+  .landing-introduction-copy > p {
+    max-width: 42ch;
     margin: var(--home-space-6) 0 0;
-    color: var(--landing-hero-muted);
-    font-size: clamp(1rem, 1.6vw, 1.125rem);
-    line-height: 1.68;
+    color: var(--home-ink-muted);
+    font-size: 1rem;
+    line-height: 1.7;
   }
 
   .landing-hero-actions {
@@ -1540,13 +1561,13 @@
   }
 
   .landing-secondary-action {
-    border-color: var(--landing-hero-rule);
-    color: var(--primary-foreground);
+    border-color: var(--home-rule);
+    color: var(--home-ink);
   }
 
   .landing-secondary-action:hover {
-    border-color: var(--landing-hero-muted);
-    color: var(--primary-foreground);
+    border-color: var(--home-ink-muted);
+    color: var(--home-ink);
   }
 
   .landing-assignment {
@@ -1555,7 +1576,7 @@
     justify-self: end;
     overflow: hidden;
     margin: 0;
-    border: 1px solid var(--landing-hero-rule);
+    border: 1px solid var(--home-rule);
     border-radius: var(--home-radius);
     background: var(--home-paper);
     color: var(--home-ink);
@@ -1639,6 +1660,7 @@
   }
 
   .landing-workflow {
+    border-top: 1px solid var(--home-rule);
     padding: clamp(var(--home-space-16), 9vw, var(--home-space-24)) 0;
   }
 
@@ -1936,7 +1958,7 @@
       gap: var(--home-space-4);
     }
 
-    .landing-hero-layout {
+    .landing-introduction-layout {
       grid-template-columns: minmax(0, 0.95fr) minmax(18rem, 0.8fr);
       gap: var(--home-space-8);
     }
@@ -2005,13 +2027,13 @@
       color: var(--home-accent-ink);
     }
 
-    .landing-hero-layout,
+    .landing-introduction-layout,
     .landing-section-heading,
     .landing-flow-row {
       grid-template-columns: minmax(0, 1fr);
     }
 
-    .landing-hero-layout {
+    .landing-introduction-layout {
       gap: var(--home-space-8);
     }
 
@@ -2058,13 +2080,13 @@
       height: 3.25rem;
     }
 
-    .landing-hero-layout {
-      padding-top: var(--home-space-10);
-      padding-bottom: var(--home-space-16);
+    .landing-marquee {
+      min-height: calc(100svh - 3.25rem);
     }
 
-    .landing-hero h1 {
-      font-size: clamp(2.35rem, 12vw, 3.15rem);
+    .landing-marquee h1 {
+      font-size: clamp(3.25rem, 15vw, 5rem);
+      line-height: 0.94;
     }
 
     .landing-hero-actions {
