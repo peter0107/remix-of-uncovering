@@ -1270,8 +1270,10 @@ export const RichTextContent = memo(function RichTextContent({
 
   useLayoutEffect(() => {
     if (!contentRef.current) return;
+    if (!richValue) return;
     prepareContentTables(contentRef.current, tableWidths);
-  }, [tableWidths, value]);
+  }, [tableWidths, value, richValue]);
+
 
   useEffect(() => {
     if (!previewImage) return;
