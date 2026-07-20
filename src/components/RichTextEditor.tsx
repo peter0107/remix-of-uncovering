@@ -84,6 +84,10 @@ type TableResizeState = {
 };
 
 type ContentTableResizeState = TableResizeState;
+type ContentTableWidths = Record<string, number[]>;
+
+// User-side table adjustments should survive nearby UI state changes during the same session.
+const contentTableWidthCache = new Map<string, ContentTableWidths>();
 
 function escapeHtml(value: string) {
   return value
@@ -1208,10 +1212,18 @@ function ensureContentTableColumns(table: HTMLTableElement) {
   return columns;
 }
 
-function prepareContentTables(container: HTMLElement) {
-  container.querySelectorAll("table").forEach((table) => {
+function prepareContentTables(container: HTMLElement, savedWidths: ContentTableWidths) {
+  container.querySelectorAll("table").forEach((table, tableIndex) => {
     const htmlTable = table as HTMLTableElement;
-    ensureContentTableColumns(htmlTable);
+    const tableKey = String(tableIndex);
+    htmlTable.dataset.richTableIndex = tableKey;
+    const columns = ensureContentTableColumns(htmlTable);
+    const widths = savedWidths[tableKey];
+    if (widths?.length === columns.length) {
+      columns.forEach((column, index) => {
+        column.style.width = `${widths[index]}%`;
+      });
+    }
 
     let wrapper = htmlTable.parentElement;
     if (!wrapper?.classList.contains("rich-text-table-scroll")) {
@@ -1239,12 +1251,19 @@ export function RichTextContent({ value, className = "" }: { value: string; clas
   const contentRef = useRef<HTMLDivElement>(null);
   const tableResizeRef = useRef<ContentTableResizeState | null>(null);
   const [previewImage, setPreviewImage] = useState<{ src: string; alt: string } | null>(null);
+  const [tableWidths, setTableWidths] = useState<ContentTableWidths>(
+    () => contentTableWidthCache.get(value) ?? {},
+  );
   const richValue = value.startsWith(RICH_TEXT_PREFIX);
 
   useLayoutEffect(() => {
-    if (!contentRef.current) return;
-    prepareContentTables(contentRef.current);
+    setTableWidths(contentTableWidthCache.get(value) ?? {});
   }, [value]);
+
+  useLayoutEffect(() => {
+    if (!contentRef.current) return;
+    prepareContentTables(contentRef.current, tableWidths);
+  }, [tableWidths, value]);
 
   useEffect(() => {
     if (!previewImage) return;
@@ -1310,12 +1329,24 @@ export function RichTextContent({ value, className = "" }: { value: string; clas
   };
 
   const endTableResize = (event: ReactPointerEvent<HTMLDivElement>) => {
-    if (tableResizeRef.current?.pointerId !== event.pointerId) return;
+    const resize = tableResizeRef.current;
+    if (resize?.pointerId !== event.pointerId) return;
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
       event.currentTarget.releasePointerCapture(event.pointerId);
     }
     tableResizeRef.current = null;
     document.body.classList.remove("rich-text-table-resizing");
+
+    const columns = ensureContentTableColumns(resize.table);
+    const tableKey = resize.table.dataset.richTableIndex ?? "0";
+    const widths = columns.map(
+      (column) => Number.parseFloat(column.style.width) || 100 / columns.length,
+    );
+    setTableWidths((current) => {
+      const next = { ...current, [tableKey]: widths };
+      contentTableWidthCache.set(value, next);
+      return next;
+    });
   };
 
   const contentClassName = `rich-text-content ${className} [&_code]:rounded-sm [&_code]:bg-neutral-100 [&_code]:px-1 [&_code]:py-0.5 [&_code]:font-mono [&_pre]:overflow-x-auto [&_pre]:rounded-md [&_pre]:bg-neutral-900 [&_pre]:px-3 [&_pre]:py-3 [&_pre]:font-mono [&_pre]:text-neutral-50 [&_pre_code]:!bg-transparent [&_pre_code]:!p-0 [&_pre_code]:!text-neutral-50 [&_table]:border-collapse [&_th]:border [&_th]:border-neutral-300 [&_th]:bg-neutral-50 [&_th]:px-2 [&_th]:py-1 [&_td]:border [&_td]:border-neutral-300 [&_td]:px-2 [&_td]:py-1`;
