@@ -1252,9 +1252,11 @@ function prepareContentTables(container: HTMLElement, savedWidths: ContentTableW
 export const RichTextContent = memo(function RichTextContent({
   value,
   className = "",
+  compact = false,
 }: {
   value: string;
   className?: string;
+  compact?: boolean;
 }) {
   const contentRef = useRef<HTMLDivElement>(null);
   const tableResizeRef = useRef<ContentTableResizeState | null>(null);
