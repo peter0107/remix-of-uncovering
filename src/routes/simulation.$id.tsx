@@ -821,21 +821,21 @@ function SimulationDetailPage() {
 
             {/* 초심자용 힌트 */}
             {step.hint && (
-              <details className="mt-6 rounded-md border border-zinc-200 bg-zinc-50 p-4">
+              <details className="mt-5 rounded-md border border-zinc-200 bg-zinc-50 p-4">
                 <summary className="cursor-pointer list-none text-sm font-semibold text-zinc-700">
                   초심자용 힌트 보기
                 </summary>
-                <div className="prose prose-sm prose-zinc mt-3 max-w-none prose-table:text-sm">
-                  <RichTextContent value={step.hint} />
+                <div className="prose prose-sm prose-zinc mt-2 max-w-none prose-table:text-sm">
+                  <RichTextContent value={step.hint} compact />
                 </div>
               </details>
             )}
 
             {/* 단계 완료 메시지 */}
             {showCompletion && (
-              <div className="mt-6 rounded-md border border-emerald-200 bg-emerald-50 p-4">
+              <div className="mt-5 rounded-md border border-emerald-200 bg-emerald-50 p-4">
                 <div className="prose prose-sm prose-emerald max-w-none">
-                  <RichTextContent value={step.completionMessage as string} />
+                  <RichTextContent value={step.completionMessage as string} compact />
                 </div>
               </div>
             )}
