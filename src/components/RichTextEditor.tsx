@@ -1248,7 +1248,13 @@ function prepareContentTables(container: HTMLElement, savedWidths: ContentTableW
   });
 }
 
-export function RichTextContent({ value, className = "" }: { value: string; className?: string }) {
+export const RichTextContent = memo(function RichTextContent({
+  value,
+  className = "",
+}: {
+  value: string;
+  className?: string;
+}) {
   const contentRef = useRef<HTMLDivElement>(null);
   const tableResizeRef = useRef<ContentTableResizeState | null>(null);
   const [previewImage, setPreviewImage] = useState<{ src: string; alt: string } | null>(null);
