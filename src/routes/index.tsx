@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowRight, Check, Clock3, Menu, X } from "lucide-react";
-import { useState } from "react";
+import { ArrowRight, Check, Menu, X } from "lucide-react";
+import { useState, type ReactNode } from "react";
 
 import { AccountMenu } from "@/components/AccountMenu";
 import { useAuth } from "@/hooks/use-auth";
@@ -11,8 +11,7 @@ export const Route = createFileRoute("/")({
       { title: "Beginner - 현직자가 제시한 업무를 직접 경험하는 직무 시뮬레이션" },
       {
         name: "description",
-        content:
-          "현직자가 제시한 실제 업무를 시뮬레이션으로 경험하고, 나에게 맞는 직무를 확인해보세요.",
+        content: "현직자가 자신의 업무로 직접 만든 과제를, 지원 전에 먼저 풀어보세요.",
       },
     ],
   }),
@@ -21,266 +20,272 @@ export const Route = createFileRoute("/")({
 
 function Brand() {
   return (
-    <span className="landing-brand" aria-label="Beginner 홈">
-      <span className="landing-brand-mark" aria-hidden="true">
-        <span>B</span>
+    <span className="reference-brand" aria-label="Beginner 홈">
+      <span className="reference-brand-mark" aria-hidden="true">
+        <i />
+        <b />
       </span>
-      <span>Beginner</span>
+      <strong>Beginner</strong>
     </span>
   );
 }
 
-function AssignmentPreview() {
-  return (
-    <figure className="landing-assignment" aria-label="현직자 제시 시뮬레이션 예시">
-      <figcaption className="landing-assignment-meta">
-        <span>브랜드 디자이너</span>
-        <span>스타트업 · 6~10년차</span>
-      </figcaption>
-      <div className="landing-assignment-body">
-        <p className="landing-assignment-label">현직자 제시 업무</p>
-        <h2>브랜드 첫 화면의 방향을 제안해보세요.</h2>
-        <p>
-          업무의 맥락을 읽고, 어떤 기준으로 판단할지 답안으로 정리합니다.
-        </p>
-        <div className="landing-assignment-foot">
-          <span>
-            <Clock3 aria-hidden="true" /> 약 25분
-          </span>
-          <Link to="/expert-simulations">
-            과제 보기 <ArrowRight aria-hidden="true" />
-          </Link>
-        </div>
-      </div>
-    </figure>
-  );
-}
-
-function RolePreview() {
-  return (
-    <div className="landing-proof" aria-label="관심 직무 선택 예시">
-      <p>관심 직무</p>
-      <ul>
-        <li>기획·전략</li>
-        <li className="is-selected">
-          디자인 <Check aria-hidden="true" />
-        </li>
-        <li>AI·개발·데이터</li>
-      </ul>
-    </div>
-  );
-}
-
-function TaskPreview() {
-  return (
-    <div className="landing-proof" aria-label="시뮬레이션 답안 작성 예시">
-      <div className="landing-proof-meta">
-        <span>브랜드 디자이너</span>
-        <span>
-          <Clock3 aria-hidden="true" /> 25분
-        </span>
-      </div>
-      <p className="landing-proof-question">
-        첫 화면에서 가장 먼저 보여줄 메시지를 정리해 주세요.
-      </p>
-      <div className="landing-answer-lines" aria-hidden="true">
-        <span />
-        <span />
-        <span />
-      </div>
-    </div>
-  );
-}
-
-function ResultPreview() {
-  return (
-    <div className="landing-proof" aria-label="작성 결과 저장 예시">
-      <p>완료한 시뮬레이션</p>
-      <div className="landing-result-row">
-        <Check aria-hidden="true" />
-        <div>
-          <strong>브랜드 디자이너</strong>
-          <span>작성한 답안을 다시 확인할 수 있어요.</span>
-        </div>
-      </div>
-      <div className="landing-result-row">
-        <Check aria-hidden="true" />
-        <div>
-          <strong>채용 제안 받아보기</strong>
-          <span>동의한 경우에만 기업에 공유돼요.</span>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-const FLOW = [
-  {
-    title: "관심 있는 일을 찾습니다.",
-    description:
-      "직무군과 직무명을 기준으로, 현직자가 제시한 업무를 찾아봅니다.",
-    preview: <RolePreview />,
-  },
-  {
-    title: "실제 업무를 풀어봅니다.",
-    description:
-      "문제를 푸는 순서와 판단의 기준을 따라가며, 내가 이 일을 어떻게 풀어가는지 확인합니다.",
-    preview: <TaskPreview />,
-  },
-  {
-    title: "결과를 남깁니다.",
-    description:
-      "제출한 답안은 내 이력에 저장됩니다. 공유에 동의한 경우에는 채용 제안에도 활용할 수 있어요.",
-    preview: <ResultPreview />,
-  },
-];
-
-function Index() {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+function Header({
+  isMenuOpen,
+  onMenuToggle,
+  onMenuClose,
+}: {
+  isMenuOpen: boolean;
+  onMenuToggle: () => void;
+  onMenuClose: () => void;
+}) {
   const { user } = useAuth();
 
   return (
-    <div className="landing-page">
-      <header className="landing-header">
-        <div className="landing-shell landing-header-inner">
-          <Link to="/" aria-label="Beginner 홈">
-            <Brand />
-          </Link>
+    <header className="reference-header">
+      <div className="reference-shell reference-header-inner">
+        <Link to="/" onClick={onMenuClose}>
+          <Brand />
+        </Link>
 
-          <nav className="landing-desktop-nav" aria-label="주요 메뉴">
-            <a href="#how-it-works">서비스 소개</a>
-            <Link to="/simulations">기업 시뮬레이션</Link>
-            <Link to="/expert-simulations">현직자 제시</Link>
-            <Link to="/biz">기업용</Link>
-          </nav>
+        <nav className="reference-desktop-nav" aria-label="주요 메뉴">
+          <a href="#service">서비스 소개</a>
+          <Link to="/simulations">기업 시뮬레이션</Link>
+          <Link to="/expert-simulations">현직자 제시</Link>
+          <Link to="/biz">기업용</Link>
+        </nav>
 
-          <div className="landing-desktop-actions">
-            {user ? (
-              <AccountMenu />
-            ) : (
-              <>
-                <Link to="/login" search={{ redirect: "/" }} className="landing-login-link">
-                  로그인
-                </Link>
-                <Link to="/start" className="landing-start-link">
-                  시작하기
-                </Link>
-              </>
-            )}
-          </div>
-
-          <div className="landing-mobile-actions">
-            {user && <AccountMenu />}
-            <button
-              type="button"
-              onClick={() => setIsMenuOpen((current) => !current)}
-              aria-label={isMenuOpen ? "메뉴 닫기" : "메뉴 열기"}
-              aria-expanded={isMenuOpen}
-              className="landing-mobile-menu-button"
-            >
-              {isMenuOpen ? <X /> : <Menu />}
-            </button>
-          </div>
+        <div className="reference-desktop-actions">
+          {user ? (
+            <AccountMenu />
+          ) : (
+            <>
+              <Link to="/login" search={{ redirect: "/" }}>
+                로그인
+              </Link>
+              <Link to="/start" className="reference-start-link">
+                시작하기
+              </Link>
+            </>
+          )}
         </div>
-        {isMenuOpen && (
-          <nav className="landing-mobile-nav" aria-label="모바일 주요 메뉴">
-            <a href="#how-it-works" onClick={() => setIsMenuOpen(false)}>
-              서비스 소개
-            </a>
-            <Link to="/simulations" onClick={() => setIsMenuOpen(false)}>
-              기업 시뮬레이션
-            </Link>
-            <Link to="/expert-simulations" onClick={() => setIsMenuOpen(false)}>
-              현직자 제시
-            </Link>
-            <Link to="/biz" onClick={() => setIsMenuOpen(false)}>
-              기업용
-            </Link>
-            {!user && (
-              <div className="landing-mobile-auth">
-                <Link to="/login" search={{ redirect: "/" }} onClick={() => setIsMenuOpen(false)}>
-                  로그인
-                </Link>
-                <Link to="/start" onClick={() => setIsMenuOpen(false)}>
-                  시작하기
-                </Link>
-              </div>
-            )}
-          </nav>
-        )}
-      </header>
+
+        <div className="reference-mobile-actions">
+          {user && <AccountMenu />}
+          <button
+            type="button"
+            onClick={onMenuToggle}
+            aria-label={isMenuOpen ? "메뉴 닫기" : "메뉴 열기"}
+            aria-expanded={isMenuOpen}
+          >
+            {isMenuOpen ? <X /> : <Menu />}
+          </button>
+        </div>
+      </div>
+
+      {isMenuOpen && (
+        <nav className="reference-mobile-nav" aria-label="모바일 주요 메뉴">
+          <a href="#service" onClick={onMenuClose}>
+            서비스 소개
+          </a>
+          <Link to="/simulations" onClick={onMenuClose}>
+            기업 시뮬레이션
+          </Link>
+          <Link to="/expert-simulations" onClick={onMenuClose}>
+            현직자 제시
+          </Link>
+          <Link to="/biz" onClick={onMenuClose}>
+            기업용
+          </Link>
+          {!user && (
+            <div className="reference-mobile-auth">
+              <Link to="/login" search={{ redirect: "/" }} onClick={onMenuClose}>
+                로그인
+              </Link>
+              <Link to="/start" onClick={onMenuClose}>
+                시작하기
+              </Link>
+            </div>
+          )}
+        </nav>
+      )}
+    </header>
+  );
+}
+
+function SourceFlow() {
+  return (
+    <section className="reference-flow" aria-label="이용 흐름">
+      <div className="reference-flow-steps">
+        {[
+          ["1", "시작"],
+          ["2", "체험"],
+          ["3", "결과 확인"],
+        ].map(([number, label], index) => (
+          <div className="reference-flow-step" key={label}>
+            {index > 0 && <span className="reference-flow-line" aria-hidden="true" />}
+            <span>{number}</span>
+            <b>{label}</b>
+          </div>
+        ))}
+      </div>
+      <p>관심 직무를 등록하고, 현직자가 만든 실제 업무 과제를 수행하면, 답안을 본 기업이 제안을 보내요.</p>
+    </section>
+  );
+}
+
+function ExpertCard({
+  title,
+  children,
+  dark = false,
+}: {
+  title: string;
+  children: ReactNode;
+  dark?: boolean;
+}) {
+  return (
+    <article className={`reference-expert-card${dark ? " is-dark" : ""}`}>
+      <h3>{title}</h3>
+      {children}
+    </article>
+  );
+}
+
+function Index() {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const closeMenu = () => setIsMenuOpen(false);
+
+  return (
+    <div className="reference-home">
+      <Header
+        isMenuOpen={isMenuOpen}
+        onMenuToggle={() => setIsMenuOpen((open) => !open)}
+        onMenuClose={closeMenu}
+      />
 
       <main>
-        <section className="landing-marquee" aria-labelledby="landing-title">
-          <div className="landing-shell landing-marquee-inner">
-            <h1 id="landing-title">
-              지원 전에,
+        <section className="reference-hero" aria-labelledby="reference-home-title">
+          <div className="reference-shell reference-hero-copy">
+            <p>"이 직무... 나랑 맞을까?"</p>
+            <h1 id="reference-home-title">
+              고민 대신,
               <br />
-              그 일을 먼저
-              <br />
-              풀어봅니다.
+              <em>직접 경험해보세요</em>
             </h1>
+            <span>현직자가 자신의 업무로 직접 만든 과제를, 지원 전에 먼저 풀어보세요</span>
+            <Link to="/start" className="reference-hero-action">
+              무료로 시작하기 <ArrowRight aria-hidden="true" />
+            </Link>
+            <small>가입 후 3분이면 첫 과제가 도착해요 · 현직자 시뮬레이션 120+</small>
           </div>
-        </section>
 
-        <section id="how-it-works" className="landing-introduction">
-          <div className="landing-shell">
-            <div className="landing-introduction-layout">
-              <header className="landing-introduction-copy">
-                <h2>직무가 아니라,<br />실제 업무를 먼저 봅니다.</h2>
-                <p>
-                  현직자가 만든 과제를 통해, 관심 있는 일이 나와 맞는지 직접 확인합니다.
-                </p>
-                <div className="landing-hero-actions">
-                  <Link to="/expert-simulations" className="landing-primary-action">
-                    현직자 제시 보기 <ArrowRight aria-hidden="true" />
-                  </Link>
-                  <Link to="/simulations" className="landing-secondary-action">
-                    기업 시뮬레이션 보기
-                  </Link>
-                </div>
-              </header>
-              <AssignmentPreview />
+          <div className="reference-logo-strip" aria-label="참여 기업 예시">
+            <div>
+              {["LOGO A", "B컴퍼니", "Ccorp", "디랩스", "EVERY", "에프원", "Gwork", "한올"].map((name) => (
+                <b key={name}>{name}</b>
+              ))}
+              {["LOGO A", "B컴퍼니", "Ccorp", "디랩스", "EVERY", "에프원", "Gwork", "한올"].map((name) => (
+                <b key={`${name}-repeat`}>{name}</b>
+              ))}
             </div>
           </div>
         </section>
 
-        <section className="landing-workflow">
-          <div className="landing-shell">
-            <header className="landing-section-heading">
-              <h2>관심 있는 일을 고르고, 답안을 남깁니다.</h2>
+        <div className="reference-shell">
+          <SourceFlow />
+        </div>
+
+        <section id="service" className="reference-expert-section">
+          <div className="reference-shell">
+            <header className="reference-section-intro">
+              <span>현직자 시뮬레이션</span>
+              <h2>
+                진짜 실무자가 낸 진짜 과제를,
+                <br />
+                지원 전에 먼저 풀어보세요
+              </h2>
               <p>
-                관심 직무를 고르고, 현직자가 제시한 과제를 풀고, 결과를 내 이력에 남깁니다.
+                채용 공고와 연결된 과제가 아니에요. 스타트업부터 대기업까지, 지금 실제로 일하고 있는
+                <br className="reference-desktop-break" /> <strong>3년차 이상 현직자</strong>가 자신의 업무를 바탕으로 직접 만든 과제입니다.
               </p>
             </header>
 
-            <ol className="landing-flow-list">
-              {FLOW.map((step, index) => (
-                <li key={step.title} className="landing-flow-row">
-                  <div className="landing-flow-copy">
-                    <span aria-hidden="true">0{index + 1}</span>
-                    <h3>{step.title}</h3>
-                    <p>{step.description}</p>
-                  </div>
-                  {step.preview}
-                </li>
-              ))}
-            </ol>
+            <div className="reference-expert-grid">
+              <ExpertCard title="직군이 아니라, 실무자 기준">
+                <p>
+                  CRM 마케터, UI/UX 디자이너, 반도체 공정 엔지니어, 브랜드 디자이너. 현직자가 매일 마주치는 상황과 자료를 그대로 가져와 과제로 만들어요.
+                </p>
+                <div className="reference-tags">
+                  <span>CRM 마케터</span>
+                  <span>UI/UX 디자이너</span>
+                  <span>공정 엔지니어</span>
+                </div>
+              </ExpertCard>
+
+              <ExpertCard title="실무의 순서 그대로, 3단계">
+                <p>실무에서 실제로 밟는 순서를 그대로 따라가요.</p>
+                <ol className="reference-mini-steps">
+                  <li><span>1</span>상황 파악</li>
+                  <li><span>2</span>실행안 설계</li>
+                  <li><span>3</span>결과 해석 · 다음 판단</li>
+                </ol>
+              </ExpertCard>
+
+              <ExpertCard title="현직자의 모범답안과 비교">
+                <p>
+                  다 풀고 나면 그 현직자가 직접 쓴 모범답안을 볼 수 있어요. 정답 맞히기가 아니라, <strong>"현직자는 이 상황에서 어떻게 판단했는가"</strong>를 비교하며 감각을 키우는 게 목적이에요.
+                </p>
+                <div className="reference-quote">
+                  <span>현</span>
+                  <p>"저라면 이탈률보다 첫 결제 코호트를 먼저 봤을 거예요" - 7년차 CRM 마케터</p>
+                </div>
+              </ExpertCard>
+
+              <ExpertCard title="AI를 얼마나 잘 쓰는지도, 역량" dark>
+                <p>
+                  과제를 푸는 동안 AI 도구를 자유롭게 활용하세요. AI로 결과물의 질과 속도를 끌어올리는 것도 요즘 실무의 핵심 역량. 그 활용 능력이 결과물 안에 자연스럽게 드러나고, 기업은 답안에서 <strong>지원자가 AI를 실무에 어떻게 녹여 쓰는지</strong>까지 확인해요.
+                </p>
+                <div className="reference-ai-note">
+                  <span>AI</span>
+                  <p>AI 활용 내역이 답안과 함께 평가에 반영돼요</p>
+                </div>
+              </ExpertCard>
+            </div>
           </div>
         </section>
 
-        <section className="landing-closing">
-          <div className="landing-shell landing-closing-inner">
-            <p>관심 있는 직무부터 살펴보세요.</p>
-            <Link to="/expert-simulations">
-              현직자 제시 업무 보기 <ArrowRight aria-hidden="true" />
+        <section className="reference-audience">
+          <div className="reference-shell reference-audience-layout">
+            <div>
+              <span>이런 분에게</span>
+              <h2>
+                지원하기 전에,
+                <br />
+                그 일 자체를 먼저 경험해보세요
+              </h2>
+              <p>어떤 직무가 나에게 맞는지 아직 확신이 없거나, 관심 있는 직무를 실제로는 어떻게 일하는지 궁금한 취업준비생에게 맞아요.</p>
+            </div>
+            <ul>
+              <li><Check aria-hidden="true" /> 어떤 직무가 맞는지 <strong>확신이 없는</strong> 취업준비생</li>
+              <li><Check aria-hidden="true" /> 관심 직무의 <strong>실제 일하는 방식</strong>이 궁금한 사람</li>
+              <li><Check aria-hidden="true" /> 지원 전에 <strong>그 일 자체를 먼저 경험</strong>해보고 싶은 사람</li>
+            </ul>
+          </div>
+        </section>
+
+        <section className="reference-cta">
+          <div className="reference-shell reference-cta-inner">
+            <h2>첫 과제, 지금 무료로 받아보세요</h2>
+            <p>가입 후 3분이면 현직자의 첫 과제가 도착해요</p>
+            <Link to="/start">
+              무료로 시작하기 <ArrowRight aria-hidden="true" />
             </Link>
           </div>
         </section>
       </main>
 
-      <footer className="landing-footer">
-        <div className="landing-shell landing-footer-inner">
+      <footer className="reference-footer">
+        <div className="reference-shell">
           <span>© 2026 Beginner. All rights reserved.</span>
           <nav aria-label="하단 메뉴">
             <a href="#faq">자주 묻는 질문</a>

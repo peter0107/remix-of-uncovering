@@ -1305,6 +1305,776 @@
 }
 
 @layer components {
+  .reference-home {
+    min-width: 0;
+    background: #fff;
+    color: #171c26;
+  }
+
+  .reference-home *,
+  .reference-home *::before,
+  .reference-home *::after {
+    box-sizing: border-box;
+  }
+
+  .reference-home a,
+  .reference-home button {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .reference-shell {
+    width: min(100%, 72.5rem);
+    margin: 0 auto;
+    padding-right: 3rem;
+    padding-left: 3rem;
+  }
+
+  .reference-header {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    background: #0a1526;
+    color: #fff;
+  }
+
+  .reference-header-inner {
+    position: relative;
+    display: flex;
+    height: 3.75rem;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .reference-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    color: #fff;
+    font-size: 1.125rem;
+    letter-spacing: -0.025em;
+    line-height: 1;
+  }
+
+  .reference-brand-mark {
+    position: relative;
+    display: block;
+    width: 1.625rem;
+    height: 1.625rem;
+  }
+
+  .reference-brand-mark i {
+    position: absolute;
+    top: 0.075rem;
+    left: 0.125rem;
+    width: 0.875rem;
+    height: 1.35rem;
+    border: 0.2rem solid #4d82d9;
+    border-radius: 0.2rem;
+  }
+
+  .reference-brand-mark b {
+    position: absolute;
+    top: 0;
+    left: 0.68rem;
+    width: 0.72rem;
+    height: 1.625rem;
+    border-radius: 0.14rem;
+    background: #4d82d9;
+    transform: perspective(2.4rem) rotateY(-38deg);
+    transform-origin: left center;
+  }
+
+  .reference-desktop-nav,
+  .reference-desktop-actions,
+  .reference-mobile-actions {
+    display: flex;
+    align-items: center;
+  }
+
+  .reference-desktop-nav {
+    position: absolute;
+    left: 50%;
+    gap: 1.625rem;
+    transform: translateX(-50%);
+  }
+
+  .reference-desktop-nav a,
+  .reference-desktop-actions > a {
+    color: #8b95a5;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    line-height: 1;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+
+  .reference-desktop-nav a:hover,
+  .reference-desktop-actions > a:first-child:hover {
+    color: #fff;
+  }
+
+  .reference-desktop-actions {
+    gap: 1rem;
+  }
+
+  .reference-start-link {
+    display: inline-flex;
+    height: 2.25rem;
+    align-items: center;
+    border-radius: 8px;
+    padding: 0 1.05rem;
+    background: #0047ab;
+    color: #fff !important;
+    font-weight: 750 !important;
+  }
+
+  .reference-start-link:hover {
+    background: #1e5bc0;
+  }
+
+  .reference-mobile-actions,
+  .reference-mobile-nav {
+    display: none;
+  }
+
+  .reference-mobile-actions button {
+    display: grid;
+    width: 2.25rem;
+    height: 2.25rem;
+    place-items: center;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: #fff;
+  }
+
+  .reference-mobile-actions button:hover {
+    background: #17243a;
+  }
+
+  .reference-mobile-actions svg {
+    width: 1.1rem;
+    height: 1.1rem;
+  }
+
+  .reference-hero {
+    overflow: hidden;
+    background: #0a1526;
+    color: #fff;
+  }
+
+  .reference-hero-copy {
+    display: flex;
+    min-height: 31.5rem;
+    align-items: center;
+    flex-direction: column;
+    justify-content: center;
+    gap: 1.3rem;
+    padding-top: 5.5rem;
+    padding-bottom: 4.5rem;
+    text-align: center;
+  }
+
+  .reference-hero-copy > p {
+    margin: 0;
+    color: #8b95a5;
+    font-size: 0.9375rem;
+    line-height: 1.4;
+  }
+
+  .reference-hero h1 {
+    margin: 0;
+    color: #fff;
+    font-size: clamp(3.15rem, 6vw, 4.25rem);
+    font-weight: 850;
+    letter-spacing: -0.065em;
+    line-height: 1.16;
+  }
+
+  .reference-hero h1 em {
+    color: #4d82d9;
+    font-style: normal;
+  }
+
+  .reference-hero-copy > span {
+    color: #b4bdca;
+    font-size: 1rem;
+    line-height: 1.65;
+  }
+
+  .reference-hero-action,
+  .reference-cta a {
+    display: inline-flex;
+    min-height: 3.2rem;
+    align-items: center;
+    justify-content: center;
+    gap: 0.55rem;
+    border-radius: 8px;
+    padding: 0 1.85rem;
+    background: #0047ab;
+    color: #fff;
+    font-size: 1rem;
+    font-weight: 750;
+    line-height: 1;
+    text-decoration: none;
+  }
+
+  .reference-hero-action:hover,
+  .reference-cta a:hover {
+    background: #1e5bc0;
+  }
+
+  .reference-hero-action svg,
+  .reference-cta a svg {
+    width: 1.05rem;
+    height: 1.05rem;
+  }
+
+  .reference-hero-copy small {
+    color: #8b95a5;
+    font-size: 0.75rem;
+    line-height: 1.4;
+  }
+
+  .reference-logo-strip {
+    overflow: hidden;
+    padding: 0 0 2.25rem;
+  }
+
+  .reference-logo-strip > div {
+    display: flex;
+    width: max-content;
+    gap: 3.5rem;
+    align-items: center;
+    animation: reference-logo-scroll 25s linear infinite;
+  }
+
+  .reference-logo-strip b {
+    color: #3d4a5f;
+    font-size: 1rem;
+    font-weight: 800;
+    line-height: 1;
+    white-space: nowrap;
+  }
+
+  .reference-flow {
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+    gap: 1.75rem;
+    padding: 3.5rem 0;
+    text-align: center;
+  }
+
+  .reference-flow-steps {
+    display: flex;
+    align-items: center;
+    font-size: 1.125rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+
+  .reference-flow-step {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+
+  .reference-flow-step > span:last-child,
+  .reference-flow-step > span:not(.reference-flow-line) {
+    display: grid;
+    width: 1.875rem;
+    height: 1.875rem;
+    place-items: center;
+    border-radius: 7px;
+    background: #0047ab;
+    color: #fff;
+    font-size: 0.75rem;
+  }
+
+  .reference-flow-line {
+    width: 3.25rem;
+    height: 1px;
+    margin: 0 1.1rem;
+    background: #d5dae3;
+  }
+
+  .reference-flow p {
+    margin: 0;
+    color: #6b7280;
+    font-size: 0.9375rem;
+    line-height: 1.6;
+  }
+
+  .reference-expert-section {
+    background: #f7f8fa;
+  }
+
+  .reference-expert-section > .reference-shell {
+    padding-top: 4.5rem;
+    padding-bottom: 4.5rem;
+  }
+
+  .reference-section-intro {
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+    gap: 0.75rem;
+    text-align: center;
+  }
+
+  .reference-section-intro > span,
+  .reference-audience > .reference-shell > div > span {
+    color: #0047ab;
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    line-height: 1.25;
+  }
+
+  .reference-section-intro h2,
+  .reference-audience h2,
+  .reference-cta h2 {
+    margin: 0;
+    color: #171c26;
+    font-size: clamp(2rem, 4vw, 2.4rem);
+    font-weight: 820;
+    letter-spacing: -0.045em;
+    line-height: 1.28;
+  }
+
+  .reference-section-intro p {
+    max-width: 43rem;
+    margin: 0.2rem 0 0;
+    color: #6b7280;
+    font-size: 0.9375rem;
+    line-height: 1.65;
+  }
+
+  .reference-section-intro strong,
+  .reference-expert-card strong,
+  .reference-audience strong {
+    color: #171c26;
+  }
+
+  .reference-expert-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.25rem;
+    margin-top: 2.75rem;
+  }
+
+  .reference-expert-card {
+    display: flex;
+    min-height: 16.5rem;
+    flex-direction: column;
+    gap: 0.85rem;
+    border: 1px solid #eef0f4;
+    border-radius: 8px;
+    padding: 1.75rem;
+    background: #fff;
+  }
+
+  .reference-expert-card h3 {
+    margin: 0;
+    color: #171c26;
+    font-size: 1.125rem;
+    font-weight: 760;
+    letter-spacing: -0.025em;
+    line-height: 1.3;
+  }
+
+  .reference-expert-card > p {
+    margin: 0;
+    color: #4b5563;
+    font-size: 0.90625rem;
+    line-height: 1.65;
+  }
+
+  .reference-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-top: auto;
+  }
+
+  .reference-tags span {
+    border: 1px solid #e3e6ec;
+    border-radius: 999px;
+    padding: 0.3rem 0.7rem;
+    background: #f7f8fa;
+    color: #4b5563;
+    font-size: 0.75rem;
+    line-height: 1.2;
+  }
+
+  .reference-mini-steps {
+    display: grid;
+    gap: 0.5rem;
+    margin: auto 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .reference-mini-steps li {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    color: #171c26;
+    font-size: 0.8125rem;
+    font-weight: 700;
+  }
+
+  .reference-mini-steps span {
+    display: grid;
+    width: 1.5rem;
+    height: 1.5rem;
+    place-items: center;
+    border-radius: 6px;
+    background: #e8effa;
+    color: #0047ab;
+    font-size: 0.6875rem;
+    font-weight: 800;
+  }
+
+  .reference-quote,
+  .reference-ai-note {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    margin-top: auto;
+    border: 1px solid #eef0f4;
+    border-radius: 8px;
+    padding: 0.7rem 0.8rem;
+    background: #f7f8fa;
+  }
+
+  .reference-quote > span {
+    display: grid;
+    width: 1.875rem;
+    height: 1.875rem;
+    flex: none;
+    place-items: center;
+    border-radius: 999px;
+    background: #e8effa;
+    color: #0047ab;
+    font-size: 0.6875rem;
+    font-weight: 800;
+  }
+
+  .reference-quote p,
+  .reference-ai-note p {
+    margin: 0;
+    color: #4b5563;
+    font-size: 0.75rem;
+    line-height: 1.45;
+  }
+
+  .reference-expert-card.is-dark {
+    border-color: #0f1b2e;
+    background: #0f1b2e;
+  }
+
+  .reference-expert-card.is-dark h3,
+  .reference-expert-card.is-dark strong {
+    color: #fff;
+  }
+
+  .reference-expert-card.is-dark > p {
+    color: #b4bdca;
+  }
+
+  .reference-ai-note {
+    border-color: rgb(255 255 255 / 12%);
+    background: rgb(255 255 255 / 7%);
+  }
+
+  .reference-ai-note > span {
+    color: #7fa8e8;
+    font-size: 0.75rem;
+    font-weight: 800;
+  }
+
+  .reference-ai-note p {
+    color: #b4bdca;
+  }
+
+  .reference-audience > .reference-shell {
+    display: grid;
+    grid-template-columns: minmax(0, 0.93fr) minmax(0, 1fr);
+    gap: 3.5rem;
+    align-items: center;
+    padding-top: 4.5rem;
+    padding-bottom: 4.5rem;
+  }
+
+  .reference-audience h2 {
+    margin-top: 0.75rem;
+    font-size: clamp(1.75rem, 3vw, 2rem);
+  }
+
+  .reference-audience p {
+    margin: 0.9rem 0 0;
+    color: #4b5563;
+    font-size: 0.9375rem;
+    line-height: 1.7;
+  }
+
+  .reference-audience ul {
+    display: grid;
+    gap: 0.65rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .reference-audience li {
+    display: flex;
+    min-height: 3.5rem;
+    align-items: center;
+    gap: 0.7rem;
+    border: 1px solid #eef0f4;
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    color: #374151;
+    font-size: 0.875rem;
+    line-height: 1.45;
+  }
+
+  .reference-audience li svg {
+    width: 1rem;
+    height: 1rem;
+    flex: none;
+    color: #0047ab;
+  }
+
+  .reference-cta {
+    background: #0a1526;
+  }
+
+  .reference-cta-inner {
+    display: flex;
+    min-height: 19rem;
+    align-items: center;
+    flex-direction: column;
+    justify-content: center;
+    gap: 0.9rem;
+    text-align: center;
+  }
+
+  .reference-cta h2 {
+    color: #fff;
+    font-size: clamp(1.8rem, 3vw, 2rem);
+  }
+
+  .reference-cta p {
+    margin: 0;
+    color: #8b95a5;
+    font-size: 0.9375rem;
+  }
+
+  .reference-cta a {
+    min-height: 2.9rem;
+    margin-top: 0.55rem;
+    padding: 0 1.45rem;
+    font-size: 0.875rem;
+  }
+
+  .reference-footer {
+    border-top: 1px solid #eef0f4;
+    background: #fff;
+  }
+
+  .reference-footer > .reference-shell {
+    display: flex;
+    min-height: 4.25rem;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+    color: #8b95a5;
+    font-size: 0.75rem;
+  }
+
+  .reference-footer nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.25rem;
+  }
+
+  .reference-footer a {
+    color: #6b7280;
+    text-decoration: none;
+  }
+
+  .reference-footer a:hover {
+    color: #171c26;
+  }
+
+  .reference-home a:focus-visible,
+  .reference-home button:focus-visible {
+    outline: 2px solid #4d82d9;
+    outline-offset: 3px;
+  }
+
+  @keyframes reference-logo-scroll {
+    to {
+      transform: translateX(-50%);
+    }
+  }
+
+  @media (max-width: 62rem) {
+    .reference-shell {
+      padding-right: 2rem;
+      padding-left: 2rem;
+    }
+
+    .reference-desktop-nav {
+      gap: 1rem;
+    }
+
+    .reference-desktop-nav a {
+      font-size: 0.75rem;
+    }
+
+    .reference-expert-section > .reference-shell,
+    .reference-audience > .reference-shell {
+      padding-top: 3.5rem;
+      padding-bottom: 3.5rem;
+    }
+
+    .reference-audience > .reference-shell {
+      gap: 2.5rem;
+    }
+  }
+
+  @media (max-width: 42rem) {
+    .reference-shell {
+      padding-right: 1.25rem;
+      padding-left: 1.25rem;
+    }
+
+    .reference-desktop-nav,
+    .reference-desktop-actions {
+      display: none;
+    }
+
+    .reference-mobile-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+
+    .reference-mobile-nav {
+      display: grid;
+      gap: 0.25rem;
+      border-top: 1px solid rgb(255 255 255 / 10%);
+      padding: 0.75rem 1.25rem 1rem;
+      background: #0a1526;
+    }
+
+    .reference-mobile-nav > a,
+    .reference-mobile-auth a {
+      display: flex;
+      min-height: 2.6rem;
+      align-items: center;
+      border-radius: 8px;
+      padding: 0 0.8rem;
+      color: #b4bdca;
+      font-size: 0.875rem;
+      font-weight: 650;
+      text-decoration: none;
+    }
+
+    .reference-mobile-nav > a:hover,
+    .reference-mobile-auth a:first-child:hover {
+      background: #17243a;
+      color: #fff;
+    }
+
+    .reference-mobile-auth {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.5rem;
+      margin-top: 0.3rem;
+    }
+
+    .reference-mobile-auth a {
+      justify-content: center;
+      border: 1px solid rgb(255 255 255 / 16%);
+    }
+
+    .reference-mobile-auth a:last-child {
+      border-color: #0047ab;
+      background: #0047ab;
+      color: #fff;
+    }
+
+    .reference-hero-copy {
+      min-height: 28rem;
+      padding-top: 4rem;
+      padding-bottom: 3rem;
+    }
+
+    .reference-hero h1 {
+      font-size: clamp(2.7rem, 13vw, 3.8rem);
+    }
+
+    .reference-hero-copy > span {
+      max-width: 28rem;
+      font-size: 0.9rem;
+    }
+
+    .reference-flow {
+      align-items: flex-start;
+      padding: 2.6rem 0;
+      text-align: left;
+    }
+
+    .reference-flow-steps {
+      width: 100%;
+      justify-content: space-between;
+      font-size: 0.8125rem;
+    }
+
+    .reference-flow-step {
+      gap: 0.35rem;
+    }
+
+    .reference-flow-line {
+      width: 1rem;
+      margin: 0 0.4rem;
+    }
+
+    .reference-expert-grid,
+    .reference-audience > .reference-shell {
+      grid-template-columns: 1fr;
+    }
+
+    .reference-expert-card {
+      min-height: 0;
+      padding: 1.35rem;
+    }
+
+    .reference-audience > .reference-shell {
+      gap: 2rem;
+    }
+
+    .reference-footer > .reference-shell {
+      min-height: 0;
+      align-items: flex-start;
+      flex-direction: column;
+      gap: 0.8rem;
+      padding-top: 1.25rem;
+      padding-bottom: 1.25rem;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .reference-logo-strip > div {
+      animation: none;
+    }
+  }
+
   .landing-page {
     min-width: 0;
     background: var(--home-paper);
