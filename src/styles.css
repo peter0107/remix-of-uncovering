@@ -1004,6 +1004,18 @@
     margin-top: 0.9rem;
   }
 
+  .rich-text-content > .rich-text-table-scroll,
+  .rich-text-content > figure[data-rich-image],
+  .rich-text-content > img {
+    margin-bottom: 0.55rem;
+  }
+
+  .rich-text-content > .rich-text-table-scroll + *,
+  .rich-text-content > figure[data-rich-image] + *,
+  .rich-text-content > img + * {
+    margin-top: 0.55rem !important;
+  }
+
   .rich-text-content h1,
   .rich-text-content h2,
   .rich-text-content h3 {
