@@ -1331,7 +1331,12 @@
 
   .reference-header {
     border-bottom: 1px solid rgb(227 230 236 / 70%);
-    background: #edf3fe;
+    background-color: #edf3fe;
+    background-image:
+      radial-gradient(rgb(22 89 227 / 10%) 1.5px, transparent 1.5px),
+      linear-gradient(180deg, #edf3fe 0%, #fff 100%);
+    background-position: top left;
+    background-size: 26px 26px, 100% 100%;
     color: #1a2340;
   }
 
