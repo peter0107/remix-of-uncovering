@@ -254,7 +254,7 @@ function Index() {
             <h1 id="reference-home-title">
               직무가 고민될 때,
               <br />
-              <em>직접 경험해보세요</em>
+              <em>직접 경험</em>해보세요
             </h1>
             <Link to="/expert-simulations" className="reference-hero-action">
               무료로 시작하기 <ArrowRight aria-hidden="true" />
