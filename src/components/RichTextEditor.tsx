@@ -1362,7 +1362,63 @@ export const RichTextContent = memo(function RichTextContent({
   };
 
   const compactSpacing = compact
-    ? "[&_p:has(+_table)]:!mb-2 [&_p:has(+_figure)]:!mb-2 [&_p:has(+_img)]:!mb-2 [&_h1:has(+_table)]:!mb-2 [&_h1:has(+_figure)]:!mb-2 [&_h1:has(+_img)]:!mb-2 [&_h2:has(+_table)]:!mb-2 [&_h2:has(+_figure)]:!mb-2 [&_h2:has(+_img)]:!mb-2 [&_h3:has(+_table)]:!mb-2 [&_h3:has(+_figure)]:!mb-2 [&_h3:has(+_img)]:!mb-2 [&_h4:has(+_table)]:!mb-2 [&_h4:has(+_figure)]:!mb-2 [&_h4:has(+_img)]:!mb-2 [&_ul:has(+_table)]:!mb-2 [&_ul:has(+_figure)]:!mb-2 [&_ul:has(+_img)]:!mb-2 [&_ol:has(+_table)]:!mb-2 [&_ol:has(+_figure)]:!mb-2 [&_ol:has(+_img)]:!mb-2 [&_blockquote:has(+_table)]:!mb-2 [&_blockquote:has(+_figure)]:!mb-2 [&_blockquote:has(+_img)]:!mb-2 [&_p+_table]:!mt-2 [&_p+_figure]:!mt-2 [&_p+_img]:!mt-2 [&_h1+_table]:!mt-2 [&_h1+_figure]:!mt-2 [&_h1+_img]:!mt-2 [&_h2+_table]:!mt-2 [&_h2+_figure]:!mt-2 [&_h2+_img]:!mt-2 [&_h3+_table]:!mt-2 [&_h3+_figure]:!mt-2 [&_h3+_img]:!mt-2 [&_h4+_table]:!mt-2 [&_h4+_figure]:!mt-2 [&_h4+_img]:!mt-2 [&_ul+_table]:!mt-2 [&_ul+_figure]:!mt-2 [&_ul+_img]:!mt-2 [&_ol+_table]:!mt-2 [&_ol+_figure]:!mt-2 [&_ol+_img]:!mt-2 [&_blockquote+_table]:!mt-2 [&_blockquote+_figure]:!mt-2 [&_blockquote+_img]:!mt-2"
+    ? [
+        // 텍스트 → 표/사진: 위 텍스트의 하단 여백 줄임
+        "[&_p:has(+_table)]:!mb-2",
+        "[&_p:has(+_figure)]:!mb-2",
+        "[&_p:has(+_img)]:!mb-2",
+        "[&_p:has(+_p:has(>img))]:!mb-2",
+        "[&_h1:has(+_table)]:!mb-2",
+        "[&_h1:has(+_figure)]:!mb-2",
+        "[&_h1:has(+_img)]:!mb-2",
+        "[&_h2:has(+_table)]:!mb-2",
+        "[&_h2:has(+_figure)]:!mb-2",
+        "[&_h2:has(+_img)]:!mb-2",
+        "[&_h3:has(+_table)]:!mb-2",
+        "[&_h3:has(+_figure)]:!mb-2",
+        "[&_h3:has(+_img)]:!mb-2",
+        "[&_h4:has(+_table)]:!mb-2",
+        "[&_h4:has(+_figure)]:!mb-2",
+        "[&_h4:has(+_img)]:!mb-2",
+        "[&_ul:has(+_table)]:!mb-2",
+        "[&_ul:has(+_figure)]:!mb-2",
+        "[&_ul:has(+_img)]:!mb-2",
+        "[&_ol:has(+_table)]:!mb-2",
+        "[&_ol:has(+_figure)]:!mb-2",
+        "[&_ol:has(+_img)]:!mb-2",
+        "[&_blockquote:has(+_table)]:!mb-2",
+        "[&_blockquote:has(+_figure)]:!mb-2",
+        "[&_blockquote:has(+_img)]:!mb-2",
+        // 표/사진 → 아래 콘텐츠: 상단 여백 줄임
+        "[&_p+_table]:!mt-2",
+        "[&_p+_figure]:!mt-2",
+        "[&_p+_img]:!mt-2",
+        "[&_h1+_table]:!mt-2",
+        "[&_h1+_figure]:!mt-2",
+        "[&_h1+_img]:!mt-2",
+        "[&_h2+_table]:!mt-2",
+        "[&_h2+_figure]:!mt-2",
+        "[&_h2+_img]:!mt-2",
+        "[&_h3+_table]:!mt-2",
+        "[&_h3+_figure]:!mt-2",
+        "[&_h3+_img]:!mt-2",
+        "[&_h4+_table]:!mt-2",
+        "[&_h4+_figure]:!mt-2",
+        "[&_h4+_img]:!mt-2",
+        "[&_ul+_table]:!mt-2",
+        "[&_ul+_figure]:!mt-2",
+        "[&_ul+_img]:!mt-2",
+        "[&_ol+_table]:!mt-2",
+        "[&_ol+_figure]:!mt-2",
+        "[&_ol+_img]:!mt-2",
+        "[&_blockquote+_table]:!mt-2",
+        "[&_blockquote+_figure]:!mt-2",
+        "[&_blockquote+_img]:!mt-2",
+        // 마크다운 이미지는 <p><img/></p>로 감싸지므로, 이미지를 품은 p의 여백도 줄임
+        "[&_p:has(>img)]:!mb-2",
+        "[&_p:has(>img)]:!mt-2",
+        "[&_p:has(>img)+p]:!mt-2",
+      ].join(" ")
     : "";
   const contentClassName = `rich-text-content ${className} ${compactSpacing} [&_code]:rounded-sm [&_code]:bg-neutral-100 [&_code]:px-1 [&_code]:py-0.5 [&_code]:font-mono [&_pre]:overflow-x-auto [&_pre]:rounded-md [&_pre]:bg-neutral-900 [&_pre]:px-3 [&_pre]:py-3 [&_pre]:font-mono [&_pre]:text-neutral-50 [&_pre_code]:!bg-transparent [&_pre_code]:!p-0 [&_pre_code]:!text-neutral-50 [&_table]:border-collapse [&_th]:border [&_th]:border-neutral-300 [&_th]:bg-neutral-50 [&_th]:px-2 [&_th]:py-1 [&_td]:border [&_td]:border-neutral-300 [&_td]:px-2 [&_td]:py-1`;
 
