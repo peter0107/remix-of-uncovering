@@ -1330,9 +1330,6 @@
   }
 
   .reference-header {
-    position: sticky;
-    top: 0;
-    z-index: 40;
     border-bottom: 1px solid rgb(227 230 236 / 70%);
     background: #edf3fe;
     color: #1a2340;
