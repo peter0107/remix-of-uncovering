@@ -1330,13 +1330,10 @@
   }
 
   .reference-header {
+    position: relative;
+    z-index: 1;
     border-bottom: 1px solid rgb(227 230 236 / 70%);
-    background-color: #edf3fe;
-    background-image:
-      radial-gradient(rgb(22 89 227 / 10%) 1.5px, transparent 1.5px),
-      linear-gradient(180deg, #edf3fe 0%, #fff 100%);
-    background-position: top left;
-    background-size: 26px 26px, 100% 100%;
+    background: transparent;
     color: #1a2340;
   }
 
@@ -1445,15 +1442,28 @@
     height: 1.1rem;
   }
 
+  .reference-intro-surface {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    background: linear-gradient(180deg, #edf3fe 0%, #fff 100%);
+  }
+
+  .reference-intro-surface::before {
+    position: absolute;
+    z-index: -1;
+    inset: 0;
+    content: "";
+    background-image: radial-gradient(rgb(22 89 227 / 10%) 1.5px, transparent 1.5px);
+    background-position: top left;
+    background-size: 26px 26px;
+    pointer-events: none;
+  }
+
   .reference-hero {
     position: relative;
-    overflow: hidden;
-    background-color: #edf3fe;
-    background-image:
-      radial-gradient(rgb(22 89 227 / 10%) 1.5px, transparent 1.5px),
-      linear-gradient(180deg, #edf3fe 0%, #fff 100%);
-    background-position: top left;
-    background-size: 26px 26px, 100% 100%;
+    z-index: 1;
+    background: transparent;
     color: #1a2340;
   }
 

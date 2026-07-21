@@ -237,19 +237,18 @@ function Index() {
 
   return (
     <div className="reference-home">
-      <Header
-        isMenuOpen={isMenuOpen}
-        onMenuToggle={() => setIsMenuOpen((open) => !open)}
-        onMenuClose={closeMenu}
-      />
-
-      <main>
+      <div className="reference-intro-surface">
+        <span className="reference-hero-glow reference-hero-glow-one" aria-hidden="true" />
+        <span className="reference-hero-glow reference-hero-glow-two" aria-hidden="true" />
+        <span className="reference-hero-shape reference-hero-shape-one" aria-hidden="true" />
+        <span className="reference-hero-shape reference-hero-shape-two" aria-hidden="true" />
+        <span className="reference-hero-shape reference-hero-shape-three" aria-hidden="true" />
+        <Header
+          isMenuOpen={isMenuOpen}
+          onMenuToggle={() => setIsMenuOpen((open) => !open)}
+          onMenuClose={closeMenu}
+        />
         <section className="reference-hero" aria-labelledby="reference-home-title">
-          <span className="reference-hero-glow reference-hero-glow-one" aria-hidden="true" />
-          <span className="reference-hero-glow reference-hero-glow-two" aria-hidden="true" />
-          <span className="reference-hero-shape reference-hero-shape-one" aria-hidden="true" />
-          <span className="reference-hero-shape reference-hero-shape-two" aria-hidden="true" />
-          <span className="reference-hero-shape reference-hero-shape-three" aria-hidden="true" />
           <div className="reference-shell reference-hero-copy">
             <h1 id="reference-home-title">
               직무가 고민될 때,
@@ -264,7 +263,9 @@ function Index() {
             </p>
           </div>
         </section>
+      </div>
 
+      <main>
         <FeaturedExpertSimulations />
 
         <section id="service" className="reference-expert-section">
