@@ -338,7 +338,7 @@ function AdminExpertSimulations() {
         </div>
       ) : (
         <div className="mt-6 grid gap-6 xl:grid-cols-[320px_minmax(0,1fr)]">
-          <aside className="flex min-h-[560px] flex-col overflow-hidden rounded-md border border-neutral-200">
+          <aside className="flex h-[38rem] flex-col overflow-hidden rounded-md border border-neutral-200 xl:sticky xl:top-6 xl:self-start">
             <div className="border-b border-neutral-200 p-3">
               <button
                 type="button"
@@ -348,7 +348,7 @@ function AdminExpertSimulations() {
                 <Plus className="h-3.5 w-3.5" /> 현직자 시뮬레이션 추가
               </button>
             </div>
-            <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-3">
+            <div className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain p-3">
               {simulations.map((simulation) => {
                 const isSelected = selectedId === simulation.id;
                 const preview = isSelected ? form : simulation;
