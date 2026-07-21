@@ -274,8 +274,8 @@ function Index() {
 
         <section className="reference-cta">
           <div className="reference-shell reference-cta-inner">
-            <h2>첫 과제, 지금 무료로 받아보세요</h2>
-            <p>가입 후 3분이면 현직자의 첫 과제가 도착해요</p>
+            <h2>진로 탐색, 이제는 미룰 때가 아닙니다.</h2>
+            <p>지금 바로 가입해서 내가 원하는 직무를 경험해보세요!</p>
             <Link to="/start">
               무료로 시작하기 <ArrowRight aria-hidden="true" />
             </Link>
