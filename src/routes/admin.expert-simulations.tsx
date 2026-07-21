@@ -338,7 +338,7 @@ function AdminExpertSimulations() {
         </div>
       ) : (
         <div className="mt-6 grid gap-6 xl:grid-cols-[320px_minmax(0,1fr)]">
-          <aside className="flex h-[38rem] flex-col overflow-hidden rounded-md border border-neutral-200 xl:sticky xl:top-6 xl:self-start">
+          <aside className="flex h-[76rem] flex-col overflow-hidden rounded-md border border-neutral-200 xl:sticky xl:top-6 xl:self-start">
             <div className="border-b border-neutral-200 p-3">
               <button
                 type="button"
