@@ -166,7 +166,7 @@ function Index() {
               <em>직접 경험해보세요</em>
             </h1>
             <span>현직자가 자신의 업무로 직접 만든 과제를, 지원 전에 먼저 풀어보세요</span>
-            <Link to="/start" className="reference-hero-action">
+            <Link to="/expert-simulations" className="reference-hero-action">
               무료로 시작하기 <ArrowRight aria-hidden="true" />
             </Link>
             <small>가입 후 3분이면 첫 과제가 도착해요 · 현직자 시뮬레이션 120+</small>
@@ -271,7 +271,7 @@ function Index() {
           <div className="reference-shell reference-cta-inner">
             <h2>진로 탐색, 이제는 미룰 때가 아닙니다.</h2>
             <p>지금 바로 가입해서 내가 원하는 직무를 경험해보세요!</p>
-            <Link to="/start">
+            <Link to="/expert-simulations">
               무료로 시작하기 <ArrowRight aria-hidden="true" />
             </Link>
           </div>
