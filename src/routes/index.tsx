@@ -20,13 +20,11 @@ export const Route = createFileRoute("/")({
 
 function Brand() {
   return (
-    <span className="reference-brand" aria-label="Beginner 홈">
-      <span className="reference-brand-mark" aria-hidden="true">
-        <i />
-        <b />
-      </span>
-      <strong>Beginner</strong>
-    </span>
+    <img
+      src="/beginner-logo.png"
+      alt="Beginner"
+      className="reference-brand"
+    />
   );
 }
 
