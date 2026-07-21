@@ -1440,48 +1440,41 @@
   }
 
   .reference-hero {
+    position: relative;
     overflow: hidden;
-    background: linear-gradient(180deg, #edf3fe 0%, #fff 100%);
+    background-color: #edf3fe;
+    background-image: radial-gradient(rgb(22 89 227 / 12%) 1px, transparent 1px);
+    background-size: 26px 26px;
     color: #1a2340;
   }
 
   .reference-hero-copy {
+    position: relative;
+    z-index: 1;
     display: flex;
-    min-height: 29rem;
+    min-height: 31rem;
     align-items: center;
     flex-direction: column;
     justify-content: center;
-    gap: 1.3rem;
-    padding-top: 5.4rem;
-    padding-bottom: 4rem;
+    gap: 2rem;
+    padding-top: 4.5rem;
+    padding-bottom: 4.5rem;
     text-align: center;
-  }
-
-  .reference-hero-copy > p {
-    margin: 0;
-    color: #5a6b8c;
-    font-size: 0.9375rem;
-    line-height: 1.4;
   }
 
   .reference-hero h1 {
     margin: 0;
     color: #1a2340;
-    font-size: clamp(3.1rem, 6vw, 4rem);
+    font-size: clamp(3.25rem, 6vw, 4rem);
     font-weight: 850;
     letter-spacing: -0.065em;
     line-height: 1.16;
+    animation: reference-hero-enter 560ms ease-out both;
   }
 
   .reference-hero h1 em {
     color: #1659e3;
     font-style: normal;
-  }
-
-  .reference-hero-copy > span {
-    color: #4b5563;
-    font-size: 1rem;
-    line-height: 1.65;
   }
 
   .reference-hero-action,
@@ -1499,6 +1492,7 @@
     font-weight: 750;
     line-height: 1;
     text-decoration: none;
+    animation: reference-hero-enter 560ms 100ms ease-out both;
   }
 
   .reference-hero-action:hover,
@@ -1512,31 +1506,110 @@
     height: 1.05rem;
   }
 
-  .reference-hero-copy small {
-    color: #6b7280;
-    font-size: 0.75rem;
-    line-height: 1.4;
+  .reference-hero-shape {
+    position: absolute;
+    display: block;
+    border-radius: 8px;
+    background: rgb(22 89 227 / 12%);
+    animation: reference-float 7s ease-in-out infinite;
+    pointer-events: none;
   }
 
-  .reference-logo-strip {
-    overflow: hidden;
-    padding: 0 0 2.25rem;
+  .reference-hero-shape-one {
+    top: 4rem;
+    right: max(7vw, 3rem);
+    width: 3.25rem;
+    height: 3.25rem;
+    transform: rotate(14deg);
   }
 
-  .reference-logo-strip > div {
+  .reference-hero-shape-two {
+    bottom: 5.25rem;
+    left: max(10vw, 2rem);
+    width: 2.4rem;
+    height: 2.4rem;
+    transform: rotate(-12deg);
+    animation-delay: 1.1s;
+  }
+
+  .reference-hero-shape-three {
+    top: 5rem;
+    left: max(18vw, 5rem);
+    width: 1.25rem;
+    height: 1.25rem;
+    transform: rotate(24deg);
+    animation-delay: 600ms;
+  }
+
+  .reference-featured {
+    padding-top: 2.25rem;
+    padding-bottom: 2.75rem;
+    background: #fff;
+  }
+
+  .reference-featured-heading {
     display: flex;
-    width: max-content;
     align-items: center;
-    animation: reference-logo-scroll 25s linear infinite;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
   }
 
-  .reference-logo-strip b {
-    color: #b7bec9;
-    font-size: 1rem;
+  .reference-featured-heading h2 {
+    margin: 0;
+    color: #171c26;
+    font-size: 1.375rem;
     font-weight: 800;
-    line-height: 1;
-    white-space: nowrap;
-    margin-right: 3.5rem;
+    letter-spacing: -0.04em;
+  }
+
+  .reference-featured-heading a {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    color: #6b7280;
+    font-size: 0.8125rem;
+    font-weight: 650;
+    text-decoration: none;
+  }
+
+  .reference-featured-heading a:hover {
+    color: #1659e3;
+  }
+
+  .reference-featured-heading svg {
+    width: 0.9rem;
+    height: 0.9rem;
+  }
+
+  .reference-featured-track {
+    display: grid;
+    grid-auto-columns: minmax(12.8rem, 1fr);
+    grid-auto-flow: column;
+    grid-template-columns: repeat(5, minmax(12.8rem, 1fr));
+    gap: 1rem;
+    overflow-x: auto;
+    padding-bottom: 0.4rem;
+    scrollbar-width: thin;
+  }
+
+  .reference-featured-card,
+  .reference-featured-skeleton {
+    min-width: 0;
+    aspect-ratio: 4 / 2.8;
+    animation: reference-card-enter 520ms ease-out both;
+  }
+
+  .reference-featured-card:nth-child(2) { animation-delay: 60ms; }
+  .reference-featured-card:nth-child(3) { animation-delay: 120ms; }
+  .reference-featured-card:nth-child(4) { animation-delay: 180ms; }
+  .reference-featured-card:nth-child(5) { animation-delay: 240ms; }
+
+  .reference-featured-skeleton {
+    overflow: hidden;
+    border: 1px solid #e3e6ec;
+    border-radius: 8px;
+    background: #fff;
   }
 
   .reference-expert-section {
@@ -1544,8 +1617,8 @@
   }
 
   .reference-expert-section > .reference-shell {
-    padding-top: 4.5rem;
-    padding-bottom: 4.5rem;
+    padding-top: 4rem;
+    padding-bottom: 4rem;
   }
 
   .reference-section-intro {
@@ -1592,19 +1665,19 @@
 
   .reference-expert-grid {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 1.25rem;
-    margin-top: 2.75rem;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1rem;
+    margin-top: 2.5rem;
   }
 
   .reference-expert-card {
     display: flex;
-    min-height: 16.5rem;
+    min-height: 12rem;
     flex-direction: column;
     gap: 0.85rem;
     border: 1px solid #eef0f4;
     border-radius: 8px;
-    padding: 1.75rem;
+    padding: 1.5rem;
     background: #fff;
   }
 
@@ -1787,7 +1860,7 @@
 
   .reference-cta-inner {
     display: flex;
-    min-height: 19rem;
+    min-height: 16rem;
     align-items: center;
     flex-direction: column;
     justify-content: center;
@@ -1852,6 +1925,33 @@
   @keyframes reference-logo-scroll {
     to {
       transform: translateX(-50%);
+    }
+  }
+
+  @keyframes reference-float {
+    0%, 100% { translate: 0 0; }
+    50% { translate: 0 -0.8rem; }
+  }
+
+  @keyframes reference-hero-enter {
+    from {
+      opacity: 0;
+      transform: translateY(0.75rem);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes reference-card-enter {
+    from {
+      opacity: 0;
+      transform: translateY(0.75rem);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
     }
   }
 
@@ -1952,11 +2052,6 @@
       font-size: clamp(2.7rem, 13vw, 3.8rem);
     }
 
-    .reference-hero-copy > span {
-      max-width: 28rem;
-      font-size: 0.9rem;
-    }
-
     .reference-expert-grid,
     .reference-audience > .reference-shell {
       grid-template-columns: 1fr;
@@ -1982,9 +2077,11 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .reference-logo-strip > div {
-      animation: none;
-    }
+    .reference-hero h1,
+    .reference-hero-action,
+    .reference-hero-shape,
+    .reference-featured-card,
+    .reference-featured-skeleton { animation: none; }
   }
 
   .landing-page {
