@@ -1542,55 +1542,6 @@
     margin-right: 3.5rem;
   }
 
-  .reference-flow {
-    display: flex;
-    align-items: center;
-    flex-direction: column;
-    gap: 1.75rem;
-    padding: 3.5rem 0;
-    text-align: center;
-  }
-
-  .reference-flow-steps {
-    display: flex;
-    align-items: center;
-    font-size: 1.125rem;
-    font-weight: 800;
-    letter-spacing: -0.02em;
-  }
-
-  .reference-flow-step {
-    display: flex;
-    align-items: center;
-    gap: 0.6rem;
-  }
-
-  .reference-flow-step > span:last-child,
-  .reference-flow-step > span:not(.reference-flow-line) {
-    display: grid;
-    width: 1.875rem;
-    height: 1.875rem;
-    place-items: center;
-    border-radius: 7px;
-    background: #1659e3;
-    color: #fff;
-    font-size: 0.75rem;
-  }
-
-  .reference-flow-line {
-    width: 3.25rem;
-    height: 1px;
-    margin: 0 1.1rem;
-    background: #d5dae3;
-  }
-
-  .reference-flow p {
-    margin: 0;
-    color: #6b7280;
-    font-size: 0.9375rem;
-    line-height: 1.6;
-  }
-
   .reference-expert-section {
     background: #f7f8fa;
   }
@@ -2007,27 +1958,6 @@
     .reference-hero-copy > span {
       max-width: 28rem;
       font-size: 0.9rem;
-    }
-
-    .reference-flow {
-      align-items: flex-start;
-      padding: 2.6rem 0;
-      text-align: left;
-    }
-
-    .reference-flow-steps {
-      width: 100%;
-      justify-content: space-between;
-      font-size: 0.8125rem;
-    }
-
-    .reference-flow-step {
-      gap: 0.35rem;
-    }
-
-    .reference-flow-line {
-      width: 1rem;
-      margin: 0 0.4rem;
     }
 
     .reference-expert-grid,

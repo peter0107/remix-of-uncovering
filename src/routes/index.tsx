@@ -106,27 +106,6 @@ function Header({
   );
 }
 
-function SourceFlow() {
-  return (
-    <section className="reference-flow" aria-label="이용 흐름">
-      <div className="reference-flow-steps">
-        {[
-          ["1", "탐색"],
-          ["2", "체험"],
-          ["3", "결과 확인"],
-        ].map(([number, label], index) => (
-          <div className="reference-flow-step" key={label}>
-            {index > 0 && <span className="reference-flow-line" aria-hidden="true" />}
-            <span>{number}</span>
-            <b>{label}</b>
-          </div>
-        ))}
-      </div>
-      <p>관심 직무를 등록하고, 현직자가 만든 실제 업무 과제를 수행해봐요.<br />내가 낸 답과 모범 답안이 어떤 부분이 다른지 확인도 해봐요.</p>
-    </section>
-  );
-}
-
 function ExpertCard({
   title,
   children,
@@ -182,10 +161,6 @@ function Index() {
           </div>
 
         </section>
-
-        <div className="reference-shell">
-          <SourceFlow />
-        </div>
 
         <section id="service" className="reference-expert-section">
           <div className="reference-shell">
