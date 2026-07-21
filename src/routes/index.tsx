@@ -165,7 +165,7 @@ function Index() {
               <br />
               <em>직접 경험해보세요</em>
             </h1>
-            <span>현직자가 자신의 업무로 직접 만든 과제를, 지원 전에 먼저 풀어보세요</span>
+            <span>현직자가 실제로 현업에서 경험하는 업무를 탐색해보세요.</span>
             <Link to="/expert-simulations" className="reference-hero-action">
               무료로 시작하기 <ArrowRight aria-hidden="true" />
             </Link>
