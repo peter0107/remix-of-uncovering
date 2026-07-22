@@ -1,95 +1,49 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
-import {
-  type ProfileFormData,
-  INITIAL_PROFILE_FORM,
-  EducationFields,
-  JobInterestFields,
-  CompanyInterestFields,
-  WorkPreferenceFields,
-  DiscoveryConsentFields,
-  EDUCATION_SCHOOL_TYPES,
-  EDUCATION_STATUS_OPTIONS,
-} from "@/lib/profile-fields";
+import { INITIAL_PROFILE_FORM, JobInterestFields } from "@/lib/profile-fields";
 
 export const Route = createFileRoute("/onboarding")({
   component: OnboardingPage,
 });
 
-type OnboardingData = ProfileFormData;
-const INITIAL: OnboardingData = {
-  ...INITIAL_PROFILE_FORM,
-  discovery_consent: true,
-};
-
-const STEP_LABELS = ["최종 학력", "관심 직무", "관심 기업", "근무 선호", "공개 동의"];
-
-// ─── 메인 페이지 ─────────────────────────────────────────────
-
 function OnboardingPage() {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
-  const [step, setStep] = useState(1);
+  const [jobInterests, setJobInterests] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
-  const [data, setDataRaw] = useState<OnboardingData>(INITIAL);
 
   useEffect(() => {
-    if (authLoading) return;
-    if (!user) {
-      navigate({ to: "/login", search: { redirect: "/onboarding" } });
-    }
-  }, [user, authLoading, navigate]);
+    if (authLoading || user) return;
+    navigate({ to: "/login", search: { redirect: "/onboarding" }, replace: true });
+  }, [authLoading, navigate, user]);
 
-  const setData = (partial: Partial<OnboardingData>) =>
-    setDataRaw((prev) => ({ ...prev, ...partial }));
+  useEffect(() => {
+    if (!user) return;
 
-  const canProceed = () => {
-    if (step === 1) {
-      const hasSchoolType = EDUCATION_SCHOOL_TYPES.some((item) =>
-        data.education_level.includes(item),
-      );
-      const hasStatus = EDUCATION_STATUS_OPTIONS.some((item) =>
-        data.education_level.includes(item),
-      );
-      return Boolean(
-        data.university_name.trim() && hasSchoolType && hasStatus && data.academic_mark,
-      );
-    }
-    if (step === 2) return data.job_interests.length > 0;
-    return true;
-  };
+    void supabase
+      .from("job_seekers")
+      .select("job_interests")
+      .eq("id", user.id)
+      .maybeSingle()
+      .then(({ data }) => setJobInterests(data?.job_interests ?? []));
+  }, [user]);
 
   const handleFinish = async () => {
-    if (!user) {
-      toast.error("로그인이 필요합니다");
-      navigate({ to: "/login", search: { redirect: "/onboarding" } });
-      return;
-    }
+    if (!user) return;
 
     setSaving(true);
     const { error } = await supabase.from("job_seekers").upsert(
       {
         id: user.id,
         email: user.email ?? "",
-        education_level: data.education_level || null,
-        majors: data.majors.length ? data.majors : null,
-        academic_mark: data.academic_mark ? parseFloat(data.academic_mark) : null,
-        job_interests: data.job_interests.length ? data.job_interests : null,
-        company_interests: data.company_interests.length ? data.company_interests : null,
-        work_regions: data.work_regions.length ? data.work_regions : null,
-        employment_types: data.employment_types.length ? data.employment_types : null,
-        willing_to_relocate: data.willing_to_relocate,
-        discovery_consent: data.discovery_consent,
+        job_interests: jobInterests,
       },
       { onConflict: "id" },
     );
-
     setSaving(false);
 
     if (error) {
@@ -97,92 +51,38 @@ function OnboardingPage() {
       return;
     }
 
-    toast.success("프로필이 저장됐어요!");
-    navigate({ to: "/simulations" });
+    navigate({ to: "/expert-simulations" });
   };
-
-  const progress = (step / 5) * 100;
 
   if (authLoading || !user) {
     return <div className="min-h-screen bg-white" />;
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-white">
-      {/* 상단 진행 바 */}
-      <div className="h-1 bg-zinc-100">
-        <div
-          className="h-full bg-zinc-900 transition-[width] duration-300"
-          style={{ width: `${progress}%` }}
-        />
-      </div>
-
-      <div className="mx-auto w-full max-w-lg flex-1 px-6 py-10">
-        {/* 단계 표시 */}
-        <div className="mb-2 flex items-center justify-between">
-          <div className="flex gap-4">
-            {STEP_LABELS.map((label, i) => (
-              <div
-                key={label}
-                className={cn(
-                  "border-b-2 pb-2 text-xs font-medium transition-colors",
-                  i + 1 === step
-                    ? "border-zinc-900 text-zinc-900"
-                    : i + 1 < step
-                      ? "border-zinc-300 text-zinc-500"
-                      : "border-transparent text-zinc-300",
-                )}
-              >
-                {i + 1 < step ? "✓" : label}
-              </div>
-            ))}
-          </div>
-          <span className="text-xs text-zinc-400">{step} / 5</span>
-        </div>
-
-        {/* 단계별 콘텐츠 */}
+    <main className="mx-auto flex min-h-screen w-full max-w-lg flex-col px-6 py-16">
+      <div>
+        <h1 className="text-2xl font-bold text-zinc-900">관심 있는 직무를 선택해주세요</h1>
         <div className="mt-8">
-          {step === 1 && <EducationFields data={data} setData={setData} />}
-          {step === 2 && <JobInterestFields data={data} setData={setData} />}
-          {step === 3 && <CompanyInterestFields data={data} setData={setData} />}
-          {step === 4 && <WorkPreferenceFields data={data} setData={setData} />}
-          {step === 5 && <DiscoveryConsentFields data={data} setData={setData} />}
-        </div>
-
-        {/* 네비게이션 버튼 */}
-        <div className="mt-10 flex items-center justify-between">
-          {step > 1 ? (
-            <button
-              type="button"
-              onClick={() => setStep((s) => s - 1)}
-              className="flex items-center gap-1 text-sm text-zinc-400 hover:text-zinc-700"
-            >
-              <ChevronLeft className="h-4 w-4" />
-              이전
-            </button>
-          ) : (
-            <div />
-          )}
-
-          {step < 5 ? (
-            <Button
-              onClick={() => setStep((s) => s + 1)}
-              disabled={!canProceed()}
-              className="min-w-28 rounded-md bg-zinc-900 text-white hover:bg-zinc-700 disabled:opacity-40"
-            >
-              다음
-            </Button>
-          ) : (
-            <Button
-              onClick={handleFinish}
-              disabled={saving}
-              className="min-w-36 rounded-md bg-zinc-900 text-white hover:bg-zinc-700 disabled:opacity-40"
-            >
-              {saving ? "저장 중..." : "시작하기"}
-            </Button>
-          )}
+          <JobInterestFields
+            data={{ ...INITIAL_PROFILE_FORM, job_interests: jobInterests }}
+            setData={(partial) => {
+              if (partial.job_interests) setJobInterests(partial.job_interests);
+            }}
+            showHeader={false}
+          />
         </div>
       </div>
-    </div>
+
+      <div className="mt-auto pt-10">
+        <Button
+          type="button"
+          onClick={handleFinish}
+          disabled={saving || jobInterests.length === 0}
+          className="w-full rounded-md bg-zinc-900 text-white hover:bg-zinc-700 disabled:opacity-40"
+        >
+          {saving ? "저장 중..." : "시작하기"}
+        </Button>
+      </div>
+    </main>
   );
 }

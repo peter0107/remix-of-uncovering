@@ -3,9 +3,11 @@ import { ArrowLeft, LayoutGrid, Search, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 import { ExpertSimulationCard } from "@/components/ExpertSimulationCard";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
-import { DOMAIN_CATEGORIES } from "@/lib/domain-categories";
+import { DOMAIN_CATEGORIES, isDomainCategory } from "@/lib/domain-categories";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/expert-simulations")({
@@ -28,6 +30,10 @@ type ExpertSimulation = {
   textColor: string;
 };
 
+type JobSeeker = {
+  job_interests: string[] | null;
+};
+
 function ExpertCardSkeleton() {
   return (
     <div className="flex aspect-[4/3] flex-col overflow-hidden rounded-md border border-zinc-100 bg-white">
@@ -46,11 +52,14 @@ function ExpertCardSkeleton() {
 }
 
 function ExpertSimulationsPage() {
+  const { user, loading: authLoading } = useAuth();
   const [simulations, setSimulations] = useState<ExpertSimulation[]>([]);
+  const [jobInterests, setJobInterests] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [selectedDomain, setSelectedDomain] = useState<string | null>(null);
+  const [showAll, setShowAll] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -84,11 +93,24 @@ function ExpertSimulationsPage() {
           })),
         );
       }
+
+      if (user) {
+        const { data: seekerData } = await supabase
+          .from("job_seekers")
+          .select("job_interests")
+          .eq("id", user.id)
+          .maybeSingle();
+        const seeker = seekerData as JobSeeker | null;
+        setJobInterests((seeker?.job_interests ?? []).filter(isDomainCategory));
+      } else {
+        setJobInterests([]);
+      }
+
       setLoading(false);
     }
 
-    void load();
-  }, []);
+    if (!authLoading) void load();
+  }, [authLoading, user]);
 
   const availableDomains = useMemo(() => {
     const domains = new Set(simulations.map((simulation) => simulation.domain).filter(Boolean));
@@ -108,6 +130,15 @@ function ExpertSimulationsPage() {
     });
   }, [query, selectedDomain, simulations]);
 
+  const recommendedSimulations = useMemo(() => {
+    const matched = simulations.filter((simulation) => jobInterests.includes(simulation.domain));
+    const remaining = simulations.filter((simulation) => !jobInterests.includes(simulation.domain));
+    return [...matched, ...remaining].slice(0, 3);
+  }, [jobInterests, simulations]);
+
+  const isRecommendationView = Boolean(user && jobInterests.length > 0 && !showAll);
+  const visibleSimulations = isRecommendationView ? recommendedSimulations : filteredSimulations;
+
   function resetFilters() {
     setQuery("");
     setSelectedDomain(null);
@@ -121,13 +152,15 @@ function ExpertSimulationsPage() {
       >
         <ArrowLeft className="h-4 w-4" /> 홈으로
       </Link>
-      <h1 className="mt-5 text-2xl font-bold text-zinc-900 md:text-3xl">현직자 제시 시뮬레이션</h1>
+      <h1 className="mt-5 text-2xl font-bold text-zinc-900 md:text-3xl">
+        {isRecommendationView ? "나를 위한 현직자 시뮬레이션 3개" : "현직자 제시 시뮬레이션"}
+      </h1>
 
       {error ? (
         <p className="mt-8 text-sm text-zinc-500">{error}</p>
       ) : (
         <>
-          {!loading && simulations.length > 0 && (
+          {!loading && simulations.length > 0 && !isRecommendationView && (
             <div className="mt-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
               <div className="flex flex-wrap gap-2">
                 <button
@@ -189,8 +222,8 @@ function ExpertSimulationsPage() {
                 <ExpertCardSkeleton />
                 <ExpertCardSkeleton />
               </>
-            ) : filteredSimulations.length > 0 ? (
-              filteredSimulations.map((simulation) => (
+            ) : visibleSimulations.length > 0 ? (
+              visibleSimulations.map((simulation) => (
                 <Link
                   key={simulation.id}
                   to="/simulation/$id"
@@ -231,6 +264,20 @@ function ExpertSimulationsPage() {
               </div>
             )}
           </div>
+
+          {isRecommendationView && !loading && (
+            <div className="mt-8 flex justify-center">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowAll(true)}
+                className="rounded-md border-zinc-300 text-zinc-700 hover:border-zinc-900 hover:text-zinc-900"
+              >
+                <LayoutGrid className="mr-2 h-4 w-4" />
+                전체 직무 보기
+              </Button>
+            </div>
+          )}
         </>
       )}
     </main>
