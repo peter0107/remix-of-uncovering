@@ -236,7 +236,16 @@ function SimulationDetailPage() {
   const draftKey = `sim-draft-${id}`;
 
   useEffect(() => {
-    if (authLoading) return;
+    if (authLoading || isPreview || user) return;
+    navigate({
+      to: "/login",
+      search: { redirect: `/simulation/${id}` },
+      replace: true,
+    });
+  }, [authLoading, id, isPreview, navigate, user]);
+
+  useEffect(() => {
+    if (authLoading || (!user && !isPreview)) return;
 
     async function loadSimulation() {
       try {
@@ -469,7 +478,7 @@ function SimulationDetailPage() {
     toast.success(`${sim.company_name}에 지원했어요. 기업 화면에서 확인할 수 있습니다.`);
   };
 
-  if (authLoading || loading) {
+  if (authLoading || (!user && !isPreview) || loading) {
     return (
       <div className="mx-auto max-w-2xl px-4 py-12">
         <Skeleton className="h-8 w-2/3" />
