@@ -39,6 +39,8 @@ type SimulationCardPreviewProps = {
   description?: string | null;
   domain?: string | null;
   estimatedMinutes?: number | null;
+  /** 기업 공식 참여 여부. false면 로고를 숨기고 "지원 대비 · 비공식"으로 표기 */
+  isPartner?: boolean;
   compact?: boolean;
   showCta?: boolean;
   ctaLabel?: string;
@@ -75,6 +77,7 @@ export function SimulationCardPreview({
   description,
   domain,
   estimatedMinutes,
+  isPartner = true,
   compact = false,
   showCta = true,
   ctaLabel = "시작하기",
@@ -90,9 +93,11 @@ export function SimulationCardPreview({
   const summary = (description?.trim() || title.trim()).replace(/\s+/g, " ");
   const imageUrl = cardImageUrl?.trim() || getFallbackImage(domain ?? "", resolvedRole, title);
   const logoText = getLogoText(resolvedCompanyName);
-  const logoContent = companyLogoUrl?.trim() ? (
+  // 미참여(비공식) 기업은 로고를 노출하지 않는다 — 도메인 이니셜 폴백만 사용.
+  const showRealLogo = isPartner && Boolean(companyLogoUrl?.trim());
+  const logoContent = showRealLogo ? (
     <img
-      src={companyLogoUrl.trim()}
+      src={(companyLogoUrl ?? "").trim()}
       alt={`${resolvedCompanyName} 로고`}
       loading="lazy"
       decoding="async"
@@ -156,12 +161,17 @@ export function SimulationCardPreview({
             <div className={logoClassName}>{logoContent}</div>
           )}
           <div className="min-w-0 pb-0.5 text-white">
-            <p className="truncate text-sm font-bold leading-tight">{resolvedCompanyName}</p>
-            {resolvedCompanyDescription && (
-              <p className="mt-0.5 truncate text-[11px] font-medium text-white/80">
-                {resolvedCompanyDescription}
-              </p>
-            )}
+            <div className="flex items-center gap-1.5">
+              <p className="truncate text-sm font-bold leading-tight">{resolvedCompanyName}</p>
+              {!isPartner && (
+                <span className="shrink-0 rounded-full bg-white/25 px-1.5 py-0.5 text-[9px] font-semibold leading-none text-white">
+                  비공식
+                </span>
+              )}
+            </div>
+            <p className="mt-0.5 truncate text-[11px] font-medium text-white/80">
+              {isPartner ? resolvedCompanyDescription : "지원 대비 · 공개 채용공고 기반"}
+            </p>
           </div>
         </div>
         {topRight && <div className="absolute right-3 top-3 z-10">{topRight}</div>}

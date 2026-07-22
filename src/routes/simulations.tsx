@@ -38,6 +38,7 @@ export type Simulation = {
   company_name: string;
   company_description: string | null;
   company_logo_url: string | null;
+  company_is_partner: boolean;
 };
 
 type JobSeeker = {
@@ -56,7 +57,12 @@ type RawRow = {
   domain: string | null;
   estimated_minutes: number | null;
   card_image_url: string | null;
-  companies: { name: string; description: string | null; logo_url: string | null } | null;
+  companies: {
+    name: string;
+    description: string | null;
+    logo_url: string | null;
+    is_partner: boolean | null;
+  } | null;
 };
 
 function toSimulation(row: RawRow): Simulation {
@@ -72,6 +78,7 @@ function toSimulation(row: RawRow): Simulation {
     company_name: row.companies?.name ?? "",
     company_description: row.companies?.description ?? null,
     company_logo_url: row.companies?.logo_url ?? null,
+    company_is_partner: row.companies?.is_partner ?? false,
   };
 }
 
@@ -83,7 +90,7 @@ async function fetchRecommended(seeker: JobSeeker): Promise<Simulation[]> {
   const { data, error } = await supabase
     .from("job_simulations")
     .select(
-      "id, title, role_label, description, job_family, domain, estimated_minutes, card_image_url, companies(name, description, logo_url)",
+      "id, title, role_label, description, job_family, domain, estimated_minutes, card_image_url, companies(name, description, logo_url, is_partner)",
     )
     .eq("simulation_source", "company")
     .eq("is_public", true)
@@ -115,7 +122,7 @@ export async function fetchAll(): Promise<Simulation[]> {
   const { data, error } = await supabase
     .from("job_simulations")
     .select(
-      "id, title, role_label, description, job_family, domain, estimated_minutes, card_image_url, companies(name, description, logo_url)",
+      "id, title, role_label, description, job_family, domain, estimated_minutes, card_image_url, companies(name, description, logo_url, is_partner)",
     )
     .eq("simulation_source", "company")
     .eq("is_public", true)
@@ -144,6 +151,7 @@ export function SimCard({ sim }: { sim: Simulation }) {
         description={sim.description}
         domain={sim.domain}
         estimatedMinutes={sim.estimated_minutes}
+        isPartner={sim.company_is_partner}
         className="h-full"
       />
     </Link>

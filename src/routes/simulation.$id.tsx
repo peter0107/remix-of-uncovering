@@ -7,6 +7,7 @@ import {
   ChevronLeft,
   Clock,
   AlertTriangle,
+  Info,
   Send,
   X,
   MessageCircle,
@@ -70,6 +71,7 @@ type SimulationDetail = {
   estimated_minutes: number | null;
   role_label: string | null;
   company_name: string;
+  company_is_partner: boolean;
 };
 
 const MAX_ANSWER_LENGTH = 1000;
@@ -268,6 +270,8 @@ function SimulationDetailPage() {
             estimated_minutes: data.estimatedMinutes,
             role_label: data.roleLabel || null,
             company_name: data.companyName,
+            // 관리자 미리보기는 공식 흐름으로 표시(비공식 고지 없이 내용만 확인).
+            company_is_partner: true,
           });
           return;
         }
@@ -275,7 +279,7 @@ function SimulationDetailPage() {
         const { data } = await supabase
           .from("job_simulations")
           .select(
-            "id, title, role_label, simulation_source, expert_nickname, expert_job_title, simulation_format, selection_mode, single_answer_question, task_prompt, shared_situation, shared_materials, steps, estimated_minutes, companies(name)",
+            "id, title, role_label, simulation_source, expert_nickname, expert_job_title, simulation_format, selection_mode, single_answer_question, task_prompt, shared_situation, shared_materials, steps, estimated_minutes, companies(name, is_partner)",
           )
           .eq("id", id)
           .eq("is_public", true)
@@ -298,7 +302,7 @@ function SimulationDetailPage() {
           steps: unknown;
           estimated_minutes: number | null;
           role_label: string | null;
-          companies: { name: string } | null;
+          companies: { name: string; is_partner: boolean | null } | null;
         };
         setSim({
           id: row.id,
@@ -319,6 +323,9 @@ function SimulationDetailPage() {
             row.simulation_source === "expert"
               ? row.expert_nickname || "현직자"
               : (row.companies?.name ?? ""),
+          // 현직자 시뮬레이션은 공식/비공식 개념이 없으므로 고지 대상에서 제외(true).
+          company_is_partner:
+            row.simulation_source === "expert" ? true : (row.companies?.is_partner ?? false),
         });
       } catch (error) {
         toast.error(error instanceof Error ? error.message : "시뮬레이션을 불러오지 못했습니다.");
@@ -504,6 +511,7 @@ function SimulationDetailPage() {
 
   if (submittedAt) {
     const isExpertSimulation = sim.simulation_source === "expert";
+    const isUnofficialSubmitted = !isExpertSimulation && !sim.company_is_partner;
     return (
       <div className="mx-auto max-w-md px-4 py-20 text-center">
         <CheckCircle2 className="mx-auto h-12 w-12 text-zinc-900" />
@@ -511,9 +519,11 @@ function SimulationDetailPage() {
         <p className="mt-2 text-sm text-zinc-500">
           {isExpertSimulation
             ? "현직자 모범답안과 AI 활용 평가 결과를 확인할 수 있어요."
-            : applicationSent
-              ? `${sim.company_name}에 답안이 전달돼요. 관심이 있으면 먼저 연락드릴 수 있어요.`
-              : "지원하기를 누르면 이력서와 시뮬레이션 답안이 기업 담당자 화면에 표시돼요."}
+            : isUnofficialSubmitted
+              ? `${sim.company_name}는 아직 Beginner 참여 전이에요. 참여하게 되면 동의한 답안이 전달돼요.`
+              : applicationSent
+                ? `${sim.company_name}에 답안이 전달돼요. 관심이 있으면 먼저 연락드릴 수 있어요.`
+                : "지원하기를 누르면 이력서와 시뮬레이션 답안이 기업 담당자 화면에 표시돼요."}
         </p>
         <div className="mt-8 flex flex-col gap-2">
           {isExpertSimulation ? (
@@ -526,6 +536,10 @@ function SimulationDetailPage() {
                 리포트 보러 가기
               </Button>
             </Link>
+          ) : isUnofficialSubmitted ? (
+            <div className="rounded-md border border-zinc-200 bg-zinc-50 px-4 py-3 text-xs leading-5 text-zinc-500">
+              마이페이지 이력에 저장됐어요. 이 기업이 Beginner에 참여하면 동의한 답안이 전달돼요.
+            </div>
           ) : (
             <Button
               className="rounded-md bg-zinc-900 text-white hover:bg-zinc-700"
@@ -546,6 +560,8 @@ function SimulationDetailPage() {
   }
 
   const isExpertSimulation = sim.simulation_source === "expert";
+  // 미참여(비공식) 기업의 '지원 대비' 시뮬레이션 — 실기업 사칭 방지용 고지·동의 문구 분기.
+  const isUnofficial = !isExpertSimulation && !sim.company_is_partner;
   const header = (
     <div>
       {isExpertSimulation && (
@@ -570,6 +586,15 @@ function SimulationDetailPage() {
           <Clock className="h-3.5 w-3.5" />약 {sim.estimated_minutes}분
         </div>
       )}
+      {isUnofficial && (
+        <div className="mt-4 flex items-start gap-2 rounded-md border border-zinc-200 bg-zinc-50 p-3 text-xs leading-5 text-zinc-500">
+          <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-zinc-400" />
+          <span>
+            이 시뮬레이션은 {sim.company_name}와 무관하며, 공개된 채용공고를 참고해 Beginner가
+            제작한 지원 대비용 콘텐츠예요. 지금은 답안이 기업에 전달되지 않아요.
+          </span>
+        </div>
+      )}
     </div>
   );
 
@@ -578,13 +603,22 @@ function SimulationDetailPage() {
       <p className="text-sm font-semibold text-zinc-900">
         {isExpertSimulation
           ? "이 답안과 AI 활용 기록을 피드백 화면에 저장할까요?"
-          : `이 답안을 ${sim.company_name}에 전송하는 것에 동의하시나요?`}
+          : isUnofficial
+            ? `${sim.company_name}가 Beginner에 참여하게 되면 이 답안을 전송하는 것에 동의하시나요?`
+            : `이 답안을 ${sim.company_name}에 전송하는 것에 동의하시나요?`}
       </p>
-      {!isExpertSimulation && (
+      {isUnofficial ? (
         <p className="mt-1 text-xs text-zinc-400">
-          동의하면 답안 원문이 기업 담당자에게 그대로 전달돼요. 동의하지 않아도 제출 자체는 되고,
-          마이페이지 이력에는 남아요.
+          지금은 이 기업이 참여 전이라 답안을 열람할 수 없어요. 나중에 참여하면 동의한 답안만 원문
+          그대로 전달돼요. 동의하지 않아도 제출은 되고, 마이페이지 이력에는 남아요.
         </p>
+      ) : (
+        !isExpertSimulation && (
+          <p className="mt-1 text-xs text-zinc-400">
+            동의하면 답안 원문이 기업 담당자에게 그대로 전달돼요. 동의하지 않아도 제출 자체는 되고,
+            마이페이지 이력에는 남아요.
+          </p>
+        )
       )}
       <div className="mt-4 flex flex-col gap-2 sm:flex-row">
         <button

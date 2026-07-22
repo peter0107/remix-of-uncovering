@@ -85,6 +85,7 @@ type CompanyForm = {
   description: string;
   logoUrl: string;
   roleLabel: string;
+  isPartner: boolean;
 };
 
 type AssetUploadTarget =
@@ -129,6 +130,7 @@ const EMPTY_COMPANY_FORM: CompanyForm = {
   description: "",
   logoUrl: "",
   roleLabel: "",
+  isPartner: false,
 };
 
 function createPrompt(): AdminSimulationPrompt {
@@ -625,6 +627,7 @@ function AdminSimulations() {
       description: company.description,
       logoUrl: company.logoUrl,
       roleLabel: company.roleLabel === company.name ? "" : company.roleLabel,
+      isPartner: company.isPartner,
     });
     setEditingCompanyId(company.id);
     setIsCompanyFormOpen(false);
@@ -815,6 +818,7 @@ function AdminSimulations() {
         description: companyForm.description.trim(),
         logoUrl: companyForm.logoUrl.trim(),
         roleLabel: companyForm.roleLabel.trim(),
+        isPartner: companyForm.isPartner,
       };
 
       const company = isEditingCompany
@@ -1892,6 +1896,20 @@ function CompanyFormEditor({
         onChange={(value) => onChange("roleLabel", value)}
         placeholder="비워두면 기업 이름"
       />
+      <label className="flex items-start gap-2.5 rounded-md border border-neutral-200 bg-white p-3">
+        <input
+          type="checkbox"
+          checked={form.isPartner}
+          onChange={(event) => onChange("isPartner", event.target.checked)}
+          className="mt-0.5 h-4 w-4 shrink-0 rounded border-neutral-300"
+        />
+        <span className="text-xs leading-5 text-neutral-600">
+          <span className="font-medium text-neutral-900">공식 참여 기업</span>
+          <br />
+          체크하면 구직자 화면에 로고와 함께 정식 노출되고 답안이 전달됩니다. 해제 시 공개 채용공고
+          기반 "지원 대비 · 비공식"으로 표기됩니다.
+        </span>
+      </label>
       <button
         type="submit"
         disabled={isSaving || form.name.trim().length === 0 || form.code.trim().length < 4}

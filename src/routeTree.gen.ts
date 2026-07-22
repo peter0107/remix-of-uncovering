@@ -26,6 +26,7 @@ import { Route as BizCoffeeChatRouteImport } from './routes/biz_.coffee-chat'
 import { Route as BizApplyRouteImport } from './routes/biz_.apply'
 import { Route as AdminSubmissionsRouteImport } from './routes/admin.submissions'
 import { Route as AdminSimulationsRouteImport } from './routes/admin.simulations'
+import { Route as AdminSimulationGeneratorRouteImport } from './routes/admin.simulation-generator'
 import { Route as AdminInquiriesRouteImport } from './routes/admin.inquiries'
 import { Route as AdminExpertSimulationsRouteImport } from './routes/admin.expert-simulations'
 import { Route as AdminAiPromptsRouteImport } from './routes/admin.ai-prompts'
@@ -118,6 +119,12 @@ const AdminSimulationsRoute = AdminSimulationsRouteImport.update({
   path: '/simulations',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminSimulationGeneratorRoute =
+  AdminSimulationGeneratorRouteImport.update({
+    id: '/simulation-generator',
+    path: '/simulation-generator',
+    getParentRoute: () => AdminRoute,
+  } as any)
 const AdminInquiriesRoute = AdminInquiriesRouteImport.update({
   id: '/inquiries',
   path: '/inquiries',
@@ -164,6 +171,7 @@ export interface FileRoutesByFullPath {
   '/admin/ai-prompts': typeof AdminAiPromptsRoute
   '/admin/expert-simulations': typeof AdminExpertSimulationsRoute
   '/admin/inquiries': typeof AdminInquiriesRoute
+  '/admin/simulation-generator': typeof AdminSimulationGeneratorRoute
   '/admin/simulations': typeof AdminSimulationsRoute
   '/admin/submissions': typeof AdminSubmissionsRoute
   '/biz/apply': typeof BizApplyRoute
@@ -189,6 +197,7 @@ export interface FileRoutesByTo {
   '/admin/ai-prompts': typeof AdminAiPromptsRoute
   '/admin/expert-simulations': typeof AdminExpertSimulationsRoute
   '/admin/inquiries': typeof AdminInquiriesRoute
+  '/admin/simulation-generator': typeof AdminSimulationGeneratorRoute
   '/admin/simulations': typeof AdminSimulationsRoute
   '/admin/submissions': typeof AdminSubmissionsRoute
   '/biz/apply': typeof BizApplyRoute
@@ -215,6 +224,7 @@ export interface FileRoutesById {
   '/admin/ai-prompts': typeof AdminAiPromptsRoute
   '/admin/expert-simulations': typeof AdminExpertSimulationsRoute
   '/admin/inquiries': typeof AdminInquiriesRoute
+  '/admin/simulation-generator': typeof AdminSimulationGeneratorRoute
   '/admin/simulations': typeof AdminSimulationsRoute
   '/admin/submissions': typeof AdminSubmissionsRoute
   '/biz_/apply': typeof BizApplyRoute
@@ -242,6 +252,7 @@ export interface FileRouteTypes {
     | '/admin/ai-prompts'
     | '/admin/expert-simulations'
     | '/admin/inquiries'
+    | '/admin/simulation-generator'
     | '/admin/simulations'
     | '/admin/submissions'
     | '/biz/apply'
@@ -267,6 +278,7 @@ export interface FileRouteTypes {
     | '/admin/ai-prompts'
     | '/admin/expert-simulations'
     | '/admin/inquiries'
+    | '/admin/simulation-generator'
     | '/admin/simulations'
     | '/admin/submissions'
     | '/biz/apply'
@@ -292,6 +304,7 @@ export interface FileRouteTypes {
     | '/admin/ai-prompts'
     | '/admin/expert-simulations'
     | '/admin/inquiries'
+    | '/admin/simulation-generator'
     | '/admin/simulations'
     | '/admin/submissions'
     | '/biz_/apply'
@@ -446,6 +459,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminSimulationsRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/simulation-generator': {
+      id: '/admin/simulation-generator'
+      path: '/simulation-generator'
+      fullPath: '/admin/simulation-generator'
+      preLoaderRoute: typeof AdminSimulationGeneratorRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/inquiries': {
       id: '/admin/inquiries'
       path: '/inquiries'
@@ -495,6 +515,7 @@ interface AdminRouteChildren {
   AdminAiPromptsRoute: typeof AdminAiPromptsRoute
   AdminExpertSimulationsRoute: typeof AdminExpertSimulationsRoute
   AdminInquiriesRoute: typeof AdminInquiriesRoute
+  AdminSimulationGeneratorRoute: typeof AdminSimulationGeneratorRoute
   AdminSimulationsRoute: typeof AdminSimulationsRoute
   AdminSubmissionsRoute: typeof AdminSubmissionsRoute
 }
@@ -503,6 +524,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminAiPromptsRoute: AdminAiPromptsRoute,
   AdminExpertSimulationsRoute: AdminExpertSimulationsRoute,
   AdminInquiriesRoute: AdminInquiriesRoute,
+  AdminSimulationGeneratorRoute: AdminSimulationGeneratorRoute,
   AdminSimulationsRoute: AdminSimulationsRoute,
   AdminSubmissionsRoute: AdminSubmissionsRoute,
 }

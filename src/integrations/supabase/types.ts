@@ -157,6 +157,7 @@ export type Database = {
           created_at: string | null
           description: string
           id: string
+          is_partner: boolean
           logo_url: string | null
           name: string
           role_label: string | null
@@ -167,6 +168,7 @@ export type Database = {
           created_at?: string | null
           description?: string
           id?: string
+          is_partner?: boolean
           logo_url?: string | null
           name: string
           role_label?: string | null
@@ -177,6 +179,7 @@ export type Database = {
           created_at?: string | null
           description?: string
           id?: string
+          is_partner?: boolean
           logo_url?: string | null
           name?: string
           role_label?: string | null

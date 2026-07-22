@@ -23,6 +23,7 @@ export type AdminCompany = {
   description: string;
   logoUrl: string;
   roleLabel: string;
+  isPartner: boolean;
   createdAt: string;
 };
 
@@ -167,6 +168,7 @@ const createCompanyInputSchema = z.object({
   description: z.string().max(200).optional().default(""),
   logoUrl: z.string().optional().default(""),
   roleLabel: z.string().optional().default(""),
+  isPartner: z.boolean().optional().default(false),
 });
 
 const updateCompanyInputSchema = createCompanyInputSchema.extend({
@@ -394,6 +396,7 @@ function mapAdminCompany(row: Record<string, unknown>): AdminCompany {
     description: String(row.description ?? ""),
     logoUrl: String(row.logo_url ?? ""),
     roleLabel: String(row.role_label ?? name),
+    isPartner: row.is_partner === true,
     createdAt: formatDateTime(String(row.created_at)),
   };
 }
@@ -476,7 +479,7 @@ export const getAdminCompanies = createServerFn({ method: "GET" }).handler(
 
     const { data, error } = await supabaseAdmin
       .from("companies")
-      .select("id, code, unique_code, name, description, logo_url, role_label, created_at")
+      .select("id, code, unique_code, name, description, logo_url, role_label, is_partner, created_at")
       .neq("code", "EXPERT-SIMULATIONS-2026")
       .order("name", { ascending: true });
 
@@ -889,8 +892,9 @@ export const createCompany = createServerFn({ method: "POST" })
         description,
         logo_url: logoUrl || null,
         role_label: roleLabel,
+        is_partner: data.isPartner,
       })
-      .select("id, code, unique_code, name, description, logo_url, role_label, created_at")
+      .select("id, code, unique_code, name, description, logo_url, role_label, is_partner, created_at")
       .single();
 
     if (error) {
@@ -938,9 +942,10 @@ export const updateCompany = createServerFn({ method: "POST" })
         description,
         logo_url: logoUrl || null,
         role_label: roleLabel,
+        is_partner: data.isPartner,
       })
       .eq("id", data.id)
-      .select("id, code, unique_code, name, description, logo_url, role_label, created_at")
+      .select("id, code, unique_code, name, description, logo_url, role_label, is_partner, created_at")
       .single();
 
     if (error) {

@@ -6,6 +6,7 @@ import {
   Inbox,
   SlidersHorizontal,
   UserRound,
+  Wand2,
 } from "lucide-react";
 import { useEffect } from "react";
 
@@ -103,6 +104,26 @@ function AdminHome() {
                   </h2>
                   <p className="mt-2 text-sm leading-6 text-neutral-500">
                     현직자 제시 카드와 모범답안을 관리합니다.
+                  </p>
+                </div>
+                <ArrowRight className="mt-1 h-4 w-4 text-neutral-400 transition-colors group-hover:text-neutral-900" />
+              </div>
+            </Link>
+
+            <Link
+              to="/admin/simulation-generator"
+              className="group rounded-md border border-neutral-200 p-5 transition-colors hover:border-neutral-900 hover:bg-neutral-50"
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <div className="grid h-10 w-10 place-items-center rounded-md bg-neutral-900 text-white">
+                    <Wand2 className="h-5 w-5" />
+                  </div>
+                  <h2 className="mt-4 text-base font-semibold text-neutral-900">
+                    JD 시뮬레이션 생성기
+                  </h2>
+                  <p className="mt-2 text-sm leading-6 text-neutral-500">
+                    채용공고를 붙여넣어 직무 시뮬레이션 초안을 생성합니다.
                   </p>
                 </div>
                 <ArrowRight className="mt-1 h-4 w-4 text-neutral-400 transition-colors group-hover:text-neutral-900" />
