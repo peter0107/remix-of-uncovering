@@ -30,6 +30,7 @@ import { Route as AdminInquiriesRouteImport } from './routes/admin.inquiries'
 import { Route as AdminExpertSimulationsRouteImport } from './routes/admin.expert-simulations'
 import { Route as AdminAiPromptsRouteImport } from './routes/admin.ai-prompts'
 import { Route as SimulationIdFeedbackRouteImport } from './routes/simulation.$id.feedback'
+import { Route as ExpertSimulationIdReviewRouteImport } from './routes/expert-simulation.$id.review'
 import { Route as ExpertSimulationIdFeedbackRouteImport } from './routes/expert-simulation.$id.feedback'
 
 const StartRoute = StartRouteImport.update({
@@ -137,6 +138,12 @@ const SimulationIdFeedbackRoute = SimulationIdFeedbackRouteImport.update({
   path: '/feedback',
   getParentRoute: () => SimulationIdRoute,
 } as any)
+const ExpertSimulationIdReviewRoute =
+  ExpertSimulationIdReviewRouteImport.update({
+    id: '/expert-simulation/$id/review',
+    path: '/expert-simulation/$id/review',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ExpertSimulationIdFeedbackRoute =
   ExpertSimulationIdFeedbackRouteImport.update({
     id: '/expert-simulation/$id/feedback',
@@ -166,6 +173,7 @@ export interface FileRoutesByFullPath {
   '/simulation/$id': typeof SimulationIdRouteWithChildren
   '/simulations/all': typeof SimulationsAllRoute
   '/expert-simulation/$id/feedback': typeof ExpertSimulationIdFeedbackRoute
+  '/expert-simulation/$id/review': typeof ExpertSimulationIdReviewRoute
   '/simulation/$id/feedback': typeof SimulationIdFeedbackRoute
 }
 export interface FileRoutesByTo {
@@ -190,6 +198,7 @@ export interface FileRoutesByTo {
   '/simulation/$id': typeof SimulationIdRouteWithChildren
   '/simulations/all': typeof SimulationsAllRoute
   '/expert-simulation/$id/feedback': typeof ExpertSimulationIdFeedbackRoute
+  '/expert-simulation/$id/review': typeof ExpertSimulationIdReviewRoute
   '/simulation/$id/feedback': typeof SimulationIdFeedbackRoute
 }
 export interface FileRoutesById {
@@ -215,6 +224,7 @@ export interface FileRoutesById {
   '/simulation/$id': typeof SimulationIdRouteWithChildren
   '/simulations_/all': typeof SimulationsAllRoute
   '/expert-simulation/$id/feedback': typeof ExpertSimulationIdFeedbackRoute
+  '/expert-simulation/$id/review': typeof ExpertSimulationIdReviewRoute
   '/simulation/$id/feedback': typeof SimulationIdFeedbackRoute
 }
 export interface FileRouteTypes {
@@ -241,6 +251,7 @@ export interface FileRouteTypes {
     | '/simulation/$id'
     | '/simulations/all'
     | '/expert-simulation/$id/feedback'
+    | '/expert-simulation/$id/review'
     | '/simulation/$id/feedback'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -265,6 +276,7 @@ export interface FileRouteTypes {
     | '/simulation/$id'
     | '/simulations/all'
     | '/expert-simulation/$id/feedback'
+    | '/expert-simulation/$id/review'
     | '/simulation/$id/feedback'
   id:
     | '__root__'
@@ -289,6 +301,7 @@ export interface FileRouteTypes {
     | '/simulation/$id'
     | '/simulations_/all'
     | '/expert-simulation/$id/feedback'
+    | '/expert-simulation/$id/review'
     | '/simulation/$id/feedback'
   fileRoutesById: FileRoutesById
 }
@@ -309,6 +322,7 @@ export interface RootRouteChildren {
   SimulationIdRoute: typeof SimulationIdRouteWithChildren
   SimulationsAllRoute: typeof SimulationsAllRoute
   ExpertSimulationIdFeedbackRoute: typeof ExpertSimulationIdFeedbackRoute
+  ExpertSimulationIdReviewRoute: typeof ExpertSimulationIdReviewRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -460,6 +474,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SimulationIdFeedbackRouteImport
       parentRoute: typeof SimulationIdRoute
     }
+    '/expert-simulation/$id/review': {
+      id: '/expert-simulation/$id/review'
+      path: '/expert-simulation/$id/review'
+      fullPath: '/expert-simulation/$id/review'
+      preLoaderRoute: typeof ExpertSimulationIdReviewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/expert-simulation/$id/feedback': {
       id: '/expert-simulation/$id/feedback'
       path: '/expert-simulation/$id/feedback'
@@ -517,6 +538,7 @@ const rootRouteChildren: RootRouteChildren = {
   SimulationIdRoute: SimulationIdRouteWithChildren,
   SimulationsAllRoute: SimulationsAllRoute,
   ExpertSimulationIdFeedbackRoute: ExpertSimulationIdFeedbackRoute,
+  ExpertSimulationIdReviewRoute: ExpertSimulationIdReviewRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { ChevronDown, ChevronUp, ExternalLink, Plus, Save, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronUp, ExternalLink, Link2, Plus, Save, Trash2 } from "lucide-react";
 import {
   type ChangeEvent,
   type FormEvent,
@@ -31,6 +31,7 @@ import {
   EXPERT_COMPANY_TYPES,
   EXPERT_EXPERIENCE_BANDS,
   getAdminExpertSimulations,
+  getOrCreateExpertSimulationShareLink,
   setExpertSimulationProfileImage,
   setExpertSimulationVisibility,
   updateExpertSimulation,
@@ -253,6 +254,7 @@ function AdminExpertSimulations() {
   const [actioningId, setActioningId] = useState<string | null>(null);
   const [profilePhotoEditor, setProfilePhotoEditor] = useState<ProfilePhotoEditor | null>(null);
   const [uploadingProfilePhoto, setUploadingProfilePhoto] = useState(false);
+  const [copyingShareLink, setCopyingShareLink] = useState(false);
   const loadedUserIdRef = useRef<string | null>(null);
   const profilePhotoInputRef = useRef<HTMLInputElement>(null);
   const profilePhotoDragRef = useRef<PhotoDragState | null>(null);
@@ -549,6 +551,22 @@ function AdminExpertSimulations() {
     }
   };
 
+  const copyShareLink = async () => {
+    if (!selectedId) return;
+    setCopyingShareLink(true);
+    try {
+      const { token } = await getOrCreateExpertSimulationShareLink({ data: { id: selectedId } });
+      await navigator.clipboard.writeText(
+        `${window.location.origin}/expert-simulation/${selectedId}/review?token=${token}`,
+      );
+      toast.success("피드백 링크를 복사했습니다.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "피드백 링크를 복사하지 못했습니다.");
+    } finally {
+      setCopyingShareLink(false);
+    }
+  };
+
   return (
     <AdminShell>
       <div className="flex flex-wrap items-end justify-between gap-4 border-b border-neutral-200 pb-6">
@@ -667,19 +685,30 @@ function AdminExpertSimulations() {
                 {selectedId ? "현직자 시뮬레이션 수정" : "현직자 시뮬레이션 추가"}
               </h2>
               {selectedId && (
-                <button
-                  type="button"
-                  onClick={() =>
-                    window.open(
-                      `/simulation/${selectedId}?preview=1`,
-                      "_blank",
-                      "noopener,noreferrer",
-                    )
-                  }
-                  className="inline-flex h-8 items-center gap-1.5 rounded-md border border-neutral-300 px-2.5 text-xs font-medium hover:bg-neutral-50"
-                >
-                  <ExternalLink className="h-3.5 w-3.5" /> 미리보기
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => void copyShareLink()}
+                    disabled={copyingShareLink}
+                    className="inline-flex h-8 items-center gap-1.5 rounded-md border border-neutral-300 px-2.5 text-xs font-medium hover:bg-neutral-50 disabled:opacity-50"
+                  >
+                    <Link2 className="h-3.5 w-3.5" />
+                    {copyingShareLink ? "링크 생성 중..." : "링크 복사"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      window.open(
+                        `/simulation/${selectedId}?preview=1`,
+                        "_blank",
+                        "noopener,noreferrer",
+                      )
+                    }
+                    className="inline-flex h-8 items-center gap-1.5 rounded-md border border-neutral-300 px-2.5 text-xs font-medium hover:bg-neutral-50"
+                  >
+                    <ExternalLink className="h-3.5 w-3.5" /> 미리보기
+                  </button>
+                </div>
               )}
             </div>
 

@@ -92,6 +92,25 @@ export type AdminExpertSimulationSubmission = {
   aiReview: ExpertAiUtilizationReview | null;
 };
 
+export type PublicExpertSimulationReview = {
+  id: string;
+  title: string;
+  roleLabel: string;
+  description: string;
+  estimatedMinutes: number | null;
+  nickname: string;
+  companyType: string;
+  experienceBand: string;
+  jobTitle: string;
+  simulationFormat: SimulationFormat;
+  selectionMode: SelectionMode;
+  singleAnswerQuestion: string;
+  taskPrompt: string;
+  sharedSituation: string;
+  sharedMaterials: string;
+  steps: AdminSimulationStep[];
+};
+
 const domainCategorySchema = z.enum(DOMAIN_CATEGORIES);
 const simulationFormatSchema = z.enum(["single", "selection"]);
 const selectionModeSchema = z.enum(["separated", "common"]);
@@ -150,6 +169,15 @@ const expertSimulationIdSchema = z.object({ id: z.string().uuid() });
 const expertSimulationVisibilitySchema = expertSimulationIdSchema.extend({ isPublic: z.boolean() });
 const expertSimulationProfileImageSchema = expertSimulationIdSchema.extend({
   profileImageUrl: z.string().url(),
+});
+const expertSimulationShareLinkSchema = expertSimulationIdSchema;
+const publicExpertSimulationReviewSchema = z.object({
+  id: z.string().uuid(),
+  token: z.string().uuid(),
+});
+const publicExpertSimulationFeedbackSchema = publicExpertSimulationReviewSchema.extend({
+  reviewerName: z.string().trim().max(80).optional().default(""),
+  feedback: z.string().trim().min(1).max(5000),
 });
 const expertFeedbackInputSchema = z.object({
   simulationId: z.string().uuid(),
@@ -412,6 +440,93 @@ export const setExpertSimulationProfileImage = createServerFn({ method: "POST" }
       .eq("simulation_source", "expert")
       .is("deleted_at", null);
     if (error) throw new Error("현직자 사진을 저장하지 못했습니다.");
+    return { ok: true };
+  });
+
+export const getOrCreateExpertSimulationShareLink = createServerFn({ method: "POST" })
+  .inputValidator(expertSimulationShareLinkSchema)
+  .handler(async ({ data }) => {
+    await assertAdmin();
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: simulation, error } = await supabaseAdmin
+      .from("job_simulations")
+      .select("feedback_share_token")
+      .eq("id", data.id)
+      .eq("simulation_source", "expert")
+      .is("deleted_at", null)
+      .maybeSingle();
+
+    if (error || !simulation) throw new Error("현직자 시뮬레이션을 찾지 못했습니다.");
+    if (simulation.feedback_share_token) return { token: simulation.feedback_share_token };
+
+    const token = crypto.randomUUID();
+    const { error: updateError } = await supabaseAdmin
+      .from("job_simulations")
+      .update({ feedback_share_token: token })
+      .eq("id", data.id);
+    if (updateError) throw new Error("피드백 링크를 만들지 못했습니다.");
+    return { token };
+  });
+
+export const getPublicExpertSimulationReview = createServerFn({ method: "GET" })
+  .inputValidator(publicExpertSimulationReviewSchema)
+  .handler(async ({ data }): Promise<PublicExpertSimulationReview> => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: simulation, error } = await supabaseAdmin
+      .from("job_simulations")
+      .select(
+        "id, title, role_label, description, estimated_minutes, expert_nickname, expert_company_type, expert_experience_band, expert_job_title, simulation_format, selection_mode, single_answer_question, task_prompt, shared_situation, shared_materials, steps",
+      )
+      .eq("id", data.id)
+      .eq("feedback_share_token", data.token)
+      .eq("simulation_source", "expert")
+      .is("deleted_at", null)
+      .maybeSingle();
+
+    if (error || !simulation) throw new Error("유효하지 않은 피드백 링크입니다.");
+    const row = simulation as Record<string, unknown>;
+    return {
+      id: String(row.id),
+      title: String(row.title ?? ""),
+      roleLabel: String(row.role_label ?? ""),
+      description: String(row.description ?? ""),
+      estimatedMinutes: typeof row.estimated_minutes === "number" ? row.estimated_minutes : null,
+      nickname: String(row.expert_nickname ?? "현직자"),
+      companyType: String(row.expert_company_type ?? ""),
+      experienceBand: String(row.expert_experience_band ?? ""),
+      jobTitle: String(row.expert_job_title ?? ""),
+      simulationFormat: row.simulation_format === "selection" ? "selection" : "single",
+      selectionMode: row.selection_mode === "common" ? "common" : "separated",
+      singleAnswerQuestion: String(row.single_answer_question ?? ""),
+      taskPrompt: String(row.task_prompt ?? ""),
+      sharedSituation: String(row.shared_situation ?? ""),
+      sharedMaterials: String(row.shared_materials ?? ""),
+      steps: mapSteps(row.steps),
+    };
+  });
+
+export const submitPublicExpertSimulationFeedback = createServerFn({ method: "POST" })
+  .inputValidator(publicExpertSimulationFeedbackSchema)
+  .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: simulation, error } = await supabaseAdmin
+      .from("job_simulations")
+      .select("id")
+      .eq("id", data.id)
+      .eq("feedback_share_token", data.token)
+      .eq("simulation_source", "expert")
+      .is("deleted_at", null)
+      .maybeSingle();
+    if (error || !simulation) throw new Error("유효하지 않은 피드백 링크입니다.");
+
+    const { error: insertError } = await supabaseAdmin
+      .from("expert_simulation_share_feedback")
+      .insert({
+        simulation_id: simulation.id,
+        reviewer_name: data.reviewerName || null,
+        feedback: data.feedback,
+      });
+    if (insertError) throw new Error("피드백을 저장하지 못했습니다.");
     return { ok: true };
   });
 

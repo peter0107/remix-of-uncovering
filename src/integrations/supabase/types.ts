@@ -518,6 +518,7 @@ export type Database = {
           expert_model_answer: string | null
           expert_nickname: string | null
           expert_profile_image_url: string | null
+          feedback_share_token: string | null
           id: string
           is_public: boolean
           job_family: string | null
@@ -549,6 +550,7 @@ export type Database = {
           expert_model_answer?: string | null
           expert_nickname?: string | null
           expert_profile_image_url?: string | null
+          feedback_share_token?: string | null
           id?: string
           is_public?: boolean
           job_family?: string | null
@@ -580,6 +582,7 @@ export type Database = {
           expert_model_answer?: string | null
           expert_nickname?: string | null
           expert_profile_image_url?: string | null
+          feedback_share_token?: string | null
           id?: string
           is_public?: boolean
           job_family?: string | null
@@ -603,6 +606,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      expert_simulation_share_feedback: {
+        Row: {
+          created_at: string
+          feedback: string
+          id: string
+          reviewer_name: string | null
+          simulation_id: string
+        }
+        Insert: {
+          created_at?: string
+          feedback: string
+          id?: string
+          reviewer_name?: string | null
+          simulation_id: string
+        }
+        Update: {
+          created_at?: string
+          feedback?: string
+          id?: string
+          reviewer_name?: string | null
+          simulation_id?: string
+        }
+        Relationships: []
       }
       resumes: {
         Row: {
