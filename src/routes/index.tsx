@@ -236,6 +236,29 @@ function Index() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const closeMenu = () => setIsMenuOpen(false);
 
+  useEffect(() => {
+    const sections = Array.from(document.querySelectorAll<HTMLElement>(".reference-reveal"));
+
+    if (!("IntersectionObserver" in window)) {
+      sections.forEach((section) => section.classList.add("is-visible"));
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+          entry.target.classList.add("is-visible");
+          observer.unobserve(entry.target);
+        });
+      },
+      { rootMargin: "0px 0px -8%", threshold: 0.06 },
+    );
+
+    sections.forEach((section) => observer.observe(section));
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <div className="reference-home">
       <div className="reference-intro-surface">
@@ -269,7 +292,7 @@ function Index() {
       <main>
         <FeaturedExpertSimulations />
 
-        <section id="service" className="reference-expert-section">
+        <section id="service" className="reference-expert-section reference-reveal">
           <div className="reference-shell">
             <header className="reference-section-intro">
               <span>현직자 시뮬레이션</span>
@@ -293,7 +316,7 @@ function Index() {
           </div>
         </section>
 
-        <section className="reference-audience">
+        <section className="reference-audience reference-reveal">
           <div className="reference-shell reference-audience-layout">
             <div>
               <span>이런 분에게</span>
@@ -312,7 +335,7 @@ function Index() {
           </div>
         </section>
 
-        <section className="reference-cta">
+        <section className="reference-cta reference-reveal">
           <div className="reference-shell reference-cta-inner">
             <h2>첫 과제, 지금 무료로 받아보세요</h2>
             <p>현직자가 제시한 업무를 직접 경험해보세요.</p>
@@ -323,7 +346,7 @@ function Index() {
         </section>
       </main>
 
-      <footer className="reference-footer">
+      <footer className="reference-footer reference-reveal">
         <div className="reference-shell">
           <span>© 2026 Beginner. All rights reserved.</span>
           <nav aria-label="하단 메뉴">

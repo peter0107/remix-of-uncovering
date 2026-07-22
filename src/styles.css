@@ -1689,6 +1689,19 @@
     background: #fff;
   }
 
+  .reference-reveal {
+    opacity: 0;
+    transform: translateY(1rem);
+    transition:
+      opacity 520ms ease-out,
+      transform 520ms ease-out;
+  }
+
+  .reference-reveal.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
   .reference-expert-section {
     background: #f7f8fa;
   }
@@ -2185,6 +2198,12 @@
     .reference-hero-shape,
     .reference-featured-card,
     .reference-featured-skeleton { animation: none; }
+
+    .reference-reveal {
+      opacity: 1;
+      transform: none;
+      transition: none;
+    }
   }
 
   .landing-page {
