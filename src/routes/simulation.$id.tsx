@@ -68,6 +68,7 @@ type SimulationDetail = {
   shared_materials: string | null;
   steps: unknown;
   estimated_minutes: number | null;
+  role_label: string | null;
   company_name: string;
 };
 
@@ -265,6 +266,7 @@ function SimulationDetailPage() {
             shared_materials: data.sharedMaterials,
             steps: data.steps,
             estimated_minutes: data.estimatedMinutes,
+            role_label: data.roleLabel || null,
             company_name: data.companyName,
           });
           return;
@@ -273,7 +275,7 @@ function SimulationDetailPage() {
         const { data } = await supabase
           .from("job_simulations")
           .select(
-            "id, title, simulation_source, expert_nickname, expert_job_title, simulation_format, selection_mode, single_answer_question, task_prompt, shared_situation, shared_materials, steps, estimated_minutes, companies(name)",
+            "id, title, role_label, simulation_source, expert_nickname, expert_job_title, simulation_format, selection_mode, single_answer_question, task_prompt, shared_situation, shared_materials, steps, estimated_minutes, companies(name)",
           )
           .eq("id", id)
           .eq("is_public", true)
@@ -295,6 +297,7 @@ function SimulationDetailPage() {
           shared_materials: string | null;
           steps: unknown;
           estimated_minutes: number | null;
+          role_label: string | null;
           companies: { name: string } | null;
         };
         setSim({
@@ -311,6 +314,7 @@ function SimulationDetailPage() {
           shared_materials: row.shared_materials,
           steps: row.steps,
           estimated_minutes: row.estimated_minutes,
+          role_label: row.role_label,
           company_name:
             row.simulation_source === "expert"
               ? row.expert_nickname || "현직자"
@@ -558,7 +562,7 @@ function SimulationDetailPage() {
         ) : (
           <Building2 className="h-3.5 w-3.5" />
         )}
-        {isExpertSimulation ? sim.expert_job_title || sim.company_name : sim.company_name}
+        {sim.role_label || (isExpertSimulation ? sim.expert_job_title || sim.company_name : sim.company_name)}
       </div>
       <h1 className="mt-1 text-2xl font-bold text-zinc-900">{sim.title}</h1>
       {sim.estimated_minutes && (

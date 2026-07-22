@@ -150,6 +150,7 @@ export type AdminSimulationPreview = Pick<
   | "steps"
   | "estimatedMinutes"
   | "companyName"
+  | "roleLabel"
 > & {
   simulationSource: "company" | "expert";
   expertNickname: string;
@@ -520,7 +521,7 @@ export const getAdminSimulationPreview = createServerFn({ method: "GET" })
     const { data: row, error } = await supabaseAdmin
       .from("job_simulations")
       .select(
-        "id, company_id, title, role_label, job_family, domain, estimated_minutes, card_image_url, description, simulation_source, expert_nickname, simulation_format, selection_mode, single_answer_question, task_prompt, shared_situation, shared_materials, steps, is_public, deleted_at, created_at, companies(code, unique_code, name, description, logo_url)",
+        "id, company_id, title, role_label, job_family, domain, estimated_minutes, card_image_url, description, simulation_source, expert_nickname, expert_job_title, simulation_format, selection_mode, single_answer_question, task_prompt, shared_situation, shared_materials, steps, is_public, deleted_at, created_at, companies(code, unique_code, name, description, logo_url)",
       )
       .eq("id", data.id)
       .is("deleted_at", null)
@@ -543,6 +544,7 @@ export const getAdminSimulationPreview = createServerFn({ method: "GET" })
       sharedMaterials: simulation.sharedMaterials,
       steps: simulation.steps,
       estimatedMinutes: simulation.estimatedMinutes,
+      roleLabel: simulation.roleLabel,
       companyName:
         (row as Record<string, unknown>).simulation_source === "expert"
           ? String((row as Record<string, unknown>).expert_nickname ?? "현직자")
