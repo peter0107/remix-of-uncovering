@@ -4,6 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
 
 import { DOMAIN_CATEGORIES } from "@/lib/domain-categories";
+import { COMPANY_AI_PROMPT_DEFAULTS, type CompanyAiPromptKey } from "@/lib/ai-prompt.defaults";
 
 const DEFAULT_ADMIN_EMAILS = ["u.ncovering2026@gmail.com"];
 import type { AdminSimulationStep } from "@/lib/simulations.functions";
@@ -282,12 +283,21 @@ function getToolInput(payload: Record<string, unknown>): unknown {
 // ============================================================
 // 프롬프트
 // ============================================================
-function buildPrompt(input: GenerateSimulationInput): string {
+const GENERATOR_PROMPT_KEY: CompanyAiPromptKey = "simulation_generator_draft";
+
+// 설계 지침은 /admin/ai-prompts에서 수정 가능. {{기업명}}/{{직무명}}/{{도메인}} 치환 후
+// 대상 정보·JD 원문·도구 호출 지시를 코드가 뒤에 붙인다.
+function buildPrompt(input: GenerateSimulationInput, instruction: string): string {
   const sourcesBlock = input.sources
     .map((s, i) => `[출처 ${i + 1} · ${s.platform}]\n${s.jd}`)
     .join("\n\n");
 
-  return `당신은 구직 대학생을 위한 직무 시뮬레이션을 설계하는 전문가입니다. 아래 채용공고(JD)들을 분석해, 지원자가 지원 전에 미리 연습할 수 있는 스텝형 시뮬레이션 초안을 만드세요.
+  const filledInstruction = instruction
+    .replaceAll("{{기업명}}", input.companyName)
+    .replaceAll("{{직무명}}", input.roleName)
+    .replaceAll("{{도메인}}", input.domain);
+
+  return `${filledInstruction}
 
 ## 대상
 - 기업명: ${input.companyName}
@@ -297,16 +307,6 @@ ${input.note ? `- 참고사항: ${input.note}` : ""}
 
 ## 채용공고 원문 (평가 기준 추출용)
 ${sourcesBlock}
-
-## 설계 규칙 (반드시 준수)
-1. **제목 형식**: 반드시 "${input.companyName} ${input.roleName} 지원 대비 시뮬레이션" 형태로 짓습니다. 이 시뮬레이션은 ${input.companyName}가 공식 제작·승인한 것이 아니라, 공개 채용공고를 참고해 만든 '지원 대비용' 콘텐츠입니다.
-2. **기업 사칭 금지**: "우리 회사는", "저희 ${input.companyName}는" 같은 기업 1인칭 화법을 절대 쓰지 마세요. 상황 안내는 "당신은 ~팀의 신입입니다" 같은 중립적 3인칭 설정으로 씁니다. 실제 기업 내부 정보를 지어내지 말고, JD에 드러난 업무 성격만 활용하세요.
-3. **평가 기준 추출**: JD의 주요업무·자격요건·우대사항에서 이 직무가 실제로 평가하는 핵심 역량 3~5개를 뽑고, 각 기준이 어느 JD 문구(어느 출처)에서 나왔는지 인용합니다.
-4. **스텝 구성**: 3~4개 단계로 나눕니다. 각 단계는 앞 단계 결과 위에 쌓이는 하나의 업무 흐름이어야 합니다(예: 진단 → 가설 → 실행안 → 정리). 각 단계에는 질문을 정확히 1개만 둡니다.
-5. **제공 자료**: 각 단계의 materials에는 JD에 근거해 만든 현실적인 가상 데이터(표, 지표, 짧은 문서)를 넣어 지원자가 근거를 가지고 답하게 합니다. 마크다운 표를 적극 활용하세요.
-6. **난이도**: 실무 경험이 없는 초심자도 참고사항의 시간 안에 완수할 수 있는 난이도로 맞춥니다. difficulty는 1~3 사이를 권장합니다.
-7. **문체**: 지원자에게 보이는 모든 텍스트(상황·질문·힌트·설명)는 한국어 해요체로 씁니다.
-8. **미반영 요건**: 텍스트 과제로 평가하기 어려운 JD 요건(특정 도구 실무, 자격증, 경력 연차 등)은 시뮬레이션에 억지로 넣지 말고 unreflected에 이유와 함께 기록합니다.
 
 반드시 record_simulation_draft 도구를 한 번 호출해 simulation과 rationale을 모두 채워 기록하세요.`;
 }
@@ -322,6 +322,18 @@ export const generateSimulationDraft = createServerFn({ method: "POST" })
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) throw new Error("ANTHROPIC_API_KEY 환경변수를 Lovable에 설정해주세요.");
 
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: savedPrompt, error: promptError } = await supabaseAdmin
+      .from("ai_prompt_settings")
+      .select("prompt")
+      .eq("key", GENERATOR_PROMPT_KEY)
+      .maybeSingle();
+    if (promptError) {
+      console.error("Failed to load generator prompt setting:", promptError);
+    }
+    const instruction =
+      savedPrompt?.prompt?.trim() || COMPANY_AI_PROMPT_DEFAULTS[GENERATOR_PROMPT_KEY].prompt;
+
     const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
@@ -334,7 +346,7 @@ export const generateSimulationDraft = createServerFn({ method: "POST" })
         max_tokens: 16000,
         tools: [GENERATE_TOOL],
         tool_choice: { type: "tool", name: GENERATE_TOOL_NAME },
-        messages: [{ role: "user", content: buildPrompt(data) }],
+        messages: [{ role: "user", content: buildPrompt(data, instruction) }],
       }),
     });
 

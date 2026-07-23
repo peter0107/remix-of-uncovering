@@ -26,6 +26,9 @@ function AdminAiPrompts() {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const [settings, setSettings] = useState<AdminAiPromptSetting[]>([]);
+  // 입력 버퍼. 비어 있으면 현재 적용 중인 프롬프트가 placeholder로 흐리게 보이고,
+  // Tab을 누르면 그 내용이 그대로 채워져 이어서 수정할 수 있다.
+  const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const loadedUserIdRef = useRef<string | null>(null);
@@ -36,6 +39,7 @@ function AdminAiPrompts() {
     try {
       const promptSettings = await getAdminAiPromptSettings();
       setSettings(promptSettings);
+      setDrafts({});
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "AI 프롬프트를 불러오지 못했습니다.");
     } finally {
@@ -54,34 +58,34 @@ function AdminAiPrompts() {
     void loadPrompt();
   }, [authLoading, userId, navigate, loadPrompt]);
 
-  const updatePrompt = (key: AdminAiPromptSetting["key"], prompt: string) => {
-    setSettings((current) =>
-      current.map((setting) => (setting.key === key ? { ...setting, prompt } : setting)),
-    );
+  const updateDraft = (key: AdminAiPromptSetting["key"], value: string) => {
+    setDrafts((current) => ({ ...current, [key]: value }));
+  };
+
+  const fillDraftFromCurrent = (key: AdminAiPromptSetting["key"]) => {
+    const setting = settings.find((s) => s.key === key);
+    if (!setting) return;
+    setDrafts((current) => ({ ...current, [key]: setting.prompt }));
   };
 
   const resetPrompt = (key: AdminAiPromptSetting["key"]) => {
-    setSettings((current) =>
-      current.map((setting) =>
-        setting.key === key
-          ? { ...setting, prompt: COMPANY_AI_PROMPT_DEFAULTS[key].prompt }
-          : setting,
-      ),
-    );
+    setDrafts((current) => ({ ...current, [key]: COMPANY_AI_PROMPT_DEFAULTS[key].prompt }));
+  };
+
+  // 비워둔 카드는 현재 적용 중인 프롬프트를 그대로 유지한다.
+  const resolvePrompt = (setting: AdminAiPromptSetting) => {
+    const draft = drafts[setting.key];
+    return draft !== undefined && draft.trim() ? draft : setting.prompt;
   };
 
   const savePrompts = async () => {
-    if (settings.some((setting) => !setting.prompt.trim())) {
-      toast.error("모든 프롬프트 내용을 입력해주세요.");
-      return;
-    }
     setIsSaving(true);
     try {
       await saveAdminAiPromptSettings({
         data: {
           settings: settings.map((setting) => ({
             key: setting.key,
-            prompt: setting.prompt,
+            prompt: resolvePrompt(setting),
           })),
         },
       });
@@ -89,7 +93,14 @@ function AdminAiPrompts() {
         dateStyle: "medium",
         timeStyle: "short",
       }).format(new Date());
-      setSettings((current) => current.map((setting) => ({ ...setting, updatedAt: savedAt })));
+      setSettings((current) =>
+        current.map((setting) => ({
+          ...setting,
+          prompt: resolvePrompt(setting),
+          updatedAt: savedAt,
+        })),
+      );
+      setDrafts({});
       toast.success("AI 프롬프트를 저장했습니다.");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "AI 프롬프트를 저장하지 못했습니다.");
@@ -104,7 +115,7 @@ function AdminAiPrompts() {
         <p className="text-xs font-medium text-neutral-500">Beginner Admin</p>
         <h1 className="mt-1 text-2xl font-semibold tracking-tight">AI 프롬프트 설정</h1>
         <p className="mt-2 text-sm text-neutral-500">
-          기업 페이지의 AI 평가 팝업에 사용할 Claude 지침을 기능별로 관리합니다.
+          기업 페이지 AI 평가와 JD 시뮬레이션 생성기에 사용할 Claude 지침을 기능별로 관리합니다.
         </p>
       </div>
 
@@ -127,14 +138,30 @@ function AdminAiPrompts() {
                   </div>
                 </div>
                 <div className="flex flex-1 flex-col">
-                  <label htmlFor={`ai-prompt-${setting.key}`} className="text-sm font-medium">
-                    프롬프트 지침
-                  </label>
+                  <div className="flex items-baseline justify-between gap-3">
+                    <label htmlFor={`ai-prompt-${setting.key}`} className="text-sm font-medium">
+                      프롬프트 지침
+                    </label>
+                    {!(drafts[setting.key] ?? "") && (
+                      <p className="text-xs text-neutral-400">
+                        흐리게 보이는 게 현재 프롬프트예요 · <kbd className="rounded border border-neutral-300 bg-neutral-50 px-1 font-sans">Tab</kbd>
+                        을 누르면 채워져요
+                      </p>
+                    )}
+                  </div>
                   <textarea
                     id={`ai-prompt-${setting.key}`}
-                    value={setting.prompt}
-                    onChange={(event) => updatePrompt(setting.key, event.target.value)}
-                    className="mt-2 min-h-[300px] w-full flex-1 resize-y rounded-md border border-neutral-300 bg-white p-4 font-mono text-sm leading-6 text-neutral-900 outline-none focus:border-neutral-900"
+                    value={drafts[setting.key] ?? ""}
+                    placeholder={setting.prompt}
+                    onChange={(event) => updateDraft(setting.key, event.target.value)}
+                    onKeyDown={(event) => {
+                      // 비어 있을 때 Tab → 현재 프롬프트를 그대로 채워 이어서 수정
+                      if (event.key === "Tab" && !(drafts[setting.key] ?? "").trim()) {
+                        event.preventDefault();
+                        fillDraftFromCurrent(setting.key);
+                      }
+                    }}
+                    className="mt-2 min-h-[300px] w-full flex-1 resize-y rounded-md border border-neutral-300 bg-white p-4 font-mono text-sm leading-6 text-neutral-900 outline-none placeholder:text-neutral-300 focus:border-neutral-900"
                   />
                   <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
                     <p className="text-xs text-neutral-500">
