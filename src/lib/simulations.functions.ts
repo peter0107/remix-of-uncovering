@@ -13,6 +13,7 @@ import {
   COMPANY_AI_REVIEW_TOOL_NAME,
   getClaudeAiReviewInput,
 } from "@/lib/ai-evaluation";
+import { getConfiguredAdminEmails } from "@/lib/admin";
 import { DOMAIN_CATEGORIES } from "@/lib/domain-categories";
 
 export type AdminCompany = {
@@ -318,10 +319,7 @@ async function getCurrentUserId() {
 
 async function assertAdmin() {
   const token = getBearerToken();
-  const adminEmails = (process.env.ADMIN_EMAILS ?? "")
-    .split(",")
-    .map((email) => email.trim().toLowerCase())
-    .filter(Boolean);
+  const adminEmails = getConfiguredAdminEmails(process.env.ADMIN_EMAILS);
 
   if (adminEmails.length === 0) {
     throw new Error("ADMIN_EMAILS 환경변수가 필요합니다.");
