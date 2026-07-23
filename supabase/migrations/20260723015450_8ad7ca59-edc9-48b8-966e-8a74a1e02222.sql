@@ -1,0 +1,1 @@
+DROP POLICY IF EXISTS "Simulation card assets are publicly readable" ON storage.objects;
