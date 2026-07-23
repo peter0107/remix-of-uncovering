@@ -275,16 +275,37 @@ function SimulationsPage() {
     }
 
     setSavingJobInterests(true);
-    const { error: updateError } = await supabase
+    const { data: updated, error: updateError } = await supabase
       .from("job_seekers")
       .update({ job_interests: draftJobInterests })
-      .eq("id", user.id);
-    setSavingJobInterests(false);
+      .eq("id", user.id)
+      .select("id");
 
-    if (updateError) {
+    // 시커 행이 아직 없는 경우 업서트로 생성
+    if (!updateError && (!updated || updated.length === 0)) {
+      const { error: upsertError } = await supabase
+        .from("job_seekers")
+        .upsert(
+          {
+            id: user.id,
+            email: user.email ?? "",
+            job_interests: draftJobInterests,
+          },
+          { onConflict: "id" },
+        );
+      if (upsertError) {
+        console.error("job_seekers upsert failed", upsertError);
+        setSavingJobInterests(false);
+        toast.error("관심 직무 저장 중 오류가 발생했어요.");
+        return;
+      }
+    } else if (updateError) {
+      console.error("job_seekers update failed", updateError);
+      setSavingJobInterests(false);
       toast.error("관심 직무 저장 중 오류가 발생했어요.");
       return;
     }
+    setSavingJobInterests(false);
 
     const updatedSeeker: JobSeeker = {
       job_interests: draftJobInterests,
@@ -299,6 +320,7 @@ function SimulationsPage() {
     setJobInterestEditorOpen(false);
     toast.success("관심 직무를 수정했어요.");
   }
+
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-12">
