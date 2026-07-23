@@ -7,7 +7,16 @@ import { supabase } from './client'
 export const attachSupabaseAuth = createMiddleware({ type: 'function' }).client(
   async ({ next }) => {
     const { data } = await supabase.auth.getSession()
-    const token = data.session?.access_token
+    let session = data.session
+
+    // Server functions validate the bearer token independently. Refresh shortly
+    // before expiry so a long-lived admin screen does not send a stale token.
+    if (session?.expires_at && session.expires_at <= Math.floor(Date.now() / 1000) + 60) {
+      const { data: refreshed, error } = await supabase.auth.refreshSession()
+      if (!error && refreshed.session) session = refreshed.session
+    }
+
+    const token = session?.access_token
     return next({
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     })
