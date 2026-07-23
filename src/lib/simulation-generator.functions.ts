@@ -4,6 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
 
 import { DOMAIN_CATEGORIES } from "@/lib/domain-categories";
+import { getConfiguredAdminEmails } from "@/lib/admin";
 import type { AdminSimulationStep } from "@/lib/simulations.functions";
 
 // ============================================================
@@ -31,10 +32,7 @@ function getBearerToken(): string {
 
 async function assertAdmin() {
   const token = getBearerToken();
-  const adminEmails = (process.env.ADMIN_EMAILS ?? "")
-    .split(",")
-    .map((email) => email.trim().toLowerCase())
-    .filter(Boolean);
+  const adminEmails = getConfiguredAdminEmails(process.env.ADMIN_EMAILS);
   if (adminEmails.length === 0) throw new Error("ADMIN_EMAILS 환경변수가 필요합니다.");
 
   const supabase = createPublicServerClient();

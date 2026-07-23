@@ -9,12 +9,17 @@ function parseAdminEmails(value: string | undefined): string[] {
 
 const envAdminEmails = parseAdminEmails(import.meta.env.VITE_ADMIN_EMAILS);
 
+export function getConfiguredAdminEmails(serverValue?: string): string[] {
+  return Array.from(
+    new Set([...CLIENT_ADMIN_EMAILS, ...envAdminEmails, ...parseAdminEmails(serverValue)]),
+  );
+}
+
 export function isAdminEmail(email: string | null | undefined): boolean {
   const normalizedEmail = email?.trim().toLowerCase();
   if (!normalizedEmail) return false;
 
-  const adminEmails = envAdminEmails.length > 0 ? envAdminEmails : CLIENT_ADMIN_EMAILS;
-  return adminEmails.includes(normalizedEmail);
+  return getConfiguredAdminEmails().includes(normalizedEmail);
 }
 
 export function getPostLoginPath(email: string | null | undefined, redirect: string): string {
