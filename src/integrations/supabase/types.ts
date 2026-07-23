@@ -443,6 +443,38 @@ export type Database = {
           },
         ]
       }
+      expert_simulation_share_feedback: {
+        Row: {
+          created_at: string
+          feedback: string
+          id: string
+          reviewer_name: string | null
+          simulation_id: string
+        }
+        Insert: {
+          created_at?: string
+          feedback: string
+          id?: string
+          reviewer_name?: string | null
+          simulation_id: string
+        }
+        Update: {
+          created_at?: string
+          feedback?: string
+          id?: string
+          reviewer_name?: string | null
+          simulation_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expert_simulation_share_feedback_simulation_id_fkey"
+            columns: ["simulation_id"]
+            isOneToOne: false
+            referencedRelation: "job_simulations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       job_seekers: {
         Row: {
           academic_mark: number | null
@@ -609,30 +641,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      expert_simulation_share_feedback: {
-        Row: {
-          created_at: string
-          feedback: string
-          id: string
-          reviewer_name: string | null
-          simulation_id: string
-        }
-        Insert: {
-          created_at?: string
-          feedback: string
-          id?: string
-          reviewer_name?: string | null
-          simulation_id: string
-        }
-        Update: {
-          created_at?: string
-          feedback?: string
-          id?: string
-          reviewer_name?: string | null
-          simulation_id?: string
-        }
-        Relationships: []
       }
       resumes: {
         Row: {
