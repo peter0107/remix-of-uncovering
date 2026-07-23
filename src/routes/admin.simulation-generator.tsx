@@ -212,7 +212,9 @@ function AdminSimulationGenerator() {
         </h1>
         <p className="mt-2 text-sm text-neutral-500">
           채용공고를 붙여넣으면 평가 기준을 추출해 스텝형 시뮬레이션 초안을 만듭니다. 생성물은 비공개로
-          저장되며, 시뮬레이션 관리에서 공개·수정할 수 있습니다. 생성에 쓰이는 설계 지침은{" "}
+          저장되며, 시뮬레이션 관리에서 공개·수정할 수 있습니다.
+          <br />
+          생성에 쓰이는 설계 지침은{" "}
           <Link to="/admin/ai-prompts" className="underline hover:text-neutral-900">
             AI 프롬프트 설정
           </Link>
