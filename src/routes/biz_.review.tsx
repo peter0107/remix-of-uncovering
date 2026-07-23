@@ -14,6 +14,7 @@ import {
   markApplicantReadByCompanyCode,
   setApplicantDecisionByCompanyCode,
   setSavedApplicantByCompanyCode,
+  type AiChatMessage,
   type Applicant,
   type ApplicantAiReview,
   type ApplicantDecisionStatus,
@@ -1398,21 +1399,7 @@ function ApplicantDetail({
                   <CollapsibleContent>
                     <div className="mt-3 space-y-3">
                       {applicant.aiChatLog.map((message, index) => (
-                        <div key={index} className="space-y-1">
-                          <p className="text-xs font-medium text-neutral-500">
-                            {message.role === "user" ? "구직자" : "AI"}
-                          </p>
-                          <p
-                            className={cn(
-                              "whitespace-pre-line rounded-xl px-3 py-2 text-sm leading-relaxed",
-                              message.role === "user"
-                                ? "bg-neutral-100 text-neutral-800"
-                                : "bg-white text-neutral-700 ring-1 ring-neutral-200",
-                            )}
-                          >
-                            {message.content}
-                          </p>
-                        </div>
+                        <ChatLogMessage key={index} message={message} />
                       ))}
                     </div>
                   </CollapsibleContent>
@@ -1449,6 +1436,40 @@ function normalizeLocation(location: string): string {
   if (location.includes("용산")) return "서울, 용산구";
   if (location.includes("성남")) return "경기, 성남시";
   return location;
+}
+
+function ChatLogMessage({ message }: { message: AiChatMessage }) {
+  const [expanded, setExpanded] = useState(false);
+  const isAssistant = message.role === "assistant";
+
+  return (
+    <div className="space-y-1">
+      <p className="text-xs font-medium text-neutral-500">{isAssistant ? "AI" : "구직자"}</p>
+      {isAssistant ? (
+        // AI 답변은 길어서 기본 한 줄로 접고, 누르면 전체를 펼친다.
+        <button
+          type="button"
+          onClick={() => setExpanded((prev) => !prev)}
+          className="flex w-full items-start gap-2 rounded-xl bg-white px-3 py-2 text-left text-sm leading-relaxed text-neutral-700 ring-1 ring-neutral-200 transition-colors hover:bg-neutral-50"
+          aria-expanded={expanded}
+        >
+          <span className={cn("min-w-0 flex-1", expanded ? "whitespace-pre-line" : "line-clamp-1")}>
+            {message.content}
+          </span>
+          <ChevronDown
+            className={cn(
+              "mt-0.5 h-4 w-4 shrink-0 text-neutral-400 transition-transform",
+              expanded && "rotate-180",
+            )}
+          />
+        </button>
+      ) : (
+        <p className="whitespace-pre-line rounded-xl bg-neutral-100 px-3 py-2 text-sm leading-relaxed text-neutral-800">
+          {message.content}
+        </p>
+      )}
+    </div>
+  );
 }
 
 function Field({ label, value }: { label: string; value: string }) {
