@@ -399,14 +399,6 @@ function SimulationsPage() {
               전체 직무 보기
             </Button>
           </Link>
-          <Link to="/expert-simulations">
-            <Button
-              variant="outline"
-              className="rounded-md border-zinc-300 text-zinc-700 hover:border-zinc-900 hover:text-zinc-900"
-            >
-              현직자 제시 보기
-            </Button>
-          </Link>
         </div>
       )}
 
