@@ -1130,7 +1130,7 @@ export const uploadSimulationCardAsset = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const base64 = data.dataUrl.replace("data:image/webp;base64,", "");
-    const bytes = Buffer.from(base64, "base64");
+    const bytes = Uint8Array.from(atob(base64), (char) => char.charCodeAt(0));
     const objectPath = `admin/${data.kind}/${data.targetId}-${Date.now()}.webp`;
 
     const { error } = await supabaseAdmin.storage
