@@ -4,11 +4,20 @@ import { useEffect, useMemo, useState } from "react";
 
 import { ExpertSimulationCard } from "@/components/ExpertSimulationCard";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { DOMAIN_CATEGORIES, isDomainCategory } from "@/lib/domain-categories";
+import { INITIAL_PROFILE_FORM, JobInterestFields } from "@/lib/profile-fields";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/expert-simulations")({
   head: () => ({ meta: [{ title: "현직자 제시 시뮬레이션 — Beginner" }] }),
@@ -61,6 +70,9 @@ function ExpertSimulationsPage() {
   const [query, setQuery] = useState("");
   const [selectedDomain, setSelectedDomain] = useState<string | null>(null);
   const [showAll, setShowAll] = useState(false);
+  const [jobInterestEditorOpen, setJobInterestEditorOpen] = useState(false);
+  const [draftJobInterests, setDraftJobInterests] = useState<string[]>([]);
+  const [savingJobInterests, setSavingJobInterests] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -146,6 +158,58 @@ function ExpertSimulationsPage() {
     setSelectedDomain(null);
   }
 
+  function openJobInterestEditor() {
+    setDraftJobInterests(jobInterests);
+    setJobInterestEditorOpen(true);
+  }
+
+  async function saveJobInterests() {
+    if (!user) return;
+    if (draftJobInterests.length === 0) {
+      toast.error("관심 직무를 하나 이상 선택해주세요.");
+      return;
+    }
+
+    setSavingJobInterests(true);
+    const { data: updated, error: updateError } = await supabase
+      .from("job_seekers")
+      .update({ job_interests: draftJobInterests })
+      .eq("id", user.id)
+      .select("id");
+
+    if (!updateError && (!updated || updated.length === 0)) {
+      const { error: upsertError } = await supabase
+        .from("job_seekers")
+        .upsert(
+          {
+            id: user.id,
+            email: user.email ?? "",
+            job_interests: draftJobInterests,
+          },
+          { onConflict: "id" },
+        );
+      if (upsertError) {
+        setSavingJobInterests(false);
+        toast.error("관심 직무 저장 중 오류가 발생했어요.");
+        return;
+      }
+    } else if (updateError) {
+      setSavingJobInterests(false);
+      toast.error("관심 직무 저장 중 오류가 발생했어요.");
+      return;
+    }
+
+    setJobInterests(draftJobInterests);
+    setSavingJobInterests(false);
+    setJobInterestEditorOpen(false);
+    toast.success("관심 직무를 수정했어요.");
+  }
+
+  const jobInterestForm = {
+    ...INITIAL_PROFILE_FORM,
+    job_interests: draftJobInterests,
+  };
+
   return (
     <main className="mx-auto max-w-5xl px-4 py-12">
       <Link
@@ -157,6 +221,26 @@ function ExpertSimulationsPage() {
       <h1 className="mt-5 text-2xl font-bold text-zinc-900 md:text-3xl">
         {isRecommendationView ? "나를 위한 현직자 시뮬레이션 3개" : "현직자 제시 시뮬레이션"}
       </h1>
+
+      {!loading && user && (
+        <div className="mt-3 flex flex-wrap gap-2">
+          {jobInterests.map((interest) => (
+            <span
+              key={interest}
+              className="rounded-lg bg-zinc-100 px-3 py-1.5 text-xs font-medium text-zinc-700"
+            >
+              {interest}
+            </span>
+          ))}
+          <button
+            type="button"
+            onClick={openJobInterestEditor}
+            className="rounded-lg bg-zinc-50 px-3 py-1.5 text-xs text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-700"
+          >
+            {jobInterests.length > 0 ? "수정" : "관심 직무 선택"}
+          </button>
+        </div>
+      )}
 
       {error ? (
         <p className="mt-8 text-sm text-zinc-500">{error}</p>
@@ -283,6 +367,42 @@ function ExpertSimulationsPage() {
           )}
         </>
       )}
+
+      <Dialog open={jobInterestEditorOpen} onOpenChange={setJobInterestEditorOpen}>
+        <DialogContent className="max-w-2xl rounded-md p-6 shadow-none data-[state=closed]:!animate-none data-[state=open]:!animate-none">
+          <DialogHeader>
+            <DialogTitle>관심 직무 수정</DialogTitle>
+          </DialogHeader>
+          <div className="max-h-[55vh] overflow-y-auto py-2">
+            <JobInterestFields
+              data={jobInterestForm}
+              setData={(partial) => {
+                if (partial.job_interests) setDraftJobInterests(partial.job_interests);
+              }}
+              showHeader={false}
+            />
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setJobInterestEditorOpen(false)}
+              disabled={savingJobInterests}
+              className="rounded-md"
+            >
+              취소
+            </Button>
+            <Button
+              type="button"
+              onClick={saveJobInterests}
+              disabled={savingJobInterests}
+              className="rounded-md bg-zinc-900 text-white hover:bg-zinc-700"
+            >
+              {savingJobInterests ? "저장 중..." : "저장"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </main>
   );
 }
